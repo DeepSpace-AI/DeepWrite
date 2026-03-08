@@ -1,0 +1,21 @@
+{
+  "name": "deepwrite",
+  "version": "1.0.0",
+  "description": "",
+  "scripts": {
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "preview": "turbo run preview",
+    "lint": "turbo run lint",
+    "format": "turbo run format",
+    "dev:web": "turbo run dev --filter=@deepwrite/web",
+    "dev:gateway": "pnpm --filter @deepwrite/gateway dev"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "packageManager": "pnpm@10.30.2",
+  "dependencies": {
+    "turbo": "^2.8.10"
+  }
+}

@@ -1,0 +1,1938 @@
+basePath: /api/v1
+definitions:
+  request.BatchDeleteWorkspaceFilesRequest:
+    properties:
+      file_ids:
+        items:
+          type: string
+        minItems: 1
+        type: array
+    required:
+    - file_ids
+    type: object
+  request.ChangeEmailRequest:
+    properties:
+      new_email:
+        example: newuser@example.com
+        type: string
+      password:
+        example: "123456"
+        minLength: 6
+        type: string
+    required:
+    - new_email
+    - password
+    type: object
+  request.ChangePasswordRequest:
+    properties:
+      new_password:
+        example: "654321"
+        minLength: 6
+        type: string
+      old_password:
+        example: "123456"
+        minLength: 6
+        type: string
+    required:
+    - new_password
+    - old_password
+    type: object
+  request.CompleteWorkspaceUploadRequest:
+    properties:
+      file_name:
+        maxLength: 255
+        type: string
+      folder_id:
+        type: string
+      object_key:
+        maxLength: 1024
+        type: string
+    required:
+    - file_name
+    - object_key
+    type: object
+  request.CreateDocumentRequest:
+    properties:
+      content_json:
+        additionalProperties: {}
+        type: object
+      folder_id:
+        type: string
+      tiptap_schema:
+        type: string
+      tiptap_schema_ver:
+        type: string
+      title:
+        maxLength: 255
+        type: string
+      workspace_id:
+        type: string
+    required:
+    - folder_id
+    - title
+    - workspace_id
+    type: object
+  request.CreateFolderRequest:
+    properties:
+      description:
+        maxLength: 1000
+        type: string
+      name:
+        maxLength: 255
+        type: string
+      parent_id:
+        type: string
+    required:
+    - name
+    type: object
+  request.CreateWorkspaceInvitationRequest:
+    properties:
+      invitee_email:
+        type: string
+      invitee_user_id:
+        type: string
+      role:
+        enum:
+        - admin
+        - editor
+        - viewer
+        type: string
+    required:
+    - role
+    type: object
+  request.CreateWorkspaceRequest:
+    properties:
+      description:
+        maxLength: 1000
+        type: string
+      name:
+        maxLength: 255
+        type: string
+      public:
+        type: boolean
+    required:
+    - name
+    type: object
+  request.ForgotPasswordRequest:
+    properties:
+      email:
+        example: user@example.com
+        type: string
+    required:
+    - email
+    type: object
+  request.LoginRequest:
+    properties:
+      email:
+        example: user@example.com
+        type: string
+      password:
+        example: "123456"
+        type: string
+    required:
+    - email
+    - password
+    type: object
+  request.LogoutRequest:
+    properties:
+      refresh_token:
+        example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+        type: string
+    type: object
+  request.PresignWorkspaceUploadRequest:
+    properties:
+      content_type:
+        maxLength: 255
+        type: string
+      expires_in:
+        maximum: 3600
+        minimum: 60
+        type: integer
+      file_name:
+        maxLength: 255
+        type: string
+      folder_id:
+        type: string
+    required:
+    - file_name
+    type: object
+  request.RefreshTokenRequest:
+    properties:
+      refresh_token:
+        example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+        type: string
+    required:
+    - refresh_token
+    type: object
+  request.RegisterRequest:
+    properties:
+      display_name:
+        example: deepwrite-user
+        type: string
+      email:
+        example: user@example.com
+        type: string
+      password:
+        example: "123456"
+        minLength: 6
+        type: string
+    required:
+    - display_name
+    - email
+    - password
+    type: object
+  request.ResetPasswordRequest:
+    properties:
+      new_password:
+        example: "654321"
+        minLength: 6
+        type: string
+      token:
+        example: f2b412f7f05f4d199f8b7a6d577d4b2a
+        type: string
+    required:
+    - new_password
+    - token
+    type: object
+  request.ResolveWorkspaceInvitationRequest:
+    properties:
+      token:
+        type: string
+    required:
+    - token
+    type: object
+  request.RestoreDocumentVersionRequest:
+    properties:
+      version:
+        minimum: 1
+        type: integer
+    required:
+    - version
+    type: object
+  request.SaveDocumentVersionRequest:
+    properties:
+      content_json:
+        additionalProperties: {}
+        type: object
+      snapshot:
+        type: boolean
+      source:
+        type: string
+      summary:
+        type: string
+      title:
+        type: string
+    type: object
+  request.UpdateFolderRequest:
+    properties:
+      description:
+        maxLength: 1000
+        type: string
+      name:
+        maxLength: 255
+        type: string
+    type: object
+  request.UpdateWorkspaceRequest:
+    properties:
+      description:
+        maxLength: 1000
+        type: string
+      name:
+        maxLength: 255
+        type: string
+      public:
+        type: boolean
+      status:
+        enum:
+        - active
+        - archived
+        type: string
+    type: object
+  request.UserProfileRequest:
+    properties:
+      avatar_url:
+        example: https://example.com/avatar.jpg
+        type: string
+      bio:
+        example: This is a user bio.
+        maxLength: 255
+        type: string
+      display_name:
+        example: deepwrite-user
+        maxLength: 30
+        type: string
+      language:
+        example: en
+        type: string
+      timezone:
+        example: UTC
+        type: string
+    required:
+    - avatar_url
+    - bio
+    - display_name
+    type: object
+  response.Response:
+    properties:
+      code:
+        type: integer
+      data: {}
+      message:
+        type: string
+      time:
+        type: integer
+    type: object
+  user.Profile:
+    properties:
+      avatar_url:
+        type: string
+      bio:
+        type: string
+      created_at:
+        type: string
+      display_name:
+        type: string
+      id:
+        type: string
+      language:
+        type: string
+      timezone:
+        type: string
+      updated_at:
+        type: string
+      user_id:
+        type: string
+    type: object
+  user.User:
+    properties:
+      created_at:
+        type: string
+      email:
+        type: string
+      id:
+        type: string
+      last_login:
+        type: string
+      role:
+        type: string
+      status:
+        type: string
+      updated_at:
+        type: string
+      user_profile:
+        $ref: '#/definitions/user.Profile'
+    type: object
+host: localhost:8080
+info:
+  contact: {}
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+  title: DeepWrite Gateway API
+  version: "1.0"
+paths:
+  /auth/login:
+    post:
+      consumes:
+      - application/json
+      description: 使用邮箱和密码登录，获取访问令牌和刷新令牌
+      parameters:
+      - description: 登录信息
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/request.LoginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 登录成功
+          schema:
+            $ref: '#/definitions/response.Response'
+        "400":
+          description: 请求参数错误
+          schema:
+            $ref: '#/definitions/response.Response'
+        "401":
+          description: 认证失败
+          schema:
+            $ref: '#/definitions/response.Response'
+        "403":
+          description: 用户被禁用
+          schema:
+            $ref: '#/definitions/response.Response'
+        "500":
+          description: 服务器错误
+          schema:
+            $ref: '#/definitions/response.Response'
+      summary: 用户登录
+      tags:
+      - Auth
+  /auth/logout:
+    post:
+      consumes:
+      - application/json
+      description: 主动使当前访问令牌失效；可选传入刷新令牌并一并失效
+      parameters:
+      - description: 登出信息（可选刷新令牌）
+        in: body
+        name: request
+        schema:
+          $ref: '#/definitions/request.LogoutRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 登出成功
+          schema:
+            $ref: '#/definitions/response.Response'
+        "401":
+          description: 认证失败
+          schema:
+            $ref: '#/definitions/response.Response'
+        "500":
+          description: 服务器错误
+          schema:
+            $ref: '#/definitions/response.Response'
+      security:
+      - BearerAuth: []
+      summary: 用户登出
+      tags:
+      - Auth
+  /auth/me:
+    get:
+      consumes:
+      - application/json
+      description: 根据访问令牌返回当前登录用户的基础信息
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 获取成功
+          schema:
+            $ref: '#/definitions/response.Response'
+        "401":
+          description: 未授权
+          schema:
+            $ref: '#/definitions/response.Response'
+      security:
+      - BearerAuth: []
+      summary: 获取当前用户信息
+      tags:
+      - Auth
+  /auth/refresh:
+    post:
+      consumes:
+      - application/json
+      description: 使用刷新令牌获取新的访问令牌和刷新令牌
+      parameters:
+      - description: 刷新令牌信息
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/request.RefreshTokenRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 刷新成功
+          schema:
+            $ref: '#/definitions/response.Response'
+        "400":
+          description: 请求参数错误
+          schema:
+            $ref: '#/definitions/response.Response'
+        "401":
+          description: 认证失败
+          schema:
+            $ref: '#/definitions/response.Response'
+        "403":
+          description: 用户被禁用
+          schema:
+            $ref: '#/definitions/response.Response'
+        "500":
+          description: 服务器错误
+          schema:
+            $ref: '#/definitions/response.Response'
+      summary: 刷新令牌
+      tags:
+      - Auth
+  /auth/register:
+    post:
+      consumes:
+      - application/json
+      description: 注册一个新用户
+      parameters:
+      - description: 注册信息
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/request.RegisterRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: 注册成功
+          schema:
+            $ref: '#/definitions/user.User'
+        "400":
+          description: 请求参数错误
+          schema:
+            $ref: '#/definitions/response.Response'
+        "500":
+          description: 服务器错误
+          schema:
+            $ref: '#/definitions/response.Response'
+      summary: 用户注册
+      tags:
+      - Auth
+  /documents:
+    get:
+      consumes:
+      - application/json
+      description: 按工作区获取文档列表
+      parameters:
+      - description: 工作区ID
+        in: query
+        name: workspace_id
+        required: true
+        type: string
+      - description: 分页大小
+        in: query
+        name: limit
+        type: integer
+      - description: 偏移量
+        in: query
+        name: offset
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 获取成功
+          schema:
+            $ref: '#/definitions/response.Response'
+        "400":
+          description: 请求参数错误
+          schema:
+            $ref: '#/definitions/response.Response'
+        "500":
+          description: 服务器错误
+          schema:
+            $ref: '#/definitions/response.Response'
+      summary: 文档列表
+      tags:
+      - Document
+    post:
+      consumes:
+      - application/json
+      description: 创建一个新的文档并写入初始快照版本
+      parameters:
+      - description: 文档创建参数
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/request.CreateDocumentRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: 创建成功
+          schema:
+            $ref: '#/definitions/response.Response'
+        "400":
+          description: 请求参数错误
+          schema:
+            $ref: '#/definitions/response.Response'
+        "500":
+          description: 服务器错误
+          schema:
+            $ref: '#/definitions/response.Response'
+      summary: 创建文档
+      tags:
+      - Document
+  /documents/{id}:
+    get:
+      consumes:
+      - application/json
+      description: 根据文档ID获取文档详情
+      parameters:
+      - description: 文档ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 获取成功
+          schema:
+            $ref: '#/definitions/response.Response'
+        "404":
+          description: 文档不存在
+          schema:
+            $ref: '#/definitions/response.Response'
+        "500":
+          description: 服务器错误
+          schema:
+            $ref: '#/definitions/response.Response'
+      summary: 获取文档详情
+      tags:
+      - Document
+    put:
+      consumes:
+      - application/json
+      description: 保存当前文档内容为新版本，可选择是否标记为快照
+      parameters:
+      - description: 文档ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: 版本保存参数
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/request.SaveDocumentVersionRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 保存成功
+          schema:
+            $ref: '#/definitions/response.Response'
+        "400":
+          description: 请求参数错误
+          schema:
+            $ref: '#/definitions/response.Response'
+        "404":
+          description: 文档不存在
+          schema:
+            $ref: '#/definitions/response.Response'
+        "500":
+          description: 服务器错误
+          schema:
+            $ref: '#/definitions/response.Response'
+      summary: 保存文档版本
+      tags:
+      - Document
+  /documents/{id}/restore:
+    post:
+      consumes:
+      - application/json
+      description: 从历史版本恢复文档，并生成新的快照版本
+      parameters:
+      - description: 文档ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: 恢复参数
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/request.RestoreDocumentVersionRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 恢复成功
+          schema:
+            $ref: '#/definitions/response.Response'
+        "400":
+          description: 请求参数错误
+          schema:
+            $ref: '#/definitions/response.Response'
+        "404":
+          description: 版本不存在
+          schema:
+            $ref: '#/definitions/response.Response'
+        "500":
+          description: 服务器错误
+          schema:
+            $ref: '#/definitions/response.Response'
+      summary: 恢复历史版本
+      tags:
+      - Document
+  /documents/{id}/versions:
+    get:
+      consumes:
+      - application/json
+      description: 获取文档历史版本列表（按版本号倒序）
+      parameters:
+      - description: 文档ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: 分页大小
+        in: query
+        name: limit
+        type: integer
+      - description: 偏移量
+        in: query
+        name: offset
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 获取成功
+          schema:
+            $ref: '#/definitions/response.Response'
+        "400":
+          description: 请求参数错误
+          schema:
+            $ref: '#/definitions/response.Response'
+        "500":
+          description: 服务器错误
+          schema:
+            $ref: '#/definitions/response.Response'
+      summary: 获取文档历史版本
+      tags:
+      - Document
+  /invitations/{invite_id}/accept:
+    post:
+      consumes:
+      - application/json
+      description: 当前用户通过 token 接受邀请并加入工作区
+      parameters:
+      - description: 邀请ID
+        in: path
+        name: invite_id
+        required: true
+        type: string
+      - description: 接受参数
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/request.ResolveWorkspaceInvitationRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 接受成功
+          schema:
+            $ref: '#/definitions/response.Response'
+        "400":
+          description: 请求参数错误
+          schema:
+            $ref: '#/definitions/response.Response'
+        "401":
+          description: 未授权
+          schema:
+            $ref: '#/definitions/response.Response'
+        "403":
+          description: 无权限操作
+          schema:
+            $ref: '#/definitions/response.Response'
+        "404":
+          description: 邀请不存在
+          schema:
+            $ref: '#/definitions/response.Response'
+        "500":
+          description: 服务器错误
+          schema:
+            $ref: '#/definitions/response.Response'
+      security:
+      - BearerAuth: []
+      summary: 接受邀请
+      tags:
+      - Workspace
+  /invitations/{invite_id}/reject:
+    post:
+      consumes:
+      - application/json
+      description: 当前用户通过 token 拒绝邀请
+      parameters:
+      - description: 邀请ID
+        in: path
+        name: invite_id
+        required: true
+        type: string
+      - description: 拒绝参数
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/request.ResolveWorkspaceInvitationRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 拒绝成功
+          schema:
+            $ref: '#/definitions/response.Response'
+        "400":
+          description: 请求参数错误
+          schema:
+            $ref: '#/definitions/response.Response'
+        "401":
+          description: 未授权
+          schema:
+            $ref: '#/definitions/response.Response'
+        "403":
+          description: 无权限操作
+          schema:
+            $ref: '#/definitions/response.Response'
+        "404":
+          description: 邀请不存在
+          schema:
+            $ref: '#/definitions/response.Response'
+        "500":
+          description: 服务器错误
+          schema:
+            $ref: '#/definitions/response.Response'
+      security:
+      - BearerAuth: []
+      summary: 拒绝邀请
+      tags:
+      - Workspace
+  /invitations/me:
+    get:
+      consumes:
+      - application/json
+      description: 获取当前用户收到的邀请列表
+      parameters:
+      - description: 邀请状态
+        in: query
+        name: status
+        type: string
+      - description: 分页大小
+        in: query
+        name: limit
+        type: integer
+      - description: 偏移量
+        in: query
+        name: offset
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 获取成功
+          schema:
+            $ref: '#/definitions/response.Response'
+        "401":
+          description: 未授权
+          schema:
+            $ref: '#/definitions/response.Response'
+        "500":
+          description: 服务器错误
+          schema:
+            $ref: '#/definitions/response.Response'
+      security:
+      - BearerAuth: []
+      summary: 我的邀请列表
+      tags:
+      - Workspace
+  /user/avatar:
+    post:
+      consumes:
+      - multipart/form-data
+      description: 上传当前登录用户头像并自动更新用户资料中的 avatar_url
+      parameters:
+      - description: 头像文件（支持 image/*）
+        in: formData
+        name: file
+        required: true
+        type: file
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 上传成功
+          schema:
+            $ref: '#/definitions/response.Response'
+        "400":
+          description: 请求参数错误
+          schema:
+            $ref: '#/definitions/response.Response'
+        "401":
+          description: 未授权
+          schema:
+            $ref: '#/definitions/response.Response'
+        "500":
+          description: 服务器错误
+          schema:
+            $ref: '#/definitions/response.Response'
+      security:
+      - BearerAuth: []
+      summary: 上传用户头像
+      tags:
+      - User
+  /user/change-email:
+    post:
+      consumes:
+      - application/json
+      description: 当前登录用户修改邮箱（需校验密码）
+      parameters:
+      - description: 修改邮箱请求
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/request.ChangeEmailRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 邮箱修改成功
+          schema:
+            $ref: '#/definitions/response.Response'
+        "400":
+          description: 请求参数错误
+          schema:
+            $ref: '#/definitions/response.Response'
+        "401":
+          description: 未授权或密码错误
+          schema:
+            $ref: '#/definitions/response.Response'
+        "500":
+          description: 服务器错误
+          schema:
+            $ref: '#/definitions/response.Response'
+      security:
+      - BearerAuth: []
+      summary: 修改邮箱
+      tags:
+      - User
+  /user/change-password:
+    post:
+      consumes:
+      - application/json
+      description: 修改当前登录用户的密码
+      parameters:
+      - description: 修改密码请求
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/request.ChangePasswordRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 密码修改成功
+          schema:
+            $ref: '#/definitions/response.Response'
+        "400":
+          description: 请求参数错误
+          schema:
+            $ref: '#/definitions/response.Response'
+        "401":
+          description: 未授权
+          schema:
+            $ref: '#/definitions/response.Response'
+        "500":
+          description: 服务器错误
+          schema:
+            $ref: '#/definitions/response.Response'
+      summary: 修改密码
+      tags:
+      - User
+  /user/forgot-password:
+    post:
+      consumes:
+      - application/json
+      description: 发送重置密码邮件（若邮箱存在）
+      parameters:
+      - description: 忘记密码请求
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/request.ForgotPasswordRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 请求已受理
+          schema:
+            $ref: '#/definitions/response.Response'
+        "400":
+          description: 请求参数错误
+          schema:
+            $ref: '#/definitions/response.Response'
+        "500":
+          description: 服务器错误
+          schema:
+            $ref: '#/definitions/response.Response'
+      summary: 忘记密码
+      tags:
+      - User
+  /user/profile:
+    get:
+      consumes:
+      - application/json
+      description: 获取当前登录用户的基本信息和个人资料
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 用户信息
+          schema:
+            $ref: '#/definitions/user.User'
+        "401":
+          description: 未授权
+          schema:
+            $ref: '#/definitions/response.Response'
+        "500":
+          description: 服务器错误
+          schema:
+            $ref: '#/definitions/response.Response'
+      summary: 获取用户信息
+      tags:
+      - User
+    put:
+      consumes:
+      - application/json
+      description: 更新当前登录用户的个人资料信息
+      parameters:
+      - description: 用户个人资料
+        in: body
+        name: profile
+        required: true
+        schema:
+          $ref: '#/definitions/request.UserProfileRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 更新后的用户信息
+          schema:
+            $ref: '#/definitions/user.User'
+        "400":
+          description: 请求参数错误
+          schema:
+            $ref: '#/definitions/response.Response'
+        "401":
+          description: 未授权
+          schema:
+            $ref: '#/definitions/response.Response'
+        "500":
+          description: 服务器错误
+          schema:
+            $ref: '#/definitions/response.Response'
+      summary: 更新用户信息
+      tags:
+      - User
+  /user/reset-password:
+    post:
+      consumes:
+      - application/json
+      description: 通过忘记密码令牌设置新密码
+      parameters:
+      - description: 重置密码请求
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/request.ResetPasswordRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 重置成功
+          schema:
+            $ref: '#/definitions/response.Response'
+        "400":
+          description: 请求参数错误或令牌失效
+          schema:
+            $ref: '#/definitions/response.Response'
+        "500":
+          description: 服务器错误
+          schema:
+            $ref: '#/definitions/response.Response'
+      summary: 重置密码
+      tags:
+      - User
+  /workspaces:
+    get:
+      consumes:
+      - application/json
+      description: 获取当前登录用户可访问的工作区列表
+      parameters:
+      - description: 分页大小
+        in: query
+        name: limit
+        type: integer
+      - description: 偏移量
+        in: query
+        name: offset
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 获取成功
+          schema:
+            $ref: '#/definitions/response.Response'
+        "401":
+          description: 未授权
+          schema:
+            $ref: '#/definitions/response.Response'
+        "500":
+          description: 服务器错误
+          schema:
+            $ref: '#/definitions/response.Response'
+      security:
+      - BearerAuth: []
+      summary: 工作区列表
+      tags:
+      - Workspace
+    post:
+      consumes:
+      - application/json
+      description: 创建一个新的工作区，并将当前用户设置为 owner
+      parameters:
+      - description: 工作区创建参数
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/request.CreateWorkspaceRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: 创建成功
+          schema:
+            $ref: '#/definitions/response.Response'
+        "400":
+          description: 请求参数错误
+          schema:
+            $ref: '#/definitions/response.Response'
+        "401":
+          description: 未授权
+          schema:
+            $ref: '#/definitions/response.Response'
+        "500":
+          description: 服务器错误
+          schema:
+            $ref: '#/definitions/response.Response'
+      security:
+      - BearerAuth: []
+      summary: 创建工作区
+      tags:
+      - Workspace
+  /workspaces/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: 删除指定工作区（仅 owner 可执行）
+      parameters:
+      - description: 工作区ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 删除成功
+          schema:
+            $ref: '#/definitions/response.Response'
+        "401":
+          description: 未授权
+          schema:
+            $ref: '#/definitions/response.Response'
+        "403":
+          description: 无权限删除
+          schema:
+            $ref: '#/definitions/response.Response'
+        "404":
+          description: 工作区不存在
+          schema:
+            $ref: '#/definitions/response.Response'
+        "500":
+          description: 服务器错误
+          schema:
+            $ref: '#/definitions/response.Response'
+      security:
+      - BearerAuth: []
+      summary: 删除工作区
+      tags:
+      - Workspace
+    get:
+      consumes:
+      - application/json
+      description: 根据工作区ID获取详情；私有工作区需具备成员权限
+      parameters:
+      - description: 工作区ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 获取成功
+          schema:
+            $ref: '#/definitions/response.Response'
+        "401":
+          description: 未授权
+          schema:
+            $ref: '#/definitions/response.Response'
+        "403":
+          description: 无权限访问
+          schema:
+            $ref: '#/definitions/response.Response'
+        "404":
+          description: 工作区不存在
+          schema:
+            $ref: '#/definitions/response.Response'
+        "500":
+          description: 服务器错误
+          schema:
+            $ref: '#/definitions/response.Response'
+      security:
+      - BearerAuth: []
+      summary: 获取工作区详情
+      tags:
+      - Workspace
+    put:
+      consumes:
+      - application/json
+      description: 更新工作区基础信息（需 admin 或 owner 权限）
+      parameters:
+      - description: 工作区ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: 工作区更新参数
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/request.UpdateWorkspaceRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 更新成功
+          schema:
+            $ref: '#/definitions/response.Response'
+        "400":
+          description: 请求参数错误
+          schema:
+            $ref: '#/definitions/response.Response'
+        "401":
+          description: 未授权
+          schema:
+            $ref: '#/definitions/response.Response'
+        "403":
+          description: 无权限修改
+          schema:
+            $ref: '#/definitions/response.Response'
+        "404":
+          description: 工作区不存在
+          schema:
+            $ref: '#/definitions/response.Response'
+        "500":
+          description: 服务器错误
+          schema:
+            $ref: '#/definitions/response.Response'
+      security:
+      - BearerAuth: []
+      summary: 更新工作区
+      tags:
+      - Workspace
+  /workspaces/{id}/files:
+    get:
+      consumes:
+      - application/json
+      description: 获取工作区文件列表，可按 folder_id 过滤
+      parameters:
+      - description: 工作区ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: 文件夹ID
+        in: query
+        name: folder_id
+        type: string
+      - description: 分页大小
+        in: query
+        name: limit
+        type: integer
+      - description: 偏移量
+        in: query
+        name: offset
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 获取成功
+          schema:
+            $ref: '#/definitions/response.Response'
+        "400":
+          description: 请求参数错误
+          schema:
+            $ref: '#/definitions/response.Response'
+        "401":
+          description: 未授权
+          schema:
+            $ref: '#/definitions/response.Response'
+        "403":
+          description: 无权限访问
+          schema:
+            $ref: '#/definitions/response.Response'
+        "404":
+          description: 工作区或文件夹不存在
+          schema:
+            $ref: '#/definitions/response.Response'
+        "500":
+          description: 服务器错误
+          schema:
+            $ref: '#/definitions/response.Response'
+      security:
+      - BearerAuth: []
+      summary: 工作区文件列表
+      tags:
+      - Workspace
+    post:
+      consumes:
+      - application/json
+      description: 生成 AWS S3 预签名 PUT URL，前端可直传文件到对象存储
+      parameters:
+      - description: 工作区ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: 预上传参数
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/request.PresignWorkspaceUploadRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: 生成成功
+          schema:
+            $ref: '#/definitions/response.Response'
+        "400":
+          description: 请求参数错误
+          schema:
+            $ref: '#/definitions/response.Response'
+        "401":
+          description: 未授权
+          schema:
+            $ref: '#/definitions/response.Response'
+        "403":
+          description: 无权限操作
+          schema:
+            $ref: '#/definitions/response.Response'
+        "404":
+          description: 工作区或文件夹不存在
+          schema:
+            $ref: '#/definitions/response.Response'
+        "500":
+          description: 服务器错误
+          schema:
+            $ref: '#/definitions/response.Response'
+      security:
+      - BearerAuth: []
+      summary: 获取工作区文件预上传URL
+      tags:
+      - Workspace
+  /workspaces/{id}/files/{file_id}:
+    delete:
+      consumes:
+      - application/json
+      description: 删除对象存储文件并删除文件元数据（需 editor/admin/owner 权限）
+      parameters:
+      - description: 工作区ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: 文件ID
+        in: path
+        name: file_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 删除成功
+          schema:
+            $ref: '#/definitions/response.Response'
+        "400":
+          description: 请求参数错误
+          schema:
+            $ref: '#/definitions/response.Response'
+        "401":
+          description: 未授权
+          schema:
+            $ref: '#/definitions/response.Response'
+        "403":
+          description: 无权限操作
+          schema:
+            $ref: '#/definitions/response.Response'
+        "404":
+          description: 工作区或文件不存在
+          schema:
+            $ref: '#/definitions/response.Response'
+        "500":
+          description: 服务器错误
+          schema:
+            $ref: '#/definitions/response.Response'
+      security:
+      - BearerAuth: []
+      summary: 删除工作区文件
+      tags:
+      - Workspace
+    get:
+      consumes:
+      - application/json
+      description: 根据 file_id 获取工作区文件详情，并返回预览URL
+      parameters:
+      - description: 工作区ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: 文件ID
+        in: path
+        name: file_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 获取成功
+          schema:
+            $ref: '#/definitions/response.Response'
+        "400":
+          description: 请求参数错误
+          schema:
+            $ref: '#/definitions/response.Response'
+        "401":
+          description: 未授权
+          schema:
+            $ref: '#/definitions/response.Response'
+        "403":
+          description: 无权限访问
+          schema:
+            $ref: '#/definitions/response.Response'
+        "404":
+          description: 工作区或文件不存在
+          schema:
+            $ref: '#/definitions/response.Response'
+        "500":
+          description: 服务器错误
+          schema:
+            $ref: '#/definitions/response.Response'
+      security:
+      - BearerAuth: []
+      summary: 获取工作区文件详情
+      tags:
+      - Workspace
+  /workspaces/{id}/files/batch-delete:
+    post:
+      consumes:
+      - application/json
+      description: 批量删除对象存储文件并删除文件元数据（需 editor/admin/owner 权限）
+      parameters:
+      - description: 工作区ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: 批量删除参数
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/request.BatchDeleteWorkspaceFilesRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 删除完成
+          schema:
+            $ref: '#/definitions/response.Response'
+        "400":
+          description: 请求参数错误
+          schema:
+            $ref: '#/definitions/response.Response'
+        "401":
+          description: 未授权
+          schema:
+            $ref: '#/definitions/response.Response'
+        "403":
+          description: 无权限操作
+          schema:
+            $ref: '#/definitions/response.Response'
+        "404":
+          description: 工作区不存在
+          schema:
+            $ref: '#/definitions/response.Response'
+        "500":
+          description: 服务器错误
+          schema:
+            $ref: '#/definitions/response.Response'
+      security:
+      - BearerAuth: []
+      summary: 批量删除工作区文件
+      tags:
+      - Workspace
+  /workspaces/{id}/files/complete:
+    post:
+      consumes:
+      - application/json
+      description: 校验对象已上传并保存文件元数据
+      parameters:
+      - description: 工作区ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: 上传完成参数
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/request.CompleteWorkspaceUploadRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 确认成功
+          schema:
+            $ref: '#/definitions/response.Response'
+        "400":
+          description: 请求参数错误
+          schema:
+            $ref: '#/definitions/response.Response'
+        "401":
+          description: 未授权
+          schema:
+            $ref: '#/definitions/response.Response'
+        "403":
+          description: 无权限操作
+          schema:
+            $ref: '#/definitions/response.Response'
+        "404":
+          description: 工作区或文件夹不存在
+          schema:
+            $ref: '#/definitions/response.Response'
+        "500":
+          description: 服务器错误
+          schema:
+            $ref: '#/definitions/response.Response'
+      security:
+      - BearerAuth: []
+      summary: 确认工作区文件上传完成
+      tags:
+      - Workspace
+  /workspaces/{id}/folders:
+    get:
+      consumes:
+      - application/json
+      description: 获取工作区下的文件夹列表，可按 parent_id 过滤
+      parameters:
+      - description: 工作区ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: 父文件夹ID
+        in: query
+        name: parent_id
+        type: string
+      - description: 分页大小
+        in: query
+        name: limit
+        type: integer
+      - description: 偏移量
+        in: query
+        name: offset
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 获取成功
+          schema:
+            $ref: '#/definitions/response.Response'
+        "401":
+          description: 未授权
+          schema:
+            $ref: '#/definitions/response.Response'
+        "403":
+          description: 无权限访问
+          schema:
+            $ref: '#/definitions/response.Response'
+        "404":
+          description: 工作区不存在
+          schema:
+            $ref: '#/definitions/response.Response'
+        "500":
+          description: 服务器错误
+          schema:
+            $ref: '#/definitions/response.Response'
+      security:
+      - BearerAuth: []
+      summary: 文件夹列表
+      tags:
+      - Workspace
+    post:
+      consumes:
+      - application/json
+      description: 在工作区下创建文件夹（需 editor/admin/owner 权限）
+      parameters:
+      - description: 工作区ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: 文件夹创建参数
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/request.CreateFolderRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: 创建成功
+          schema:
+            $ref: '#/definitions/response.Response'
+        "400":
+          description: 请求参数错误
+          schema:
+            $ref: '#/definitions/response.Response'
+        "401":
+          description: 未授权
+          schema:
+            $ref: '#/definitions/response.Response'
+        "403":
+          description: 无权限创建
+          schema:
+            $ref: '#/definitions/response.Response'
+        "404":
+          description: 工作区不存在
+          schema:
+            $ref: '#/definitions/response.Response'
+        "500":
+          description: 服务器错误
+          schema:
+            $ref: '#/definitions/response.Response'
+      security:
+      - BearerAuth: []
+      summary: 创建文件夹
+      tags:
+      - Workspace
+  /workspaces/{id}/folders/{folder_id}:
+    delete:
+      consumes:
+      - application/json
+      description: 删除指定文件夹（需 editor/admin/owner 权限）
+      parameters:
+      - description: 工作区ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: 文件夹ID
+        in: path
+        name: folder_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 删除成功
+          schema:
+            $ref: '#/definitions/response.Response'
+        "401":
+          description: 未授权
+          schema:
+            $ref: '#/definitions/response.Response'
+        "403":
+          description: 无权限删除
+          schema:
+            $ref: '#/definitions/response.Response'
+        "404":
+          description: 文件夹不存在
+          schema:
+            $ref: '#/definitions/response.Response'
+        "500":
+          description: 服务器错误
+          schema:
+            $ref: '#/definitions/response.Response'
+      security:
+      - BearerAuth: []
+      summary: 删除文件夹
+      tags:
+      - Workspace
+    get:
+      consumes:
+      - application/json
+      description: 获取工作区下指定文件夹详情
+      parameters:
+      - description: 工作区ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: 文件夹ID
+        in: path
+        name: folder_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 获取成功
+          schema:
+            $ref: '#/definitions/response.Response'
+        "401":
+          description: 未授权
+          schema:
+            $ref: '#/definitions/response.Response'
+        "403":
+          description: 无权限访问
+          schema:
+            $ref: '#/definitions/response.Response'
+        "404":
+          description: 文件夹不存在
+          schema:
+            $ref: '#/definitions/response.Response'
+        "500":
+          description: 服务器错误
+          schema:
+            $ref: '#/definitions/response.Response'
+      security:
+      - BearerAuth: []
+      summary: 获取文件夹详情
+      tags:
+      - Workspace
+    put:
+      consumes:
+      - application/json
+      description: 更新文件夹名称和描述（需 editor/admin/owner 权限）
+      parameters:
+      - description: 工作区ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: 文件夹ID
+        in: path
+        name: folder_id
+        required: true
+        type: string
+      - description: 文件夹更新参数
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/request.UpdateFolderRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 更新成功
+          schema:
+            $ref: '#/definitions/response.Response'
+        "400":
+          description: 请求参数错误
+          schema:
+            $ref: '#/definitions/response.Response'
+        "401":
+          description: 未授权
+          schema:
+            $ref: '#/definitions/response.Response'
+        "403":
+          description: 无权限更新
+          schema:
+            $ref: '#/definitions/response.Response'
+        "404":
+          description: 文件夹不存在
+          schema:
+            $ref: '#/definitions/response.Response'
+        "500":
+          description: 服务器错误
+          schema:
+            $ref: '#/definitions/response.Response'
+      security:
+      - BearerAuth: []
+      summary: 更新文件夹
+      tags:
+      - Workspace
+  /workspaces/{id}/invitations:
+    get:
+      consumes:
+      - application/json
+      description: 获取指定工作区邀请记录（需 owner/admin 权限）
+      parameters:
+      - description: 工作区ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: 邀请状态
+        in: query
+        name: status
+        type: string
+      - description: 分页大小
+        in: query
+        name: limit
+        type: integer
+      - description: 偏移量
+        in: query
+        name: offset
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 获取成功
+          schema:
+            $ref: '#/definitions/response.Response'
+        "401":
+          description: 未授权
+          schema:
+            $ref: '#/definitions/response.Response'
+        "403":
+          description: 无权限访问
+          schema:
+            $ref: '#/definitions/response.Response'
+        "404":
+          description: 工作区不存在
+          schema:
+            $ref: '#/definitions/response.Response'
+        "500":
+          description: 服务器错误
+          schema:
+            $ref: '#/definitions/response.Response'
+      security:
+      - BearerAuth: []
+      summary: 工作区邀请列表
+      tags:
+      - Workspace
+    post:
+      consumes:
+      - application/json
+      description: 通过邮箱或用户ID创建邀请（需 owner/admin 权限）
+      parameters:
+      - description: 工作区ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: 邀请参数
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/request.CreateWorkspaceInvitationRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: 创建成功
+          schema:
+            $ref: '#/definitions/response.Response'
+        "400":
+          description: 请求参数错误
+          schema:
+            $ref: '#/definitions/response.Response'
+        "401":
+          description: 未授权
+          schema:
+            $ref: '#/definitions/response.Response'
+        "403":
+          description: 无权限创建
+          schema:
+            $ref: '#/definitions/response.Response'
+        "404":
+          description: 工作区不存在
+          schema:
+            $ref: '#/definitions/response.Response'
+        "500":
+          description: 服务器错误
+          schema:
+            $ref: '#/definitions/response.Response'
+      security:
+      - BearerAuth: []
+      summary: 创建工作区邀请
+      tags:
+      - Workspace
+  /workspaces/{id}/invitations/{invite_id}/revoke:
+    post:
+      consumes:
+      - application/json
+      description: 撤销待处理邀请（需 owner/admin 权限）
+      parameters:
+      - description: 工作区ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: 邀请ID
+        in: path
+        name: invite_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 撤销成功
+          schema:
+            $ref: '#/definitions/response.Response'
+        "401":
+          description: 未授权
+          schema:
+            $ref: '#/definitions/response.Response'
+        "403":
+          description: 无权限撤销
+          schema:
+            $ref: '#/definitions/response.Response'
+        "404":
+          description: 邀请不存在
+          schema:
+            $ref: '#/definitions/response.Response'
+        "500":
+          description: 服务器错误
+          schema:
+            $ref: '#/definitions/response.Response'
+      security:
+      - BearerAuth: []
+      summary: 撤销工作区邀请
+      tags:
+      - Workspace
+securityDefinitions:
+  BasicAuth:
+    type: basic
+  BearerAuth:
+    description: 输入 "Bearer {token}" 格式的访问令牌
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"

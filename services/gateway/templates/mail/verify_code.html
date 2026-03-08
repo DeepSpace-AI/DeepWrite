@@ -1,0 +1,12 @@
+{{define "content"}}
+<p style="margin:0 0 12px 0;font-size:15px;line-height:1.75;color:#374151;">你好，{{.Name}}：</p>
+<p style="margin:0 0 14px 0;font-size:15px;line-height:1.75;color:#374151;">你的验证码如下（{{.ExpireMinutes}} 分钟内有效）：</p>
+<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 14px 0;">
+	<tr>
+		<td style="background-color:#f9fafb;border:1px dashed #d1d5db;border-radius:10px;padding:12px 16px;">
+			<span style="font-size:30px;letter-spacing:8px;font-weight:700;color:#111827;line-height:1;">{{.Code}}</span>
+		</td>
+	</tr>
+</table>
+<p style="margin:0;font-size:13px;line-height:1.7;color:#6b7280;">如非本人操作，请忽略此邮件并尽快检查账号安全。</p>
+{{end}}

@@ -1,0 +1,15 @@
+{{define "content"}}
+<p style="margin:0 0 12px 0;font-size:15px;line-height:1.75;color:#374151;">你好，{{.Name}}：</p>
+<p style="margin:0 0 12px 0;font-size:15px;line-height:1.75;color:#374151;">{{.InviterName}} 邀请你加入工作区 <b>{{.WorkspaceName}}</b>。</p>
+<p style="margin:0 0 14px 0;font-size:13px;line-height:1.7;color:#6b7280;">角色：{{.Role}} ｜ 过期时间：{{.ExpireAt}}</p>
+
+<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 14px 0;">
+  <tr>
+    <td style="border-radius:10px;background-color:#2563eb;">
+      <a href="{{.AcceptURL}}" style="display:inline-block;padding:11px 20px;font-size:14px;font-weight:600;color:#ffffff;text-decoration:none;">接受邀请</a>
+    </td>
+  </tr>
+</table>
+
+<p style="margin:0;font-size:13px;line-height:1.7;color:#6b7280;">若按钮无法点击，请复制链接到浏览器打开：{{.AcceptURL}}</p>
+{{end}}
