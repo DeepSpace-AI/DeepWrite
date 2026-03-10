@@ -5,7 +5,9 @@ import { EditorContent, useEditor } from '@tiptap/vue-3'
 import StarterKit from '@tiptap/starter-kit'
 import Collaboration from '@tiptap/extension-collaboration'
 import * as Y from 'yjs'
+import { Awareness } from 'y-protocols/awareness'
 import { GatewayYjsProvider } from '@/collab/gatewayProvider'
+import '@/assets/editor.css'
 
 interface IssueTokenResponse {
   token: string
@@ -25,9 +27,25 @@ const connectionError = ref('')
 const isConnecting = ref(false)
 
 const ydoc = new Y.Doc()
-let provider: GatewayYjsProvider | null = null
+const awareness = new Awareness(ydoc)
+const provider = ref<GatewayYjsProvider | null>(null)
+const awarenessVersion = ref(0)
 let localUpdateCount = 0
 let syncTimer: number | null = null
+
+const handleAwarenessUpdate = () => {
+  awarenessVersion.value += 1
+}
+
+const handleDocUpdate = (_update: Uint8Array, origin: unknown) => {
+  if (origin === provider.value) {
+    return
+  }
+  localUpdateCount += 1
+  if (localUpdateCount >= 50) {
+    void syncContentIfNeeded(true)
+  }
+}
 
 const editor = useEditor({
   editable: true,
@@ -38,19 +56,22 @@ const editor = useEditor({
     }),
   ],
   onSelectionUpdate: ({ editor: currentEditor }) => {
-    if (!provider) return
+    if (!provider.value) return
     const { from, to } = currentEditor.state.selection
-    provider.setLocalSelection(from, to)
+    provider.value.setLocalSelection(from, to)
   },
 })
 
 const members = computed(() => {
-  if (!provider) {
+  awarenessVersion.value
+
+  const currentProvider = provider.value
+  if (!currentProvider) {
     return []
   }
 
   const rows: Array<{ id: number, name: string, selection: string }> = []
-  provider.awareness.getStates().forEach((state, clientID) => {
+  currentProvider.awareness.getStates().forEach((state, clientID) => {
     const user = state.user as { name?: string } | undefined
     const selection = state.selection as { anchor?: number, head?: number } | undefined
     rows.push({
@@ -142,20 +163,16 @@ async function connectCollab() {
     readOnly.value = Boolean(token.read_only)
     editor.value?.setEditable(!readOnly.value)
 
-    provider?.disconnect()
+    if (provider.value) {
+      provider.value.awareness.off('update', handleAwarenessUpdate)
+      provider.value.disconnect()
+    }
     const wsUrl = `${toWsBase(gatewayBase)}/api/v1/documents/${documentId.value}/collab/ws?token=${encodeURIComponent(token.token)}&name=${encodeURIComponent(displayName.value)}`
-    provider = new GatewayYjsProvider(ydoc, wsUrl, displayName.value)
-    provider.connect()
-
-    ydoc.on('update', (_update: Uint8Array, origin: unknown) => {
-      if (origin === provider) {
-        return
-      }
-      localUpdateCount += 1
-      if (localUpdateCount >= 50) {
-        void syncContentIfNeeded(true)
-      }
-    })
+    const nextProvider = new GatewayYjsProvider(ydoc, wsUrl, displayName.value, awareness)
+    nextProvider.awareness.on('update', handleAwarenessUpdate)
+    provider.value = nextProvider
+    awarenessVersion.value += 1
+    nextProvider.connect()
 
     if (syncTimer) {
       window.clearInterval(syncTimer)
@@ -174,6 +191,7 @@ async function connectCollab() {
 }
 
 onMounted(() => {
+  ydoc.on('update', handleDocUpdate)
   void connectCollab()
 })
 
@@ -181,8 +199,12 @@ onBeforeUnmount(() => {
   if (syncTimer) {
     window.clearInterval(syncTimer)
   }
-  provider?.disconnect()
-  provider = null
+  ydoc.off('update', handleDocUpdate)
+  if (provider.value) {
+    provider.value.awareness.off('update', handleAwarenessUpdate)
+    provider.value.disconnect()
+  }
+  provider.value = null
 })
 </script>
 
@@ -217,7 +239,7 @@ onBeforeUnmount(() => {
     <section class="grid gap-4 lg:grid-cols-[1fr_280px]">
       <article class="rounded-xl border border-base-300 bg-base-100 p-4 shadow-sm">
         <h1 class="mb-3 text-xl font-semibold">{{ title || '协作文档' }}</h1>
-        <EditorContent :editor="editor" class="prose max-w-none min-h-[420px]" />
+        <EditorContent :editor="editor" class="d-editor-content prose max-w-none min-h-105" />
       </article>
 
       <aside class="rounded-xl border border-base-300 bg-base-100 p-4 shadow-sm">

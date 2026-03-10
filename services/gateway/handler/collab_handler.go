@@ -39,19 +39,19 @@ type collabClient struct {
 }
 
 type collabRoom struct {
-	DocumentID      string
-	WorkspaceID     string
-	Cfg             config.CollabConfig
-	Mu              sync.Mutex
-	Clients         map[*collabClient]struct{}
-	AwarenessByUser map[string][]byte
-	State           document.CollabState
-	Updates         []document.CollabUpdate
-	Pending         []document.CollabUpdate
-	Flushing        bool
-	Closed          bool
-	FlushTicker     *time.Ticker
-	StopCh          chan struct{}
+	DocumentID        string
+	WorkspaceID       string
+	Cfg               config.CollabConfig
+	Mu                sync.Mutex
+	Clients           map[*collabClient]struct{}
+	AwarenessByClient map[*collabClient][]byte
+	State             document.CollabState
+	Updates           []document.CollabUpdate
+	Pending           []document.CollabUpdate
+	Flushing          bool
+	Closed            bool
+	FlushTicker       *time.Ticker
+	StopCh            chan struct{}
 }
 
 type collabManager struct {
@@ -388,16 +388,16 @@ func (m *collabManager) getOrCreateRoom(ctx context.Context, documentID, workspa
 	}
 
 	room := &collabRoom{
-		DocumentID:      documentID,
-		WorkspaceID:     workspaceID,
-		Cfg:             cfg,
-		Clients:         map[*collabClient]struct{}{},
-		AwarenessByUser: map[string][]byte{},
-		State:           state,
-		Updates:         updates,
-		Pending:         make([]document.CollabUpdate, 0, 64),
-		FlushTicker:     time.NewTicker(time.Duration(cfg.FlushIntervalMS) * time.Millisecond),
-		StopCh:          make(chan struct{}),
+		DocumentID:        documentID,
+		WorkspaceID:       workspaceID,
+		Cfg:               cfg,
+		Clients:           map[*collabClient]struct{}{},
+		AwarenessByClient: map[*collabClient][]byte{},
+		State:             state,
+		Updates:           updates,
+		Pending:           make([]document.CollabUpdate, 0, 64),
+		FlushTicker:       time.NewTicker(time.Duration(cfg.FlushIntervalMS) * time.Millisecond),
+		StopCh:            make(chan struct{}),
 	}
 	if len(updates) > 0 {
 		room.State.LastSeq = updates[len(updates)-1].Seq
@@ -422,15 +422,26 @@ func (r *collabRoom) flushLoop() {
 
 func (r *collabRoom) addClient(client *collabClient) {
 	r.Mu.Lock()
-	defer r.Mu.Unlock()
+	awarenessFrames := make([][]byte, 0, len(r.AwarenessByClient))
+	for _, payload := range r.AwarenessByClient {
+		awarenessFrames = append(awarenessFrames, append([]byte(nil), payload...))
+	}
 	r.Clients[client] = struct{}{}
+	r.Mu.Unlock()
+
+	for _, payload := range awarenessFrames {
+		select {
+		case client.Send <- collab.BuildAwarenessFrame(payload):
+		default:
+		}
+	}
 }
 
 func (r *collabRoom) removeClient(client *collabClient) {
 	r.Mu.Lock()
 	defer r.Mu.Unlock()
 	delete(r.Clients, client)
-	delete(r.AwarenessByUser, client.UserID)
+	delete(r.AwarenessByClient, client)
 }
 
 func (r *collabRoom) replayUpdates(client *collabClient) {
@@ -487,7 +498,7 @@ func (r *collabRoom) acceptUpdate(client *collabClient, subtype uint64, payload 
 
 func (r *collabRoom) acceptAwareness(client *collabClient, payload []byte) {
 	r.Mu.Lock()
-	r.AwarenessByUser[client.UserID] = append([]byte(nil), payload...)
+	r.AwarenessByClient[client] = append([]byte(nil), payload...)
 	r.Mu.Unlock()
 
 	r.broadcast(client, collab.BuildAwarenessFrame(payload), false)

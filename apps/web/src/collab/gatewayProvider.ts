@@ -68,12 +68,13 @@ export class GatewayYjsProvider {
   private readonly wsUrl: string
   private readonly name: string
   private connected = false
+  private awarenessHeartbeatTimer: number | null = null
 
-  constructor(doc: Y.Doc, wsUrl: string, name: string) {
+  constructor(doc: Y.Doc, wsUrl: string, name: string, awareness?: Awareness) {
     this.doc = doc
     this.wsUrl = wsUrl
     this.name = name
-    this.awareness = new Awareness(doc)
+    this.awareness = awareness ?? new Awareness(doc)
 
     this.doc.on('update', (update: Uint8Array, origin: unknown) => {
       if (origin === this || !this.connected) {
@@ -101,6 +102,7 @@ export class GatewayYjsProvider {
       this.awareness.setLocalStateField('user', {
         name: this.name,
       })
+      this.startAwarenessHeartbeat()
       this.send(buildSyncFrame(SYNC_STEP1, new Uint8Array()))
     }
 
@@ -111,14 +113,17 @@ export class GatewayYjsProvider {
 
     this.ws.onclose = () => {
       this.connected = false
+      this.stopAwarenessHeartbeat()
     }
 
     this.ws.onerror = () => {
       this.connected = false
+      this.stopAwarenessHeartbeat()
     }
   }
 
   disconnect() {
+    this.stopAwarenessHeartbeat()
     this.awareness.setLocalState(null)
     if (this.ws) {
       this.ws.close()
@@ -136,6 +141,28 @@ export class GatewayYjsProvider {
       return
     }
     this.ws.send(payload)
+  }
+
+  private startAwarenessHeartbeat() {
+    this.stopAwarenessHeartbeat()
+    this.awarenessHeartbeatTimer = window.setInterval(() => {
+      if (!this.connected) {
+        return
+      }
+      const localState = this.awareness.getLocalState()
+      if (!localState) {
+        return
+      }
+      const encoded = encodeAwarenessUpdate(this.awareness, [this.doc.clientID])
+      this.send(buildAwarenessFrame(encoded))
+    }, 15000)
+  }
+
+  private stopAwarenessHeartbeat() {
+    if (this.awarenessHeartbeatTimer !== null) {
+      window.clearInterval(this.awarenessHeartbeatTimer)
+      this.awarenessHeartbeatTimer = null
+    }
   }
 
   private handleFrame(frame: Uint8Array) {
