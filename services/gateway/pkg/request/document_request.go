@@ -2,7 +2,7 @@ package request
 
 type CreateDocumentRequest struct {
 	WorkspaceID     string         `json:"workspace_id" binding:"required,uuid"`
-	FolderID        string         `json:"folder_id" binding:"required,uuid"`
+	FolderID        string         `json:"folder_id" binding:"omitempty,uuid"`
 	Title           string         `json:"title" binding:"required,max=255"`
 	ContentJSON     map[string]any `json:"content_json"`
 	TiptapSchema    string         `json:"tiptap_schema"`
@@ -19,4 +19,9 @@ type SaveDocumentVersionRequest struct {
 
 type RestoreDocumentVersionRequest struct {
 	Version int64 `json:"version" binding:"required,min=1"`
+}
+
+type SyncCollabContentRequest struct {
+	Title       string         `json:"title"`
+	ContentJSON map[string]any `json:"content_json" binding:"required"`
 }

@@ -26,18 +26,38 @@ type DocumentHandler struct{}
 // @Failure      500 {object} response.Response "服务器错误"
 // @Router       /documents [post]
 func (h *DocumentHandler) Create(c *gin.Context) {
+	userID := strings.TrimSpace(c.GetString("user_id"))
+	if userID == "" {
+		response.Failed(c, response.ErrorUnauthorizedCode, "unauthorized")
+		return
+	}
+
 	var req request.CreateDocumentRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		response.Failed(c, response.ErrorBadRequestCode, "Invalid request: "+err.Error())
 		return
 	}
 
+	_, role, err := getWorkspaceRole(c.Request.Context(), req.WorkspaceID, userID)
+	if err != nil {
+		response.Failed(c, response.ErrorUnknownCode, "获取工作区信息失败")
+		return
+	}
+	if !canEditWorkspace(role) {
+		response.Failed(c, response.ErrorForbiddenCode, "无权限创建文档")
+		return
+	}
+
 	newDoc := document.Document{
 		WorkspaceID:     strings.TrimSpace(req.WorkspaceID),
-		FolderID:        strings.TrimSpace(req.FolderID),
 		Title:           strings.TrimSpace(req.Title),
 		TiptapSchema:    strings.TrimSpace(req.TiptapSchema),
 		TiptapSchemaVer: strings.TrimSpace(req.TiptapSchemaVer),
+	}
+
+	folderID := strings.TrimSpace(req.FolderID)
+	if folderID != "" {
+		newDoc.FolderID = &folderID
 	}
 
 	contentJSON, err := toDatatypesJSON(req.ContentJSON)
@@ -47,7 +67,7 @@ func (h *DocumentHandler) Create(c *gin.Context) {
 	}
 	newDoc.ContentJSON = contentJSON
 
-	if err := document.Create(c.Request.Context(), &newDoc, c.GetString("user_id")); err != nil {
+	if err := document.Create(c.Request.Context(), &newDoc, userID); err != nil {
 		response.Failed(c, response.ErrorUnknownCode, "创建文档失败")
 		return
 	}
@@ -66,6 +86,12 @@ func (h *DocumentHandler) Create(c *gin.Context) {
 // @Failure      500 {object} response.Response "服务器错误"
 // @Router       /documents/{id} [get]
 func (h *DocumentHandler) GetByID(c *gin.Context) {
+	userID := strings.TrimSpace(c.GetString("user_id"))
+	if userID == "" {
+		response.Failed(c, response.ErrorUnauthorizedCode, "unauthorized")
+		return
+	}
+
 	documentID := strings.TrimSpace(c.Param("id"))
 	if documentID == "" {
 		response.Failed(c, response.ErrorBadRequestCode, "document id is required")
@@ -79,6 +105,16 @@ func (h *DocumentHandler) GetByID(c *gin.Context) {
 			return
 		}
 		response.Failed(c, response.ErrorUnknownCode, "获取文档失败")
+		return
+	}
+
+	_, role, err := getWorkspaceRole(c.Request.Context(), doc.WorkspaceID, userID)
+	if err != nil {
+		response.Failed(c, response.ErrorUnknownCode, "获取工作区信息失败")
+		return
+	}
+	if !canViewWorkspace(role) {
+		response.Failed(c, response.ErrorForbiddenCode, "无权限访问文档")
 		return
 	}
 
@@ -98,9 +134,25 @@ func (h *DocumentHandler) GetByID(c *gin.Context) {
 // @Failure      500 {object} response.Response "服务器错误"
 // @Router       /documents [get]
 func (h *DocumentHandler) List(c *gin.Context) {
+	userID := strings.TrimSpace(c.GetString("user_id"))
+	if userID == "" {
+		response.Failed(c, response.ErrorUnauthorizedCode, "unauthorized")
+		return
+	}
+
 	workspaceID := strings.TrimSpace(c.Query("workspace_id"))
 	if workspaceID == "" {
 		response.Failed(c, response.ErrorBadRequestCode, "workspace_id is required")
+		return
+	}
+
+	_, role, err := getWorkspaceRole(c.Request.Context(), workspaceID, userID)
+	if err != nil {
+		response.Failed(c, response.ErrorUnknownCode, "获取工作区信息失败")
+		return
+	}
+	if !canViewWorkspace(role) {
+		response.Failed(c, response.ErrorForbiddenCode, "无权限查看文档列表")
 		return
 	}
 
@@ -127,6 +179,12 @@ func (h *DocumentHandler) List(c *gin.Context) {
 // @Failure      500 {object} response.Response "服务器错误"
 // @Router       /documents/{id} [put]
 func (h *DocumentHandler) SaveVersion(c *gin.Context) {
+	userID := strings.TrimSpace(c.GetString("user_id"))
+	if userID == "" {
+		response.Failed(c, response.ErrorUnauthorizedCode, "unauthorized")
+		return
+	}
+
 	documentID := strings.TrimSpace(c.Param("id"))
 	if documentID == "" {
 		response.Failed(c, response.ErrorBadRequestCode, "document id is required")
@@ -145,6 +203,26 @@ func (h *DocumentHandler) SaveVersion(c *gin.Context) {
 		return
 	}
 
+	doc, err := document.GetByID(c.Request.Context(), documentID)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			response.Failed(c, 404, "文档不存在")
+			return
+		}
+		response.Failed(c, response.ErrorUnknownCode, "获取文档失败")
+		return
+	}
+
+	_, role, err := getWorkspaceRole(c.Request.Context(), doc.WorkspaceID, userID)
+	if err != nil {
+		response.Failed(c, response.ErrorUnknownCode, "获取工作区信息失败")
+		return
+	}
+	if !canEditWorkspace(role) {
+		response.Failed(c, response.ErrorForbiddenCode, "无权限编辑文档")
+		return
+	}
+
 	updatedDoc, newVersion, err := document.SaveVersion(c.Request.Context(), document.SaveVersionInput{
 		DocumentID:  documentID,
 		Title:       strings.TrimSpace(req.Title),
@@ -152,7 +230,7 @@ func (h *DocumentHandler) SaveVersion(c *gin.Context) {
 		Source:      strings.TrimSpace(req.Source),
 		Snapshot:    req.Snapshot,
 		Summary:     strings.TrimSpace(req.Summary),
-		CreatedBy:   c.GetString("user_id"),
+		CreatedBy:   userID,
 	})
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -182,9 +260,35 @@ func (h *DocumentHandler) SaveVersion(c *gin.Context) {
 // @Failure      500 {object} response.Response "服务器错误"
 // @Router       /documents/{id}/versions [get]
 func (h *DocumentHandler) VersionHistory(c *gin.Context) {
+	userID := strings.TrimSpace(c.GetString("user_id"))
+	if userID == "" {
+		response.Failed(c, response.ErrorUnauthorizedCode, "unauthorized")
+		return
+	}
+
 	documentID := strings.TrimSpace(c.Param("id"))
 	if documentID == "" {
 		response.Failed(c, response.ErrorBadRequestCode, "document id is required")
+		return
+	}
+
+	doc, err := document.GetByID(c.Request.Context(), documentID)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			response.Failed(c, 404, "文档不存在")
+			return
+		}
+		response.Failed(c, response.ErrorUnknownCode, "获取文档失败")
+		return
+	}
+
+	_, role, err := getWorkspaceRole(c.Request.Context(), doc.WorkspaceID, userID)
+	if err != nil {
+		response.Failed(c, response.ErrorUnknownCode, "获取工作区信息失败")
+		return
+	}
+	if !canViewWorkspace(role) {
+		response.Failed(c, response.ErrorForbiddenCode, "无权限访问文档历史")
 		return
 	}
 
@@ -211,6 +315,12 @@ func (h *DocumentHandler) VersionHistory(c *gin.Context) {
 // @Failure      500 {object} response.Response "服务器错误"
 // @Router       /documents/{id}/restore [post]
 func (h *DocumentHandler) RestoreVersion(c *gin.Context) {
+	userID := strings.TrimSpace(c.GetString("user_id"))
+	if userID == "" {
+		response.Failed(c, response.ErrorUnauthorizedCode, "unauthorized")
+		return
+	}
+
 	documentID := strings.TrimSpace(c.Param("id"))
 	if documentID == "" {
 		response.Failed(c, response.ErrorBadRequestCode, "document id is required")
@@ -223,7 +333,27 @@ func (h *DocumentHandler) RestoreVersion(c *gin.Context) {
 		return
 	}
 
-	updatedDoc, restoredVersion, err := document.RestoreFromVersion(c.Request.Context(), documentID, req.Version, c.GetString("user_id"))
+	doc, err := document.GetByID(c.Request.Context(), documentID)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			response.Failed(c, 404, "文档不存在")
+			return
+		}
+		response.Failed(c, response.ErrorUnknownCode, "获取文档失败")
+		return
+	}
+
+	_, role, err := getWorkspaceRole(c.Request.Context(), doc.WorkspaceID, userID)
+	if err != nil {
+		response.Failed(c, response.ErrorUnknownCode, "获取工作区信息失败")
+		return
+	}
+	if !canEditWorkspace(role) {
+		response.Failed(c, response.ErrorForbiddenCode, "无权限恢复文档版本")
+		return
+	}
+
+	updatedDoc, restoredVersion, err := document.RestoreFromVersion(c.Request.Context(), documentID, req.Version, userID)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			response.Failed(c, 404, "历史版本不存在")

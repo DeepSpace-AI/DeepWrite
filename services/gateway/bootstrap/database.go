@@ -49,7 +49,15 @@ func AutoMigrate() {
 		&workspace.WorkspaceInvitation{},
 		&document.Document{},
 		&document.Version{},
+		&document.CollabToken{},
+		&document.CollabUpdate{},
+		&document.CollabState{},
+		&document.CollabAudit{},
 	); err != nil {
+		panic(err)
+	}
+
+	if err := database.DB.Exec(`ALTER TABLE documents ALTER COLUMN folder_id DROP NOT NULL`).Error; err != nil {
 		panic(err)
 	}
 }

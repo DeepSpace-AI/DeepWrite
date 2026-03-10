@@ -205,6 +205,35 @@ func RestoreFromVersion(ctx context.Context, documentID string, version int64, c
 	})
 }
 
+func UpdateLiveContent(ctx context.Context, documentID, title string, contentJSON datatypes.JSON) (Document, error) {
+	var doc Document
+	err := database.DB.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).
+			Where("id = ?", strings.TrimSpace(documentID)).
+			First(&doc).Error; err != nil {
+			return err
+		}
+
+		updates := map[string]any{}
+		trimmedTitle := strings.TrimSpace(title)
+		if trimmedTitle != "" {
+			updates["title"] = trimmedTitle
+		}
+		if len(contentJSON) > 0 {
+			updates["content_json"] = contentJSON
+		}
+
+		if len(updates) > 0 {
+			if err := tx.Model(&Document{}).Where("id = ?", doc.ID).Updates(updates).Error; err != nil {
+				return err
+			}
+		}
+
+		return tx.Where("id = ?", doc.ID).First(&doc).Error
+	})
+	return doc, err
+}
+
 func normalizeSource(source string) string {
 	switch strings.TrimSpace(source) {
 	case VersionSourceAutosave:

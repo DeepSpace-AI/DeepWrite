@@ -78,5 +78,23 @@ func SetupAPIRoutes(r *gin.Engine) {
 			invitationGroup.POST("/:invite_id/accept", workspaceHandler.AcceptInvitation)
 			invitationGroup.POST("/:invite_id/reject", workspaceHandler.RejectInvitation)
 		}
+
+		documentGroup := v1.Group("/documents")
+		documentGroup.Use(middleware.AuthMiddleware())
+		documentHandler := new(handler.DocumentHandler)
+		collabHandler := new(handler.CollabHandler)
+		{
+			documentGroup.POST("", documentHandler.Create)
+			documentGroup.GET("", documentHandler.List)
+			documentGroup.GET("/:id", documentHandler.GetByID)
+			documentGroup.PUT("/:id", documentHandler.SaveVersion)
+			documentGroup.GET("/:id/versions", documentHandler.VersionHistory)
+			documentGroup.POST("/:id/restore", documentHandler.RestoreVersion)
+			documentGroup.POST("/:id/collab-token", collabHandler.IssueToken)
+			documentGroup.POST("/:id/collab/content", collabHandler.SyncContent)
+		}
+
+		// 协作文档 WebSocket 使用短期 token 鉴权，不复用 AuthMiddleware。
+		v1.GET("/documents/:id/collab/ws", collabHandler.ConnectWS)
 	}
 }

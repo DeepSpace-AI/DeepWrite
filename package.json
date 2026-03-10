@@ -9,7 +9,8 @@
     "lint": "turbo run lint",
     "format": "turbo run format",
     "dev:web": "turbo run dev --filter=@deepwrite/web",
-    "dev:gateway": "pnpm --filter @deepwrite/gateway dev"
+    "dev:gateway": "pnpm --filter @deepwrite/gateway dev",
+    "gen:openapi": "cd services/gateway && swag init"
   },
   "keywords": [],
   "author": "",

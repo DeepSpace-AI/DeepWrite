@@ -22,6 +22,7 @@ type Config struct {
 	Mail     MailConfig     `mapstructure:"MAIL"`
 	Logger   LoggerConfig   `mapstructure:"LOGGER"`
 	JWT      JWTConfig      `mapstructure:"JWT"`
+	Collab   CollabConfig   `mapstructure:"COLLAB"`
 }
 
 // DatabaseConfig 数据库配置
@@ -96,6 +97,20 @@ type JWTConfig struct {
 	TokenType      string `mapstructure:"TOKEN_TYPE"`
 	HeaderName     string `mapstructure:"HEADER_NAME"`
 	ContextUserKey string `mapstructure:"CONTEXT_USER_KEY"`
+}
+
+type CollabConfig struct {
+	Enabled                 bool   `mapstructure:"ENABLED"`
+	WSPath                  string `mapstructure:"WS_PATH"`
+	TokenTTLSeconds         int    `mapstructure:"TOKEN_TTL_SECONDS"`
+	TokenSingleUse          bool   `mapstructure:"TOKEN_SINGLE_USE"`
+	FlushIntervalMS         int    `mapstructure:"FLUSH_INTERVAL_MS"`
+	FlushMaxUpdates         int    `mapstructure:"FLUSH_MAX_UPDATES"`
+	SnapshotIntervalSeconds int    `mapstructure:"SNAPSHOT_INTERVAL_SECONDS"`
+	SnapshotMaxUpdates      int    `mapstructure:"SNAPSHOT_MAX_UPDATES"`
+	ReconnectWindowSeconds  int    `mapstructure:"RECONNECT_WINDOW_SECONDS"`
+	HeartbeatPingSeconds    int    `mapstructure:"HEARTBEAT_PING_SECONDS"`
+	HeartbeatTimeoutSeconds int    `mapstructure:"HEARTBEAT_TIMEOUT_SECONDS"`
 }
 
 // ConfigReader 配置读取器接口
@@ -225,6 +240,19 @@ func (vcr *ViperConfigReader) setDefaults() {
 	v.SetDefault("JWT.TOKEN_TYPE", "Bearer")
 	v.SetDefault("JWT.HEADER_NAME", "Authorization")
 	v.SetDefault("JWT.CONTEXT_USER_KEY", "current_user")
+
+	// Collab 默认值
+	v.SetDefault("COLLAB.ENABLED", false)
+	v.SetDefault("COLLAB.WS_PATH", "/api/v1/documents/:id/collab/ws")
+	v.SetDefault("COLLAB.TOKEN_TTL_SECONDS", 120)
+	v.SetDefault("COLLAB.TOKEN_SINGLE_USE", true)
+	v.SetDefault("COLLAB.FLUSH_INTERVAL_MS", 3000)
+	v.SetDefault("COLLAB.FLUSH_MAX_UPDATES", 50)
+	v.SetDefault("COLLAB.SNAPSHOT_INTERVAL_SECONDS", 300)
+	v.SetDefault("COLLAB.SNAPSHOT_MAX_UPDATES", 200)
+	v.SetDefault("COLLAB.RECONNECT_WINDOW_SECONDS", 30)
+	v.SetDefault("COLLAB.HEARTBEAT_PING_SECONDS", 15)
+	v.SetDefault("COLLAB.HEARTBEAT_TIMEOUT_SECONDS", 45)
 
 	// Workspace 默认值
 	v.SetDefault("WORKSPACE.INVITATION_EXPIRE_HOURS", 168)
@@ -387,6 +415,41 @@ func (vcr *ViperConfigReader) applyEnvOverrides() {
 	}
 	if env := os.Getenv("JWT_ISSUER"); env != "" {
 		vcr.cfg.JWT.Issuer = env
+	}
+
+	// Collab 环境变量覆盖
+	if env := os.Getenv("COLLAB_ENABLED"); env != "" {
+		vcr.cfg.Collab.Enabled = vcr.viper.GetBool("COLLAB_ENABLED")
+	}
+	if env := os.Getenv("COLLAB_WS_PATH"); env != "" {
+		vcr.cfg.Collab.WSPath = env
+	}
+	if env := os.Getenv("COLLAB_TOKEN_TTL_SECONDS"); env != "" {
+		vcr.cfg.Collab.TokenTTLSeconds = vcr.viper.GetInt("COLLAB_TOKEN_TTL_SECONDS")
+	}
+	if env := os.Getenv("COLLAB_TOKEN_SINGLE_USE"); env != "" {
+		vcr.cfg.Collab.TokenSingleUse = vcr.viper.GetBool("COLLAB_TOKEN_SINGLE_USE")
+	}
+	if env := os.Getenv("COLLAB_FLUSH_INTERVAL_MS"); env != "" {
+		vcr.cfg.Collab.FlushIntervalMS = vcr.viper.GetInt("COLLAB_FLUSH_INTERVAL_MS")
+	}
+	if env := os.Getenv("COLLAB_FLUSH_MAX_UPDATES"); env != "" {
+		vcr.cfg.Collab.FlushMaxUpdates = vcr.viper.GetInt("COLLAB_FLUSH_MAX_UPDATES")
+	}
+	if env := os.Getenv("COLLAB_SNAPSHOT_INTERVAL_SECONDS"); env != "" {
+		vcr.cfg.Collab.SnapshotIntervalSeconds = vcr.viper.GetInt("COLLAB_SNAPSHOT_INTERVAL_SECONDS")
+	}
+	if env := os.Getenv("COLLAB_SNAPSHOT_MAX_UPDATES"); env != "" {
+		vcr.cfg.Collab.SnapshotMaxUpdates = vcr.viper.GetInt("COLLAB_SNAPSHOT_MAX_UPDATES")
+	}
+	if env := os.Getenv("COLLAB_RECONNECT_WINDOW_SECONDS"); env != "" {
+		vcr.cfg.Collab.ReconnectWindowSeconds = vcr.viper.GetInt("COLLAB_RECONNECT_WINDOW_SECONDS")
+	}
+	if env := os.Getenv("COLLAB_HEARTBEAT_PING_SECONDS"); env != "" {
+		vcr.cfg.Collab.HeartbeatPingSeconds = vcr.viper.GetInt("COLLAB_HEARTBEAT_PING_SECONDS")
+	}
+	if env := os.Getenv("COLLAB_HEARTBEAT_TIMEOUT_SECONDS"); env != "" {
+		vcr.cfg.Collab.HeartbeatTimeoutSeconds = vcr.viper.GetInt("COLLAB_HEARTBEAT_TIMEOUT_SECONDS")
 	}
 }
 

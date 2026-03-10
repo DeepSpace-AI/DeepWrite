@@ -15,7 +15,7 @@ const (
 type Document struct {
 	ID          string `json:"id" gorm:"primaryKey;type:uuid;default:gen_random_uuid()"`
 	WorkspaceID string `json:"workspace_id" gorm:"type:uuid;not null"`
-	FolderID    string `json:"folder_id" gorm:"type:uuid;not null"`
+	FolderID    *string `json:"folder_id,omitempty" gorm:"type:uuid;index"`
 
 	Title             string         `json:"title" gorm:"type:varchar(255);not null"`
 	ContentJSON       datatypes.JSON `json:"content_json" gorm:"type:jsonb;not null;default:'{}'::jsonb"`
