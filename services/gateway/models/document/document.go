@@ -13,8 +13,8 @@ const (
 )
 
 type Document struct {
-	ID          string `json:"id" gorm:"primaryKey;type:uuid;default:gen_random_uuid()"`
-	WorkspaceID string `json:"workspace_id" gorm:"type:uuid;not null"`
+	ID          string  `json:"id" gorm:"primaryKey;type:uuid;default:gen_random_uuid()"`
+	WorkspaceID string  `json:"workspace_id" gorm:"type:uuid;not null"`
 	FolderID    *string `json:"folder_id,omitempty" gorm:"type:uuid;index"`
 
 	Title             string         `json:"title" gorm:"type:varchar(255);not null"`
@@ -23,7 +23,7 @@ type Document struct {
 	TiptapSchemaVer   string         `json:"tiptap_schema_ver" gorm:"type:varchar(50);not null;default:'v1'"`
 	CurrentVersion    int64          `json:"current_version" gorm:"not null;default:1"`
 	LatestSnapshotID  *string        `json:"latest_snapshot_id,omitempty" gorm:"type:uuid"`
-	LatestSnapshotVer int64          `json:"latest_snapshot_version" gorm:"not null;default:0"`
+	LatestSnapshotVer int64          `json:"latest_snapshot_version" gorm:"column:latest_snapshot_ver;not null;default:0"`
 	LatestSnapshotAt  *time.Time     `json:"latest_snapshot_at,omitempty"`
 	LastVersionedAt   *time.Time     `json:"last_versioned_at,omitempty"`
 	Versions          []Version      `json:"-" gorm:"foreignKey:DocumentID;constraint:OnDelete:CASCADE;"`

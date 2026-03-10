@@ -1,0 +1,113 @@
+# =========================
+# 网关服务基础配置
+# =========================
+APP_NAME: gateway-service # 应用名
+APP_ENV: development # 运行环境: development/test/production
+PORT: "8080" # HTTP 服务端口
+
+# =========================
+# PostgreSQL 数据库配置
+# =========================
+DATABASE:
+  HOST: localhost # 数据库主机
+  PORT: "5432" # 数据库端口
+  USER: postgres # 数据库用户名
+  PASSWORD: "<db_password>" # 数据库密码
+  NAME: deepwrite # 数据库名称
+  MAX_CONN: 25 # 最大连接数
+  MAX_IDLE_CONN: 10 # 最大空闲连接数
+  MAX_LIFETIME: 180 # 连接最大存活时间(秒)
+  AUTO_MIGRATE: true # 启动时自动迁移表结构(生产建议关闭)
+
+# =========================
+# Redis 配置
+# =========================
+REDIS:
+  HOST: localhost # Redis 主机
+  PORT: "6379" # Redis 端口
+  PASSWORD: "" # Redis 密码(无密码可留空)
+  DB: 0 # Redis 数据库编号
+  MAX_RETRY: 3 # Redis 操作最大重试次数
+
+# =========================
+# 缓存后端配置
+# =========================
+CACHE:
+  BACKEND: redis # 缓存后端: redis/file
+  FILE_PATH: ./tmp/cache/cache.json # 文件缓存路径(仅 BACKEND=file 生效)
+  REDIS_PREFIX: "gateway:" # Redis key 前缀
+
+# =========================
+# 对象存储配置
+# =========================
+STORAGE:
+  PROVIDER: aws-s3 # 存储提供商(兼容 S3 协议)
+  REGION: auto # 区域(某些平台可用 auto)
+  ENDPOINT: "https://<your-endpoint>" # S3/R2 访问端点
+  BUCKET: "<your-bucket>" # 存储桶名称
+  ACCESS_KEY_ID: "<your-access-key-id>" # 访问密钥 ID
+  SECRET_ACCESS_KEY: "<your-secret-access-key>" # 访问密钥 Secret
+  SESSION_TOKEN: "" # 临时凭证 Token(长期密钥可留空)
+  USE_PATH_STYLE: false # 是否使用 path style 地址
+  DISABLE_SSL: false # 是否禁用 SSL
+
+# =========================
+# 邮件服务配置
+# =========================
+MAIL:
+  ENABLED: false # 是否启用邮件发送
+  PROVIDER: smtp # 邮件提供商
+  HOST: "smtp.example.com" # SMTP 主机
+  PORT: 587 # SMTP 端口
+  TLS_MODE: auto # TLS 模式: auto/ssl/starttls/none
+  USERNAME: "<smtp-username>" # SMTP 用户名
+  PASSWORD: "<smtp-password>" # SMTP 密码/授权码
+  FROM_NAME: DeepWrite # 发件人显示名称
+  FROM_MAIL: no-reply@example.com # 发件人邮箱
+  TEMPLATE_DIR: templates/mail # 邮件模板目录
+
+# =========================
+# 日志配置
+# =========================
+LOGGER:
+  DIR: logs # 日志目录
+  FILENAME: gateway # 日志文件名前缀
+  LEVEL: info # 日志级别: debug/info/warn/error
+  MAX_SIZE_MB: 100 # 单文件最大大小(MB)
+  MAX_BACKUPS: 30 # 最大保留文件数
+  MAX_AGE_DAYS: 30 # 日志保留天数
+  COMPRESS: true # 是否压缩旧日志
+
+# =========================
+# JWT 认证配置
+# =========================
+JWT:
+  SECRET_KEY: "<jwt-secret-key>" # JWT 签名密钥(生产务必替换)
+  EXPIRE_HOURS: 24 # Access Token 有效期(小时)
+  REFRESH_HOURS: 168 # Refresh Token 有效期(小时)
+  ISSUER: gateway-service # 签发者
+  TOKEN_TYPE: Bearer # Token 类型
+  HEADER_NAME: Authorization # 读取 token 的请求头
+  CONTEXT_USER_KEY: current_user # Gin Context 用户键名
+
+# =========================
+# 实时协作配置
+# =========================
+COLLAB:
+  ENABLED: true # 是否启用协作功能
+  WS_PATH: /api/v1/documents/:id/collab/ws # 协作 WebSocket 路由
+  TOKEN_TTL_SECONDS: 120 # 协作临时 token 有效期(秒)
+  TOKEN_SINGLE_USE: true # token 是否单次使用
+  FLUSH_INTERVAL_MS: 3000 # 更新批量落库间隔(毫秒)
+  FLUSH_MAX_UPDATES: 50 # 单次最多落库更新条数
+  SNAPSHOT_INTERVAL_SECONDS: 300 # 快照触发检查间隔(秒)
+  SNAPSHOT_MAX_UPDATES: 200 # 达到该更新数触发快照
+  RECONNECT_WINDOW_SECONDS: 30 # 断线重连窗口(秒)
+  HEARTBEAT_PING_SECONDS: 15 # 心跳 ping 间隔(秒)
+  HEARTBEAT_TIMEOUT_SECONDS: 45 # 心跳超时阈值(秒)
+
+# =========================
+# 工作区业务配置
+# =========================
+WORKSPACE:
+  INVITATION_EXPIRE_HOURS: 168 # 邀请链接有效期(小时)

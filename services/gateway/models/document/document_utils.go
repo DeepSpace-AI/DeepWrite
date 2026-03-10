@@ -57,10 +57,10 @@ func Create(ctx context.Context, doc *Document, createdBy string) error {
 		doc.LastVersionedAt = &initialVersion.CreatedAt
 
 		updates := map[string]any{
-			"latest_snapshot_id":      doc.LatestSnapshotID,
-			"latest_snapshot_version": doc.LatestSnapshotVer,
-			"latest_snapshot_at":      doc.LatestSnapshotAt,
-			"last_versioned_at":       doc.LastVersionedAt,
+			"latest_snapshot_id":  doc.LatestSnapshotID,
+			"latest_snapshot_ver": doc.LatestSnapshotVer,
+			"latest_snapshot_at":  doc.LatestSnapshotAt,
+			"last_versioned_at":   doc.LastVersionedAt,
 		}
 
 		return tx.Model(&Document{}).Where("id = ?", doc.ID).Updates(updates).Error
@@ -149,7 +149,7 @@ func SaveVersion(ctx context.Context, input SaveVersionInput) (Document, Version
 
 		if createdVersion.Snapshot {
 			updates["latest_snapshot_id"] = createdVersion.ID
-			updates["latest_snapshot_version"] = createdVersion.Version
+			updates["latest_snapshot_ver"] = createdVersion.Version
 			updates["latest_snapshot_at"] = createdVersion.CreatedAt
 		}
 
