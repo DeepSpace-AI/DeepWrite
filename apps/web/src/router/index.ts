@@ -1,6 +1,7 @@
 import { createRouter, createWebHistory, type RouteRecordRaw } from 'vue-router'
 import defaultLayout from '@/layouts/defaultLayout.vue'
 import workbenchLayout from '@/layouts/workbenchLayout.vue'
+import workspaceDetailLayout from '@/layouts/workspaceDetailLayout.vue'
 
 const routes: RouteRecordRaw[] = [
   {
@@ -27,21 +28,16 @@ const routes: RouteRecordRaw[] = [
         path: 'forgot-password',
         name: 'forgot-password',
         component: () => import('@/views/ForgotPasswordView.vue'),
-      },
-      {
-        path: '/documents/:id',
-        name: 'document-collab',
-        component: () => import('@/views/DocumentCollabView.vue'),
-      },
+      }
     ],
   },
   {
-    path: '/dashboard',
+    path: '/',
     name: 'workbenchLayout',
     component: workbenchLayout,
     children: [
       {
-        path: '',
+        path: 'dashboard',
         name: 'dashboard',
         component: () => import('@/views/DashboardView.vue'),
       },
@@ -49,6 +45,41 @@ const routes: RouteRecordRaw[] = [
         path: 'workspaces',
         name: 'workspace-list',
         component: () => import('@/views/workspace/WorkspaceListView.vue'),
+      },
+      {
+        path: 'workspaces/:id',
+        redirect: (to) => ({ name: 'workspace-detail', params: { id: to.params.id } }),
+      },
+      {
+        path: 'profile',
+        name: 'profile',
+        component: () => import('@/views/ProfileView.vue'),
+      },
+      {
+        path: 'library',
+        name: 'library',
+        component: () => import('@/views/LibraryView.vue'),
+      },
+      {
+        path: 'skills',
+        name: 'skills',
+        component: () => import('@/views/SkillsView.vue'),
+      },
+      {
+        path: 'agents',
+        name: 'agents',
+        component: () => import('@/views/AgentsView.vue'),
+      },
+    ],
+  },
+  {
+    path: '/workspace/:id',
+    component: workspaceDetailLayout,
+    children: [
+      {
+        path: '',
+        name: 'workspace-detail',
+        component: () => import('@/views/workspace/WorkspaceDetailView.vue'),
       },
     ],
   },

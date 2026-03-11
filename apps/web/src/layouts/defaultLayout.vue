@@ -3,9 +3,11 @@ import { computed, onBeforeMount } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useAuthStore } from '@/stores/auth'
 import { useUserStore } from '@/stores/user'
+import { useI18n } from 'vue-i18n'
 
 const authStore = useAuthStore()
 const userStore = useUserStore()
+const { t } = useI18n()
 
 const { isAuthenticated } = storeToRefs(authStore)
 const { user } = storeToRefs(userStore)
@@ -30,19 +32,19 @@ onBeforeMount(() => {
         </div>
         <div class="navbar-center hidden md:flex">
           <ul class="menu menu-horizontal text-sm px-1">
-            <li><RouterLink :to="{ name: 'home', hash: '#demo' }">演示</RouterLink></li>
-            <li><RouterLink :to="{ name: 'home', hash: '#integrations' }">集成</RouterLink></li>
-            <li><RouterLink :to="{ name: 'home', hash: '#pricing' }">定价</RouterLink></li>
+            <li><RouterLink :to="{ name: 'home', hash: '#demo' }">{{ t('nav.demo') }}</RouterLink></li>
+            <li><RouterLink :to="{ name: 'home', hash: '#integrations' }">{{ t('nav.integrations') }}</RouterLink></li>
+            <li><RouterLink :to="{ name: 'home', hash: '#pricing' }">{{ t('nav.pricing') }}</RouterLink></li>
           </ul>
         </div>
         <div class="navbar-end gap-2">
           <RouterLink :to="{ name: 'dashboard' }" class="btn btn-ghost btn-sm" v-if="showWorkbench"
-            >工作台</RouterLink
+            >{{ t('nav.workbench') }}</RouterLink
           >
           <template v-else>
-            <RouterLink :to="{ name: 'login' }" class="btn btn-ghost btn-sm">登录</RouterLink>
+            <RouterLink :to="{ name: 'login' }" class="btn btn-ghost btn-sm">{{ t('nav.login') }}</RouterLink>
             <RouterLink :to="{ name: 'register' }" class="btn btn-primary btn-sm"
-              >免费使用</RouterLink
+              >{{ t('nav.startFree') }}</RouterLink
             >
           </template>
         </div>

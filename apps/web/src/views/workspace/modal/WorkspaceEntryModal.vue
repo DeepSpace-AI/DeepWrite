@@ -1,31 +1,39 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
-import { useI18n } from 'vue-i18n'
 
-const { t } = useI18n()
-
-interface CreateWorkspaceForm {
-  name: string
-  description: string
-  isPublic: boolean
-}
-
-const props = defineProps<{
+const props = withDefaults(defineProps<{
   modelValue: boolean
+  title: string
+  subtitle?: string
+  nameLabel: string
+  namePlaceholder?: string
+  descriptionLabel?: string
+  descriptionPlaceholder?: string
+  submitText: string
   submitting?: boolean
   errorMessage?: string
-}>()
+  initialName?: string
+  initialDescription?: string
+  showDescription?: boolean
+}>(), {
+  subtitle: '',
+  namePlaceholder: '',
+  descriptionLabel: '',
+  descriptionPlaceholder: '',
+  submitting: false,
+  errorMessage: '',
+  initialName: '',
+  initialDescription: '',
+  showDescription: false,
+})
 
 const emit = defineEmits<{
   (e: 'update:modelValue', value: boolean): void
-  (e: 'submit', payload: { name: string; description: string; public: boolean }): void
+  (e: 'submit', payload: { name: string; description: string }): void
 }>()
 
-const form = ref<CreateWorkspaceForm>({
-  name: '',
-  description: '',
-  isPublic: false,
-})
+const localName = ref('')
+const localDescription = ref('')
 const localError = ref('')
 
 const visible = computed({
@@ -37,12 +45,24 @@ watch(
   () => props.modelValue,
   (open) => {
     if (open) {
+      localName.value = props.initialName
+      localDescription.value = props.initialDescription
       localError.value = ''
       return
     }
 
-    form.value = { name: '', description: '', isPublic: false }
+    localName.value = ''
+    localDescription.value = ''
     localError.value = ''
+  },
+)
+
+watch(
+  () => [props.initialName, props.initialDescription],
+  ([name, description]) => {
+    if (!props.modelValue) return
+    localName.value = name || ''
+    localDescription.value = description || ''
   },
 )
 
@@ -51,27 +71,24 @@ function handleClose() {
 }
 
 function handleSubmit() {
-  const name = form.value.name.trim()
+  const name = localName.value.trim()
   if (!name) {
-    localError.value = t('workspace.create.nameRequired')
+    localError.value = '请输入名称。'
     return
   }
-
   if (name.length > 255) {
-    localError.value = t('workspace.create.nameTooLong')
+    localError.value = '名称不能超过 255 字符。'
     return
   }
-
-  if (form.value.description.length > 1000) {
-    localError.value = t('workspace.create.descriptionTooLong')
+  if (localDescription.value.length > 1000) {
+    localError.value = '描述不能超过 1000 字符。'
     return
   }
 
   localError.value = ''
   emit('submit', {
     name,
-    description: form.value.description.trim(),
-    public: form.value.isPublic,
+    description: localDescription.value.trim(),
   })
 }
 </script>
@@ -79,34 +96,29 @@ function handleSubmit() {
 <template>
   <dialog class="modal" :class="{ 'modal-open': visible }" @close="handleClose">
     <div class="modal-box rounded-sm border border-base-300">
-      <h3 class="text-lg font-semibold text-base-content">{{ t('workspace.modal.create.title') }}</h3>
-      <p class="mt-1 text-sm text-base-content/60">{{ t('workspace.modal.create.subtitle') }}</p>
+      <h3 class="text-lg font-semibold text-base-content">{{ title }}</h3>
+      <p v-if="subtitle" class="mt-1 text-sm text-base-content/60">{{ subtitle }}</p>
 
       <div class="mt-4 space-y-4">
         <label class="fieldset">
-          <legend class="fieldset-legend text-sm">{{ t('workspace.modal.create.name') }}</legend>
+          <legend class="fieldset-legend text-sm">{{ nameLabel }}</legend>
           <input
-            v-model="form.name"
+            v-model="localName"
             type="text"
             class="input input-bordered w-full rounded-sm"
-            :placeholder="t('workspace.modal.create.namePlaceholder')"
+            :placeholder="namePlaceholder"
             maxlength="255"
           />
         </label>
 
-        <label class="fieldset">
-          <legend class="fieldset-legend text-sm">{{ t('workspace.modal.create.description') }}</legend>
+        <label v-if="showDescription" class="fieldset">
+          <legend class="fieldset-legend text-sm">{{ descriptionLabel }}</legend>
           <textarea
-            v-model="form.description"
+            v-model="localDescription"
             class="textarea textarea-bordered min-h-24 w-full rounded-sm"
-            :placeholder="t('workspace.modal.create.descriptionPlaceholder')"
+            :placeholder="descriptionPlaceholder"
             maxlength="1000"
           />
-        </label>
-
-        <label class="label cursor-pointer justify-start gap-3 rounded-sm border border-base-300/70 bg-base-200/60 px-3 py-2">
-          <input v-model="form.isPublic" type="checkbox" class="checkbox checkbox-sm rounded-xs" />
-          <span class="label-text text-sm text-base-content/70">{{ t('workspace.modal.create.makePublic') }}</span>
         </label>
 
         <p v-if="localError || errorMessage" class="rounded-sm border border-error/30 bg-error/10 px-3 py-2 text-sm text-error">
@@ -117,7 +129,7 @@ function handleSubmit() {
       <div class="modal-action">
         <button type="button" class="btn btn-ghost rounded-sm" :disabled="submitting" @click="handleClose">取消</button>
         <button type="button" class="btn btn-primary rounded-sm" :disabled="submitting" @click="handleSubmit">
-          {{ submitting ? '创建中...' : '确认创建' }}
+          {{ submitting ? '处理中...' : submitText }}
         </button>
       </div>
     </div>

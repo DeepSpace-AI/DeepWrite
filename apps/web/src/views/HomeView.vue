@@ -1,5 +1,12 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue'
+import IconFormatListBulleted from '~icons/mdi/format-list-bulleted'
+import IconAccountGroupOutline from '~icons/mdi/account-group-outline'
+import IconFileDocumentOutline from '~icons/mdi/file-document-outline'
+import IconPencilOutline from '~icons/mdi/pencil-outline'
+import IconSchoolOutline from '~icons/mdi/school-outline'
+import IconCheck from '~icons/mdi/check'
+import IconClose from '~icons/mdi/close'
 
 // ── 打字演示 ──────────────────────────────────────────────
 const demoContent = `# Q3 产品路线图
@@ -109,9 +116,7 @@ onUnmounted(() => clearTimeout(timerId))
             <button class="btn btn-ghost btn-xs text-xs w-7 h-7 min-h-0 p-0">H1</button>
             <button class="btn btn-ghost btn-xs text-xs w-7 h-7 min-h-0 p-0">H2</button>
             <button class="btn btn-ghost btn-xs w-7 h-7 min-h-0 p-0">
-              <svg viewBox="0 0 16 16" fill="none" class="size-3.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
-                <path d="M2 4h12M2 8h10M2 12h8" />
-              </svg>
+              <IconFormatListBulleted class="size-3.5" />
             </button>
           </div>
           <!-- 协作者状态栏 -->
@@ -177,9 +182,7 @@ onUnmounted(() => clearTimeout(timerId))
         <div class="card bg-base-100 border border-base-300 card-lift group">
           <div class="card-body gap-4">
             <div class="size-10 rounded-lg bg-primary/10 text-primary flex items-center justify-center transition-colors duration-200 group-hover:bg-primary group-hover:text-primary-content">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="size-5">
-                <path d="M15 19.128a9.38 9.38 0 0 0 2.625.372 9.337 9.337 0 0 0 4.121-.952 4.125 4.125 0 0 0-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 0 1 8.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0 1 11.964-3.07M12 6.375a3.375 3.375 0 1 1-6.75 0 3.375 3.375 0 0 1 6.75 0Zm8.25 2.25a2.625 2.625 0 1 1-5.25 0 2.625 2.625 0 0 1 5.25 0Z" />
-              </svg>
+              <IconAccountGroupOutline class="size-5" />
             </div>
             <h3 class="font-semibold text-base-content">团队协作</h3>
             <p class="text-sm text-base-content/55 leading-relaxed">实时光标感知，多人同时在线，操作冲突自动合并，提交历史可追溯</p>
@@ -190,9 +193,7 @@ onUnmounted(() => clearTimeout(timerId))
         <div class="card bg-base-100 border border-base-300 card-lift group">
           <div class="card-body gap-4">
             <div class="size-10 rounded-lg bg-secondary/10 text-secondary flex items-center justify-center transition-colors duration-200 group-hover:bg-secondary group-hover:text-secondary-content">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="size-5">
-                <path d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" />
-              </svg>
+              <IconFileDocumentOutline class="size-5" />
             </div>
             <h3 class="font-semibold text-base-content">技术文档</h3>
             <p class="text-sm text-base-content/55 leading-relaxed">代码块高亮、表格支持、Markdown 渲染，结构化内容清晰易维护</p>
@@ -203,9 +204,7 @@ onUnmounted(() => clearTimeout(timerId))
         <div class="card bg-base-100 border border-base-300 card-lift group">
           <div class="card-body gap-4">
             <div class="size-10 rounded-lg bg-accent/10 text-accent flex items-center justify-center transition-colors duration-200 group-hover:bg-accent group-hover:text-accent-content">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="size-5">
-                <path d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10" />
-              </svg>
+              <IconPencilOutline class="size-5" />
             </div>
             <h3 class="font-semibold text-base-content">创意写作</h3>
             <p class="text-sm text-base-content/55 leading-relaxed">流畅的编辑体验，专注模式消除干扰，让创作思路不被打断</p>
@@ -216,9 +215,7 @@ onUnmounted(() => clearTimeout(timerId))
         <div class="card bg-base-100 border border-base-300 card-lift group">
           <div class="card-body gap-4">
             <div class="size-10 rounded-lg bg-primary/10 text-primary flex items-center justify-center transition-colors duration-200 group-hover:bg-primary group-hover:text-primary-content">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="size-5">
-                <path d="M4.26 10.147a60.438 60.438 0 0 0-.491 6.347A48.62 48.62 0 0 1 12 20.904a48.62 48.62 0 0 1 8.232-4.41 60.46 60.46 0 0 0-.491-6.347m-15.482 0a50.636 50.636 0 0 0-2.658-.813A59.906 59.906 0 0 1 12 3.493a59.903 59.903 0 0 1 10.399 5.84c-.896.248-1.783.52-2.658.814m-15.482 0A50.717 50.717 0 0 1 12 13.489a50.702 50.702 0 0 1 3.741-1.342M6.75 15a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5Zm0 0v-3.675A55.378 55.378 0 0 1 12 8.443m-7.007 11.55A5.981 5.981 0 0 0 6.75 15.75v-1.5" />
-              </svg>
+              <IconSchoolOutline class="size-5" />
             </div>
             <h3 class="font-semibold text-base-content">学术研究</h3>
             <p class="text-sm text-base-content/55 leading-relaxed">批注讨论、草稿对比、版本管理，协同撰写学术论文更高效</p>
@@ -325,23 +322,23 @@ onUnmounted(() => clearTimeout(timerId))
             <p class="text-sm text-base-content/55">适合个人用户入门体验</p>
             <ul class="space-y-3 text-sm pt-2 flex-1">
               <li class="flex items-center gap-2.5">
-                <svg viewBox="0 0 16 16" fill="none" class="size-4 text-success shrink-0" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 8l4 4 7-7"/></svg>
+                <IconCheck class="size-4 text-success shrink-0" />
                 最多 3 个文档
               </li>
               <li class="flex items-center gap-2.5">
-                <svg viewBox="0 0 16 16" fill="none" class="size-4 text-success shrink-0" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 8l4 4 7-7"/></svg>
+                <IconCheck class="size-4 text-success shrink-0" />
                 最多 2 人协作
               </li>
               <li class="flex items-center gap-2.5">
-                <svg viewBox="0 0 16 16" fill="none" class="size-4 text-success shrink-0" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 8l4 4 7-7"/></svg>
+                <IconCheck class="size-4 text-success shrink-0" />
                 基础富文本编辑
               </li>
               <li class="flex items-center gap-2.5 opacity-30">
-                <svg viewBox="0 0 16 16" fill="none" class="size-4 shrink-0" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M4 4l8 8M12 4l-8 8"/></svg>
+                <IconClose class="size-4 shrink-0" />
                 版本历史
               </li>
               <li class="flex items-center gap-2.5 opacity-30">
-                <svg viewBox="0 0 16 16" fill="none" class="size-4 shrink-0" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M4 4l8 8M12 4l-8 8"/></svg>
+                <IconClose class="size-4 shrink-0" />
                 API 访问
               </li>
             </ul>
@@ -368,23 +365,23 @@ onUnmounted(() => clearTimeout(timerId))
             <p class="text-sm text-base-content/55">适合编辑团队、研究小组与内容驱动型产品</p>
             <ul class="space-y-3 text-sm pt-2 flex-1">
               <li class="flex items-center gap-2.5">
-                <svg viewBox="0 0 16 16" fill="none" class="size-4 shrink-0" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 8l4 4 7-7"/></svg>
+                <IconCheck class="size-4 shrink-0" />
                 无限文档
               </li>
               <li class="flex items-center gap-2.5">
-                <svg viewBox="0 0 16 16" fill="none" class="size-4 shrink-0" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 8l4 4 7-7"/></svg>
+                <IconCheck class="size-4 shrink-0" />
                 最多 10 人协作
               </li>
               <li class="flex items-center gap-2.5">
-                <svg viewBox="0 0 16 16" fill="none" class="size-4 shrink-0" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 8l4 4 7-7"/></svg>
+                <IconCheck class="size-4 shrink-0" />
                 完整版本历史
               </li>
               <li class="flex items-center gap-2.5">
-                <svg viewBox="0 0 16 16" fill="none" class="size-4 shrink-0" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 8l4 4 7-7"/></svg>
+                <IconCheck class="size-4 shrink-0" />
                 REST API 访问
               </li>
               <li class="flex items-center gap-2.5">
-                <svg viewBox="0 0 16 16" fill="none" class="size-4 shrink-0" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 8l4 4 7-7"/></svg>
+                <IconCheck class="size-4 shrink-0" />
                 评论与批注
               </li>
             </ul>
@@ -407,23 +404,23 @@ onUnmounted(() => clearTimeout(timerId))
             <p class="text-sm text-base-content/55">适合大型团队与企业级部署</p>
             <ul class="space-y-3 text-sm pt-2 flex-1">
               <li class="flex items-center gap-2.5">
-                <svg viewBox="0 0 16 16" fill="none" class="size-4 text-success shrink-0" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 8l4 4 7-7"/></svg>
+                <IconCheck class="size-4 text-success shrink-0" />
                 无限文档与成员
               </li>
               <li class="flex items-center gap-2.5">
-                <svg viewBox="0 0 16 16" fill="none" class="size-4 text-success shrink-0" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 8l4 4 7-7"/></svg>
+                <IconCheck class="size-4 text-success shrink-0" />
                 Webhook 集成
               </li>
               <li class="flex items-center gap-2.5">
-                <svg viewBox="0 0 16 16" fill="none" class="size-4 text-success shrink-0" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 8l4 4 7-7"/></svg>
+                <IconCheck class="size-4 text-success shrink-0" />
                 自定义域名
               </li>
               <li class="flex items-center gap-2.5">
-                <svg viewBox="0 0 16 16" fill="none" class="size-4 text-success shrink-0" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 8l4 4 7-7"/></svg>
+                <IconCheck class="size-4 text-success shrink-0" />
                 优先技术支持
               </li>
               <li class="flex items-center gap-2.5">
-                <svg viewBox="0 0 16 16" fill="none" class="size-4 text-success shrink-0" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 8l4 4 7-7"/></svg>
+                <IconCheck class="size-4 text-success shrink-0" />
                 SLA 99.9% 保障
               </li>
             </ul>

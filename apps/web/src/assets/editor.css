@@ -1,13 +1,41 @@
+.d-editor {
+  min-height: 0;
+}
+
+.d-editor-toolbar {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  overflow: visible;
+  background-color: var(--color-base-100);
+}
+
+.d-editor-toolbar .tooltip,
+.d-editor-toolbar .tooltip::before,
+.d-editor-toolbar .tooltip::after {
+  z-index: 30;
+}
+
+.d-editor-body {
+  min-height: 0;
+}
+
+.d-editor-content {
+  height: 100%;
+  overflow-y: auto;
+}
+
 .d-editor-btn:disabled {
   opacity: 0.5;
   pointer-events: none;
 }
 
 .d-editor-content .tiptap {
-  min-height: 16rem;
+  min-height: 100%;
   outline: none;
   line-height: 1.75;
   caret-color: var(--color-primary);
+  padding: 1.5rem 1.75rem 3rem;
 }
 
 .d-editor-content .tiptap > *:first-child {

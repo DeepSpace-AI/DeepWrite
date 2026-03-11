@@ -22,11 +22,13 @@ import type { EditorTool } from './types'
 
 interface Props {
   modelValue?: string
+  modelJson?: Record<string, unknown> | null
   tools?: EditorTool[]
 }
 
 const props = withDefaults(defineProps<Props>(), {
   modelValue: '<p>开始创作吧 ✍️</p>',
+  modelJson: null,
   tools: (): EditorTool[] => [
     'bold',
     'italic',
@@ -62,6 +64,7 @@ const props = withDefaults(defineProps<Props>(), {
 
 const emit = defineEmits<{
   'update:modelValue': [value: string]
+  'update:modelJson': [value: Record<string, unknown>]
 }>()
 
 // Slash menu state
@@ -98,9 +101,10 @@ const editor = useEditor({
     TableCell,
     TableHeader,
   ],
-  content: props.modelValue,
+  content: props.modelJson ?? props.modelValue,
   onUpdate: ({ editor: currentEditor }) => {
     emit('update:modelValue', currentEditor.getHTML())
+    emit('update:modelJson', currentEditor.getJSON() as Record<string, unknown>)
 
     // 检测 Slash 命令
     const { $from } = currentEditor.state.selection
@@ -122,6 +126,16 @@ const editor = useEditor({
 })
 
 watch(
+  () => props.modelJson,
+  (value) => {
+    const currentEditor = editor.value
+    if (!currentEditor || !value) return
+    if (JSON.stringify(value) === JSON.stringify(currentEditor.getJSON())) return
+    currentEditor.commands.setContent(value)
+  },
+)
+
+watch(
   () => props.modelValue,
   (value) => {
     const currentEditor = editor.value
@@ -134,14 +148,14 @@ watch(
 </script>
 
 <template>
-  <div class="d-editor card border border-base-300 bg-base-100 shadow-sm">
+  <div class="d-editor flex h-full min-h-0 flex-col bg-base-100">
     <DEditorToolbar :editor="editor ?? null" :tools="props.tools" />
 
-    <div class="d-editor-body relative p-4">
+    <div class="d-editor-body relative min-h-0 flex-1 overflow-hidden">
       <EditorContent
         v-if="editor"
         :editor="editor"
-        class="d-editor-content prose prose-sm md:prose-base max-w-none min-h-64
+        class="d-editor-content prose prose-sm md:prose-base h-full max-w-none
         prose-headings:font-title prose-headings:text-base-content
         prose-p:text-base-content prose-strong:text-base-content prose-em:text-base-content
         prose-a:text-primary prose-a:no-underline hover:prose-a:underline

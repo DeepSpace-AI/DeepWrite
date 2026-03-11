@@ -1,0 +1,183 @@
+<script setup lang="ts">
+import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
+import DEditor from '@/components/editor/DEditor.vue'
+import WorkspaceResourcePane from '@/views/workspace/components/WorkspaceResourcePane.vue'
+import type { Collaborator, VisibleFolderNode, WorkspaceDocument, WorkspaceFile, WorkspaceFolder } from '@/views/workspace/types'
+
+const props = defineProps<{
+  visibleFolders: VisibleFolderNode[]
+  selectedFolderId: string | null
+  selectedFolder: WorkspaceFolder | null
+  selectedFolderPath: WorkspaceFolder[]
+  currentFolderDocuments: WorkspaceDocument[]
+  currentFolderFiles: WorkspaceFile[]
+  selectedFileIds: string[]
+  activeDocumentId?: string
+  loadingFolders: boolean
+  loadingDocuments: boolean
+  loadingFiles: boolean
+  uploadingFiles: boolean
+  submitting: boolean
+  resourceErrorMessage?: string
+  showWritingEditor: boolean
+  selectedDocument: WorkspaceDocument | null
+  editorContent: string
+  editorJson: Record<string, unknown> | null
+  headerDocument: WorkspaceDocument | null
+  headerCollaborators: Collaborator[]
+  workspaceId: string
+}>()
+
+const emit = defineEmits<{
+  (e: 'select-root'): void
+  (e: 'select-folder', folderId: string): void
+  (e: 'toggle-folder', folderId: string): void
+  (e: 'create-folder', payload: { name: string; description: string; parentId: string | null }): void
+  (e: 'rename-folder', payload: { folderId: string; name: string; description: string }): void
+  (e: 'delete-folder', folder: WorkspaceFolder): void
+  (e: 'create-document', payload: { title: string }): void
+  (e: 'begin-edit', doc: WorkspaceDocument): void
+  (e: 'rename-document', payload: { documentId: string; title: string }): void
+  (e: 'upload-files', files: File[]): void
+  (e: 'delete-file', fileId: string): void
+  (e: 'preview-file', fileId: string): void
+  (e: 'batch-delete-files', fileIds: string[]): void
+  (e: 'update:selectedFileIds', value: string[]): void
+  (e: 'update:editorContent', value: string): void
+  (e: 'update:editorJson', value: Record<string, unknown> | null): void
+  (e: 'save-draft'): void
+  (e: 'exit-editor'): void
+}>()
+
+const { t } = useI18n()
+
+const contentProxy = computed({
+  get: () => props.editorContent,
+  set: (value: string) => emit('update:editorContent', value),
+})
+
+function formatTime(value?: string) {
+  if (!value) return '--'
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return value
+  return new Intl.DateTimeFormat('zh-CN', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  }).format(date)
+}
+
+function collaboratorInitial(name: string) {
+  return name.trim().slice(0, 1).toUpperCase() || 'U'
+}
+</script>
+
+<template>
+  <WorkspaceResourcePane
+    :visible-folders="visibleFolders"
+    :selected-folder-id="selectedFolderId"
+    :selected-folder="selectedFolder"
+    :selected-folder-path="selectedFolderPath"
+    :current-folder-documents="currentFolderDocuments"
+    :current-folder-files="currentFolderFiles"
+    :selected-file-ids="selectedFileIds"
+    :active-document-id="activeDocumentId"
+    :loading-folders="loadingFolders"
+    :loading-documents="loadingDocuments"
+    :loading-files="loadingFiles"
+    :uploading-files="uploadingFiles"
+    :submitting="submitting"
+    :error-message="resourceErrorMessage"
+    @select-root="emit('select-root')"
+    @select-folder="emit('select-folder', $event)"
+    @toggle-folder="emit('toggle-folder', $event)"
+    @create-folder="emit('create-folder', $event)"
+    @rename-folder="emit('rename-folder', $event)"
+    @delete-folder="emit('delete-folder', $event)"
+    @create-document="emit('create-document', $event)"
+    @open-document="emit('begin-edit', $event)"
+    @rename-document="emit('rename-document', $event)"
+    @upload-files="emit('upload-files', $event)"
+    @delete-file="emit('delete-file', $event)"
+    @preview-file="emit('preview-file', $event)"
+    @batch-delete-files="emit('batch-delete-files', $event)"
+    @update:selected-file-ids="emit('update:selectedFileIds', $event)"
+  />
+
+  <main v-if="showWritingEditor" class="h-full min-h-0 rounded-sm border border-base-300 bg-base-100 shadow-sm flex flex-col">
+    <div class="border-b border-base-300 px-4 py-3">
+      <div class="flex flex-wrap items-center justify-between gap-3">
+        <div class="min-w-0">
+          <div class="flex items-center gap-2 text-sm">
+            <span class="text-[11px] font-mono uppercase tracking-[0.2em] text-base-content/45">{{ t('workspace.detail.currentDocLabel') }}</span>
+            <span class="text-base-content/35">|</span>
+            <h3 class="max-w-70 truncate text-base font-semibold text-base-content">{{ selectedDocument?.title }}</h3>
+          </div>
+          <div class="mt-1 flex items-center gap-2 overflow-x-auto whitespace-nowrap text-xs text-base-content/55">
+            <span>{{ t('workspace.detail.updatedAtLabel') }}: {{ formatTime(headerDocument?.updated_at) }}</span>
+            <span class="text-base-content/35">|</span>
+            <span>{{ t('workspace.detail.resources.versionLabel') }}: {{ headerDocument?.current_version || 1 }}</span>
+            <span class="text-base-content/35">|</span>
+            <span>{{ t('workspace.detail.collaboratorsLabel') }}: {{ headerCollaborators.length }}</span>
+          </div>
+        </div>
+
+        <div class="flex flex-wrap items-center justify-end gap-2">
+          <div class="avatar-group -space-x-3 rtl:space-x-reverse">
+            <div v-for="person in headerCollaborators.slice(0, 5)" :key="person.id" class="avatar">
+              <div class="w-7 border border-base-100 bg-base-300 text-[10px] text-base-content">
+                <img v-if="person.avatarUrl" :src="person.avatarUrl" :alt="person.name" />
+                <span v-else class="inline-flex h-full w-full items-center justify-center">{{ collaboratorInitial(person.name) }}</span>
+              </div>
+            </div>
+            <div v-if="headerCollaborators.length > 5" class="avatar placeholder">
+              <div class="w-7 border border-base-100 bg-neutral text-[10px] text-neutral-content">+{{ headerCollaborators.length - 5 }}</div>
+            </div>
+          </div>
+          <button type="button" class="btn btn-sm rounded-sm" :disabled="submitting" @click="emit('save-draft')">{{ t('workspace.detail.saveDraft') }}</button>
+          <button type="button" class="btn btn-sm btn-ghost rounded-sm" @click="emit('exit-editor')">{{ t('workspace.detail.exitEditor') }}</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="min-h-0 flex-1">
+      <DEditor
+        class="h-full"
+        v-model="contentProxy"
+        :model-json="editorJson"
+        @update:model-json="emit('update:editorJson', $event)"
+      />
+    </div>
+  </main>
+
+  <aside class="h-full min-h-0 rounded-sm border border-base-300 bg-base-100 shadow-sm transition-all duration-300 flex flex-col">
+    <div class="border-b border-base-300 px-4 py-3">
+      <h3 class="text-sm font-semibold text-base-content">{{ t('workspace.detail.agentTitle') }}</h3>
+    </div>
+    <div class="flex min-h-0 flex-1 flex-col">
+      <div class="flex-1 space-y-2 overflow-y-auto px-3 py-3">
+        <div
+          v-for="msg in [
+            { id: 'm-1', role: 'agent', text: '已就当前文档提炼 3 条结构优化建议。' },
+            { id: 'm-2', role: 'user', text: '请优先优化第一章开头的背景段落。' },
+            { id: 'm-3', role: 'agent', text: '建议把“问题背景”改为“行业转折点”，可增强叙事张力。' },
+          ]"
+          :key="msg.id"
+          class="rounded-sm px-3 py-2 text-sm"
+          :class="msg.role === 'agent' ? 'bg-base-200/70 text-base-content' : 'bg-primary/10 text-base-content/85'"
+        >
+          {{ msg.text }}
+        </div>
+      </div>
+      <div class="border-t border-base-300 p-3">
+        <div class="rounded-sm border border-base-300 bg-base-200/50 px-3 py-2 text-sm text-base-content/50">
+          {{ t('workspace.detail.agentInputHint') }}
+        </div>
+      </div>
+    </div>
+  </aside>
+</template>

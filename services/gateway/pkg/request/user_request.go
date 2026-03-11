@@ -3,7 +3,7 @@ package request
 type UserProfileRequest struct {
 	DisplayName string `json:"display_name" binding:"required,max=30" example:"deepwrite-user"`
 	AvatarURL   string `json:"avatar_url" binding:"required" example:"https://example.com/avatar.jpg"`
-	Bio         string `json:"bio" binding:"required,max=255" example:"This is a user bio."`
+	Bio         string `json:"bio" binding:"max=255" example:"This is a user bio."`
 	Language    string `json:"language" example:"en"`
 	Timezone    string `json:"timezone" example:"UTC"`
 }

@@ -1,4 +1,8 @@
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
+
 defineProps<{
   eyebrow: string
   title: string
@@ -21,7 +25,7 @@ defineProps<{
           {{ eyebrow }}
         </div>
         <div class="mt-8 space-y-5">
-          <div class="text-xs font-mono uppercase tracking-[0.24em] text-primary/70">权限访问</div>
+          <div class="text-xs font-mono uppercase tracking-[0.24em] text-primary/70">{{ t('auth.accessLabel') }}</div>
           <h1 class="heading-serif text-4xl font-bold leading-[1.08] text-base-content lg:text-5xl">
             {{ title }}
           </h1>
@@ -41,11 +45,11 @@ defineProps<{
           <div class="grid grid-cols-2 gap-3">
             <div class="rounded-sm border border-base-300 bg-base-100/80 p-4">
               <div class="text-[11px] font-mono uppercase tracking-[0.2em] text-base-content/38">Session</div>
-              <p class="mt-2 leading-7">短会话登录与设备记忆，便于持续写作。</p>
+                <p class="mt-2 leading-7">{{ t('auth.sessionText') }}</p>
             </div>
             <div class="rounded-sm border border-base-300 bg-base-100/80 p-4">
               <div class="text-[11px] font-mono uppercase tracking-[0.2em] text-base-content/38">Recovery</div>
-              <p class="mt-2 leading-7">支持邮箱找回与后续密码重置流程接入。</p>
+                <p class="mt-2 leading-7">{{ t('auth.recoveryText') }}</p>
             </div>
           </div>
         </div>

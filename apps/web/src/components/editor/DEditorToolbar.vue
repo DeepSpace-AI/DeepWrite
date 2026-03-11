@@ -424,7 +424,7 @@ const runTool = (tool: EditorTool) => {
   <div>
     <div class="d-editor-toolbar flex flex-wrap items-center gap-3 border-b border-base-300 p-3">
       <div v-for="group in toolGroups" :key="group" v-show="visibleToolsByGroup[group].length > 0" class="join">
-        <div v-for="tool in visibleToolsByGroup[group]" :key="tool.key" class="tooltip tooltip-top" :data-tip="tool.tip">
+        <div v-for="tool in visibleToolsByGroup[group]" :key="tool.key" class="tooltip tooltip-bottom z-20" :data-tip="tool.tip">
           <button
             type="button"
             class="d-editor-btn btn btn-sm btn-ghost join-item"
