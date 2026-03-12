@@ -81,3 +81,15 @@ export async function listDocumentVersions(documentId: string, limit = 50, offse
   })
   return unwrapResponse<DocumentVersion[]>(res)
 }
+
+export interface CollabTokenResponse {
+  token: string
+  expires_at: string
+  ws_path: string
+  read_only: boolean
+}
+
+export async function getCollabToken(documentId: string): Promise<CollabTokenResponse> {
+  const res = await http.post(`/documents/${documentId}/collab-token`)
+  return unwrapResponse<CollabTokenResponse>(res)
+}

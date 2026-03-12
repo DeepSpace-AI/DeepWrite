@@ -377,15 +377,19 @@ export function useWorkspaceResources(workspaceId: Ref<string>) {
     }
   }
 
-  async function saveDocument(documentId: string, payload: { title: string; contentJson: Record<string, unknown> | null; summary?: string }) {
+  async function saveDocument(
+    documentId: string,
+    payload: { title: string; contentJson: Record<string, unknown> | null; summary?: string },
+    options?: { source?: 'autosave' | 'manual' | 'snapshot' | string; snapshot?: boolean },
+  ) {
     isMutating.value = true
     clearError()
     try {
       const result = await saveDocumentVersion(documentId, {
         title: payload.title,
         content_json: payload.contentJson ?? emptyDocumentContent(),
-        source: 'manual',
-        snapshot: true,
+        source: options?.source || 'manual',
+        snapshot: options?.snapshot ?? true,
         summary: payload.summary || '',
       })
       upsertDocument(result.document)

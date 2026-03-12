@@ -8,13 +8,6 @@ import IconUnderline from '~icons/mdi/format-underline'
 import IconStrike from '~icons/mdi/format-strikethrough-variant'
 import IconHighlight from '~icons/mdi/marker'
 import IconTextColor from '~icons/mdi/format-color-text'
-import IconH1 from '~icons/mdi/format-header-1'
-import IconH2 from '~icons/mdi/format-header-2'
-import IconParagraph from '~icons/mdi/format-paragraph'
-import IconAlignLeft from '~icons/mdi/format-align-left'
-import IconAlignCenter from '~icons/mdi/format-align-center'
-import IconAlignRight from '~icons/mdi/format-align-right'
-import IconAlignJustify from '~icons/mdi/format-align-justify'
 import IconListBullet from '~icons/mdi/format-list-bulleted'
 import IconListNumber from '~icons/mdi/format-list-numbered'
 import IconChecklist from '~icons/mdi/format-list-checks'
@@ -28,13 +21,13 @@ import IconRedo from '~icons/mdi/redo'
 import IconLink from '~icons/mdi/link-variant'
 import IconImage from '~icons/mdi/image'
 import IconTable from '~icons/mdi/table'
-import IconH3 from '~icons/mdi/format-header-3'
-import IconH4 from '~icons/mdi/format-header-4'
 import IconTableRowPlus from '~icons/mdi/table-row-plus-after'
+import IconBgColor from '~icons/mdi/format-color-fill'
 import IconTableRowRemove from '~icons/mdi/table-row-remove'
 import IconTableColumnPlus from '~icons/mdi/table-column-plus-after'
 import IconTableColumnRemove from '~icons/mdi/table-column-remove'
 import IconTableRemove from '~icons/mdi/table-remove'
+import IconChevronDown from '~icons/mdi/chevron-down'
 
 interface Props {
   editor: Editor | null
@@ -57,6 +50,140 @@ const linkModalOpen = ref(false)
 const imageModalOpen = ref(false)
 const linkUrl = ref('')
 const imageUrl = ref('')
+
+const FONT_FAMILIES: { label: string; value: string }[] = [
+  { label: '默认字体', value: '' },
+  { label: '宋体', value: "'宋体', SimSun, serif" },
+  { label: '黑体', value: "'黑体', SimHei, sans-serif" },
+  { label: '楷体', value: "'楷体', KaiTi, cursive" },
+  { label: '微软雅黑', value: "'微软雅黑', 'Microsoft YaHei', sans-serif" },
+  { label: 'Arial', value: 'Arial, sans-serif' },
+  { label: 'Georgia', value: 'Georgia, serif' },
+  { label: 'Courier New', value: "'Courier New', monospace" },
+]
+
+const TEXT_COLOR_PRESETS: { label: string; value: string }[] = [
+  { label: '默认', value: 'unset' },
+  { label: '主色', value: 'var(--color-primary)' },
+  { label: '黑色', value: '#000000' },
+  { label: '灰色', value: '#6B7280' },
+  { label: '红色', value: '#DC2626' },
+  { label: '橙色', value: '#EA580C' },
+  { label: '绿色', value: '#16A34A' },
+  { label: '蓝色', value: '#2563EB' },
+]
+
+const BG_COLOR_PRESETS: { label: string; value: string }[] = [
+  { label: '无背景', value: 'unset' },
+  { label: '黄色', value: '#FEF08A' },
+  { label: '绿色', value: '#BBF7D0' },
+  { label: '蓝色', value: '#BFDBFE' },
+  { label: '紫色', value: '#DDD6FE' },
+  { label: '粉色', value: '#FBCFE8' },
+  { label: '橙色', value: '#FED7AA' },
+  { label: '灰色', value: '#E5E7EB' },
+]
+
+const HEADING_OPTIONS: { label: string; value: EditorTool }[] = [
+  { label: '正文', value: 'paragraph' },
+  { label: '一级标题', value: 'heading1' },
+  { label: '二级标题', value: 'heading2' },
+  { label: '三级标题', value: 'heading3' },
+  { label: '四级标题', value: 'heading4' },
+]
+
+const ALIGN_OPTIONS: { label: string; value: EditorTool }[] = [
+  { label: '左对齐', value: 'alignLeft' },
+  { label: '居中对齐', value: 'alignCenter' },
+  { label: '右对齐', value: 'alignRight' },
+  { label: '两端对齐', value: 'alignJustify' },
+]
+
+const currentFontFamily = computed(() => {
+  if (!props.editor) return ''
+  return props.editor.getAttributes('textStyle').fontFamily || ''
+})
+
+const currentFontFamilyLabel = computed(() =>
+  FONT_FAMILIES.find((item) => item.value === currentFontFamily.value)?.label || '默认字体',
+)
+
+const currentTextColor = computed(() => {
+  if (!props.editor) return '#000000'
+  return props.editor.getAttributes('textStyle').color || '#000000'
+})
+
+const currentBgColor = computed(() => {
+  if (!props.editor) return '#ffff00'
+  return props.editor.getAttributes('highlight').color || '#ffff00'
+})
+
+const hasCustomTextColor = computed(() => {
+  if (!props.editor) return false
+  const color = props.editor.getAttributes('textStyle').color
+  if (!color) return false
+  return !TEXT_COLOR_PRESETS.some((item) => item.value === color)
+})
+
+const hasCustomBgColor = computed(() => {
+  if (!props.editor) return false
+  const color = props.editor.getAttributes('highlight').color
+  if (!color) return false
+  return !BG_COLOR_PRESETS.some((item) => item.value === color)
+})
+
+const setFontFamily = (font: string) => {
+  if (!props.editor) return
+  if (!font) {
+    props.editor.chain().focus().unsetFontFamily().run()
+  } else {
+    props.editor.chain().focus().setFontFamily(font).run()
+  }
+}
+
+const setTextColor = (color: string) => {
+  if (!props.editor) return
+  props.editor.chain().focus().setColor(color).run()
+}
+
+const setTextColorPreset = (color: string) => {
+  if (!props.editor) return
+  if (color === 'unset') {
+    props.editor.chain().focus().unsetColor().run()
+    return
+  }
+  props.editor.chain().focus().setColor(color).run()
+}
+
+const isTextColorPresetActive = (color: string) => {
+  if (!props.editor) return false
+  if (color === 'unset') {
+    return !props.editor.getAttributes('textStyle').color
+  }
+  return props.editor.isActive('textStyle', { color })
+}
+
+const setBgColor = (color: string) => {
+  if (!props.editor) return
+  props.editor.chain().focus().setHighlight({ color }).run()
+}
+
+const setBgColorPreset = (color: string) => {
+  if (!props.editor) return
+  if (color === 'unset') {
+    props.editor.chain().focus().unsetHighlight().run()
+    return
+  }
+  props.editor.chain().focus().setHighlight({ color }).run()
+}
+
+const isBgColorPresetActive = (color: string) => {
+  if (!props.editor) return false
+  if (color === 'unset') {
+    return !props.editor.getAttributes('highlight').color
+  }
+  return props.editor.isActive('highlight', { color })
+}
 
 const openLinkModal = () => {
   if (!props.editor) return
@@ -112,6 +239,54 @@ const can = (action: (editor: Editor) => boolean) => {
 const toolSet = computed(() => new Set(props.tools))
 const hasTool = (tool: EditorTool) => toolSet.value.has(tool)
 
+const hasHeadingSelect = computed(() =>
+  ['paragraph', 'heading1', 'heading2', 'heading3', 'heading4'].some((tool) => hasTool(tool as EditorTool)),
+)
+
+const hasAlignSelect = computed(() =>
+  ['alignLeft', 'alignCenter', 'alignRight', 'alignJustify'].some((tool) => hasTool(tool as EditorTool)),
+)
+
+const headingOptions = computed(() => HEADING_OPTIONS.filter((option) => hasTool(option.value)))
+const alignOptions = computed(() => ALIGN_OPTIONS.filter((option) => hasTool(option.value)))
+
+const currentHeadingTool = computed<EditorTool>(() => {
+  if (!props.editor) return headingOptions.value[0]?.value ?? 'paragraph'
+  if (props.editor.isActive('heading', { level: 1 }) && hasTool('heading1')) return 'heading1'
+  if (props.editor.isActive('heading', { level: 2 }) && hasTool('heading2')) return 'heading2'
+  if (props.editor.isActive('heading', { level: 3 }) && hasTool('heading3')) return 'heading3'
+  if (props.editor.isActive('heading', { level: 4 }) && hasTool('heading4')) return 'heading4'
+  if (hasTool('paragraph')) return 'paragraph'
+  return headingOptions.value[0]?.value ?? 'paragraph'
+})
+
+const currentAlignTool = computed<EditorTool>(() => {
+  if (!props.editor) return alignOptions.value[0]?.value ?? 'alignLeft'
+  if (props.editor.isActive({ textAlign: 'center' }) && hasTool('alignCenter')) return 'alignCenter'
+  if (props.editor.isActive({ textAlign: 'right' }) && hasTool('alignRight')) return 'alignRight'
+  if (props.editor.isActive({ textAlign: 'justify' }) && hasTool('alignJustify')) return 'alignJustify'
+  if (hasTool('alignLeft')) return 'alignLeft'
+  return alignOptions.value[0]?.value ?? 'alignLeft'
+})
+
+const currentHeadingLabel = computed(() =>
+  headingOptions.value.find((option) => option.value === currentHeadingTool.value)?.label ?? '标题级别',
+)
+
+const currentAlignLabel = computed(() =>
+  alignOptions.value.find((option) => option.value === currentAlignTool.value)?.label ?? '文字对齐',
+)
+
+const setHeadingTool = (tool: EditorTool) => {
+  if (!canRunTool(tool)) return
+  runTool(tool)
+}
+
+const setAlignTool = (tool: EditorTool) => {
+  if (!canRunTool(tool)) return
+  runTool(tool)
+}
+
 const toolGroups: ToolGroup[] = ['style', 'heading', 'block', 'action']
 
 const toolItems: ToolItem[] = [
@@ -120,18 +295,7 @@ const toolItems: ToolItem[] = [
   { key: 'underline', group: 'style', tip: '下划线', label: '下划线', icon: IconUnderline },
   { key: 'strike', group: 'style', tip: '删除线', label: '删除线', icon: IconStrike },
   { key: 'highlight', group: 'style', tip: '高亮', label: '高亮', icon: IconHighlight },
-  { key: 'textPrimary', group: 'style', tip: '主色文字', label: '主色文字', icon: IconTextColor },
-  { key: 'textDefault', group: 'style', tip: '默认文字色', label: '默认文字色', icon: IconTextColor },
   { key: 'inlineCode', group: 'style', tip: '行内代码', label: '行内代码', icon: IconInlineCode },
-  { key: 'heading1', group: 'heading', tip: '一级标题', label: '一级标题', icon: IconH1 },
-  { key: 'heading2', group: 'heading', tip: '二级标题', label: '二级标题', icon: IconH2 },
-  { key: 'heading3', group: 'heading', tip: '三级标题', label: '三级标题', icon: IconH3 },
-  { key: 'heading4', group: 'heading', tip: '四级标题', label: '四级标题', icon: IconH4 },
-  { key: 'paragraph', group: 'heading', tip: '正文', label: '正文', icon: IconParagraph },
-  { key: 'alignLeft', group: 'heading', tip: '左对齐', label: '左对齐', icon: IconAlignLeft },
-  { key: 'alignCenter', group: 'heading', tip: '居中对齐', label: '居中对齐', icon: IconAlignCenter },
-  { key: 'alignRight', group: 'heading', tip: '右对齐', label: '右对齐', icon: IconAlignRight },
-  { key: 'alignJustify', group: 'heading', tip: '两端对齐', label: '两端对齐', icon: IconAlignJustify },
   { key: 'bulletList', group: 'block', tip: '无序列表', label: '无序列表', icon: IconListBullet },
   { key: 'orderedList', group: 'block', tip: '有序列表', label: '有序列表', icon: IconListNumber },
   { key: 'taskList', group: 'block', tip: '任务列表', label: '任务列表', icon: IconChecklist },
@@ -423,6 +587,158 @@ const runTool = (tool: EditorTool) => {
 <template>
   <div>
     <div class="d-editor-toolbar flex flex-wrap items-center gap-3 border-b border-base-300 p-3">
+      <!-- 字体 / 颜色特殊控件 -->
+      <div v-if="hasTool('fontFamily') || hasTool('textColor') || hasTool('textPrimary') || hasTool('textDefault') || hasTool('bgColor')" class="join">
+        <!-- 字体选择 -->
+        <div v-if="hasTool('fontFamily')" class="dropdown dropdown-bottom relative">
+          <div
+            tabindex="0"
+            role="button"
+            class="d-editor-btn btn btn-sm btn-ghost join-item min-w-28 justify-between px-2"
+          >
+            <span class="truncate text-xs font-normal" :style="currentFontFamily ? { fontFamily: currentFontFamily } : undefined">{{ currentFontFamilyLabel }}</span>
+            <IconChevronDown class="size-3.5 opacity-70" />
+          </div>
+          <ul tabindex="0" class="dropdown-content menu z-30 mt-2 w-52 rounded-box border border-base-300 bg-base-100 p-1 shadow-lg">
+            <li v-for="font in FONT_FAMILIES" :key="font.value">
+              <button
+                type="button"
+                :class="currentFontFamily === font.value ? 'active' : ''"
+                @click="setFontFamily(font.value)"
+              >
+                <span :style="font.value ? { fontFamily: font.value } : undefined">{{ font.label }}</span>
+              </button>
+            </li>
+          </ul>
+        </div>
+        <!-- 字体颜色 -->
+        <div v-if="hasTool('textColor') || hasTool('textPrimary') || hasTool('textDefault')" class="dropdown dropdown-bottom relative">
+          <div tabindex="0" role="button" class="d-editor-btn btn btn-sm btn-ghost join-item flex flex-col items-center justify-center gap-0 px-2">
+            <IconTextColor class="size-4" />
+            <span class="h-0.75 w-4 rounded-full" :style="{ background: currentTextColor }" />
+          </div>
+          <div tabindex="0" class="dropdown-content absolute left-0 top-full mt-2 w-56 rounded-box border border-base-300 bg-base-100 p-3 shadow-lg">
+            <p class="mb-2 text-xs font-medium text-base-content/70">常用色</p>
+            <div class="grid grid-cols-4 gap-2">
+              <button
+                v-for="preset in TEXT_COLOR_PRESETS"
+                :key="preset.value"
+                type="button"
+                class="btn btn-xs h-auto min-h-0 flex-col gap-1 px-1 py-1"
+                :class="isTextColorPresetActive(preset.value) ? 'btn-primary' : 'btn-ghost'"
+                @click="setTextColorPreset(preset.value)"
+              >
+                <span
+                  class="h-3 w-3 rounded-full border border-base-300"
+                  :style="{ background: preset.value === 'unset' ? 'transparent' : preset.value }"
+                />
+                <span class="text-[10px] leading-none">{{ preset.label }}</span>
+              </button>
+            </div>
+            <div class="mt-3 border-t border-base-300 pt-3">
+              <label class="btn btn-sm w-full justify-between">
+                <span>自定义颜色</span>
+                <span class="h-3 w-3 rounded-full border border-base-300" :style="{ background: currentTextColor }" />
+                <input
+                  type="color"
+                  class="sr-only"
+                  :value="currentTextColor"
+                  @input="setTextColor(($event.target as HTMLInputElement).value)"
+                >
+              </label>
+              <p v-if="hasCustomTextColor" class="mt-1 text-[10px] text-base-content/55">当前为自定义文字色</p>
+            </div>
+          </div>
+        </div>
+        <!-- 背景色 -->
+        <div v-if="hasTool('bgColor')" class="dropdown dropdown-bottom relative">
+          <div tabindex="0" role="button" class="d-editor-btn btn btn-sm btn-ghost join-item flex flex-col items-center justify-center gap-0 px-2">
+            <IconBgColor class="size-4" />
+            <span class="h-0.75 w-4 rounded-full" :style="{ background: currentBgColor }" />
+          </div>
+          <div tabindex="0" class="dropdown-content absolute left-0 top-full mt-2 w-56 rounded-box border border-base-300 bg-base-100 p-3 shadow-lg">
+            <p class="mb-2 text-xs font-medium text-base-content/70">常用色</p>
+            <div class="grid grid-cols-4 gap-2">
+              <button
+                v-for="preset in BG_COLOR_PRESETS"
+                :key="preset.value"
+                type="button"
+                class="btn btn-xs h-auto min-h-0 flex-col gap-1 px-1 py-1"
+                :class="isBgColorPresetActive(preset.value) ? 'btn-primary' : 'btn-ghost'"
+                @click="setBgColorPreset(preset.value)"
+              >
+                <span
+                  class="h-3 w-3 rounded-full border border-base-300"
+                  :style="{ background: preset.value === 'unset' ? 'transparent' : preset.value }"
+                />
+                <span class="text-[10px] leading-none">{{ preset.label }}</span>
+              </button>
+            </div>
+            <div class="mt-3 border-t border-base-300 pt-3">
+              <label class="btn btn-sm w-full justify-between">
+                <span>自定义背景色</span>
+                <span class="h-3 w-3 rounded-full border border-base-300" :style="{ background: currentBgColor }" />
+                <input
+                  type="color"
+                  class="sr-only"
+                  :value="currentBgColor"
+                  @input="setBgColor(($event.target as HTMLInputElement).value)"
+                >
+              </label>
+              <p v-if="hasCustomBgColor" class="mt-1 text-[10px] text-base-content/55">当前为自定义背景色</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div v-if="hasHeadingSelect || hasAlignSelect" class="join">
+        <div v-if="hasHeadingSelect" class="dropdown dropdown-bottom relative">
+          <div
+            tabindex="0"
+            role="button"
+            class="d-editor-btn btn btn-sm btn-ghost join-item min-w-28 justify-between px-2"
+          >
+            <span class="text-xs font-normal">{{ currentHeadingLabel }}</span>
+            <IconChevronDown class="size-3.5 opacity-70" />
+          </div>
+          <ul tabindex="0" class="dropdown-content menu z-30 mt-2 w-44 rounded-box border border-base-300 bg-base-100 p-1 shadow-lg">
+            <li v-for="option in headingOptions" :key="option.value">
+              <button
+                type="button"
+                :class="currentHeadingTool === option.value ? 'active' : ''"
+                :disabled="!canRunTool(option.value)"
+                @click="setHeadingTool(option.value)"
+              >
+                {{ option.label }}
+              </button>
+            </li>
+          </ul>
+        </div>
+
+        <div v-if="hasAlignSelect" class="dropdown dropdown-bottom relative">
+          <div
+            tabindex="0"
+            role="button"
+            class="d-editor-btn btn btn-sm btn-ghost join-item min-w-28 justify-between px-2"
+          >
+            <span class="text-xs font-normal">{{ currentAlignLabel }}</span>
+            <IconChevronDown class="size-3.5 opacity-70" />
+          </div>
+          <ul tabindex="0" class="dropdown-content menu z-30 mt-2 w-44 rounded-box border border-base-300 bg-base-100 p-1 shadow-lg">
+            <li v-for="option in alignOptions" :key="option.value">
+              <button
+                type="button"
+                :class="currentAlignTool === option.value ? 'active' : ''"
+                :disabled="!canRunTool(option.value)"
+                @click="setAlignTool(option.value)"
+              >
+                {{ option.label }}
+              </button>
+            </li>
+          </ul>
+        </div>
+      </div>
+
       <div v-for="group in toolGroups" :key="group" v-show="visibleToolsByGroup[group].length > 0" class="join">
         <div v-for="tool in visibleToolsByGroup[group]" :key="tool.key" class="tooltip tooltip-bottom z-20" :data-tip="tool.tip">
           <button

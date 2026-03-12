@@ -6,7 +6,9 @@ import IconChevronRight from '~icons/mdi/chevron-right'
 import IconDeleteOutline from '~icons/mdi/delete-outline'
 import IconFileDocumentOutline from '~icons/mdi/file-document-outline'
 import IconFileOutline from '~icons/mdi/file-outline'
+import IconFilePlusOutline from '~icons/mdi/file-document-plus-outline'
 import IconFolderOutline from '~icons/mdi/folder-outline'
+import IconFolderPlusOutline from '~icons/mdi/folder-plus-outline'
 import IconPencilOutline from '~icons/mdi/pencil-outline'
 import IconTrayArrowUp from '~icons/mdi/tray-arrow-up'
 import IconEyeOutline from '~icons/mdi/eye-outline'
@@ -57,6 +59,7 @@ const renameFolderOpen = ref(false)
 const createDocumentOpen = ref(false)
 const renameDocumentOpen = ref(false)
 const pendingCreateFolderSubmit = ref(false)
+const pendingCreateDocumentSubmit = ref(false)
 const contextMenuVisible = ref(false)
 const contextMenuX = ref(0)
 const contextMenuY = ref(0)
@@ -152,6 +155,11 @@ function openDocumentCreateModal() {
   createDocumentOpen.value = true
 }
 
+function handleCreateDocumentSubmit(payload: { name: string }) {
+  pendingCreateDocumentSubmit.value = true
+  emit('create-document', { title: payload.name })
+}
+
 function openDocumentRenameModal(document: WorkspaceDocument) {
   editingDocument.value = document
   renameDocumentOpen.value = true
@@ -200,13 +208,21 @@ function confirmBatchDeleteFiles() {
 watch(
   () => props.submitting,
   (submitting, previous) => {
-    if (!pendingCreateFolderSubmit.value) return
     if (!previous || submitting) return
 
-    if (!props.errorMessage) {
-      createFolderOpen.value = false
+    if (pendingCreateFolderSubmit.value) {
+      if (!props.errorMessage) {
+        createFolderOpen.value = false
+      }
+      pendingCreateFolderSubmit.value = false
     }
-    pendingCreateFolderSubmit.value = false
+
+    if (pendingCreateDocumentSubmit.value) {
+      if (!props.errorMessage) {
+        createDocumentOpen.value = false
+      }
+      pendingCreateDocumentSubmit.value = false
+    }
   },
 )
 </script>
@@ -235,9 +251,21 @@ watch(
           </div>
         </div>
         <div class="flex items-center gap-1">
-          <button type="button" class="btn btn-ghost btn-xs rounded-sm" :disabled="uploadingFiles" @click="fileInput?.click()">
-            <IconTrayArrowUp class="size-4" />
-          </button>
+          <div class="tooltip tooltip-bottom" :data-tip="t('workspace.detail.resources.createDocument')">
+            <button type="button" class="btn btn-ghost btn-xs rounded-sm" @click="openDocumentCreateModal()">
+              <IconFilePlusOutline class="size-4" />
+            </button>
+          </div>
+          <div class="tooltip tooltip-bottom" :data-tip="t('workspace.detail.resources.createFolder')">
+            <button type="button" class="btn btn-ghost btn-xs rounded-sm" @click="openFolderCreateModal()">
+              <IconFolderPlusOutline class="size-4" />
+            </button>
+          </div>
+          <div class="tooltip tooltip-bottom" :data-tip="t('workspace.detail.resources.uploadFiles')">
+            <button type="button" class="btn btn-ghost btn-xs rounded-sm" :disabled="uploadingFiles" @click="fileInput?.click()">
+              <IconTrayArrowUp class="size-4" />
+            </button>
+          </div>
         </div>
       </div>
 
@@ -467,7 +495,7 @@ watch(
       :submit-text="t('workspace.detail.resources.confirmCreateDocument')"
       :submitting="submitting"
       :error-message="errorMessage"
-      @submit="emit('create-document', { title: $event.name })"
+      @submit="handleCreateDocumentSubmit($event)"
     />
 
     <WorkspaceEntryModal

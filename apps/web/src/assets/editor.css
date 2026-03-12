@@ -16,6 +16,19 @@
   z-index: 30;
 }
 
+.d-editor-toolbar .dropdown {
+  position: relative;
+  z-index: 35;
+}
+
+.d-editor-toolbar .dropdown:focus-within {
+  z-index: 70;
+}
+
+.d-editor-toolbar .dropdown .dropdown-content {
+  z-index: 80 !important;
+}
+
 .d-editor-body {
   min-height: 0;
 }

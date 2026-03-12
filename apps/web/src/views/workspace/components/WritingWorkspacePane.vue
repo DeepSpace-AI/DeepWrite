@@ -26,6 +26,12 @@ const props = defineProps<{
   editorJson: Record<string, unknown> | null
   headerDocument: WorkspaceDocument | null
   headerCollaborators: Collaborator[]
+  remoteCollaborators: Array<{ clientId: number; name: string; color?: string }>
+  isAutoSaving: boolean
+    readOnly?: boolean
+  autoSaveError?: string
+  lastLocalSaveAt?: number | null
+  lastCloudSaveAt?: number | null
   workspaceId: string
 }>()
 
@@ -74,6 +80,34 @@ function formatTime(value?: string) {
 function collaboratorInitial(name: string) {
   return name.trim().slice(0, 1).toUpperCase() || 'U'
 }
+
+function formatTimestamp(value?: number | null) {
+  if (!value) return '--'
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return '--'
+  return new Intl.DateTimeFormat('zh-CN', {
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false,
+  }).format(date)
+}
+
+const autoSaveStatusText = computed(() => {
+  if (props.autoSaveError) {
+    return t('workspace.detail.autoSaveError')
+  }
+  if (props.isAutoSaving) {
+    return t('workspace.detail.autoSaveSaving')
+  }
+  if (props.lastCloudSaveAt) {
+    return t('workspace.detail.autoSaveCloudAt', { time: formatTimestamp(props.lastCloudSaveAt) })
+  }
+  if (props.lastLocalSaveAt) {
+    return t('workspace.detail.autoSaveLocalAt', { time: formatTimestamp(props.lastLocalSaveAt) })
+  }
+  return t('workspace.detail.autoSaveIdle')
+})
 </script>
 
 <template>
@@ -117,25 +151,67 @@ function collaboratorInitial(name: string) {
             <span class="text-base-content/35">|</span>
             <h3 class="max-w-70 truncate text-base font-semibold text-base-content">{{ selectedDocument?.title }}</h3>
           </div>
-          <div class="mt-1 flex items-center gap-2 overflow-x-auto whitespace-nowrap text-xs text-base-content/55">
+          <div class="mt-1 flex flex-wrap items-center gap-2 text-xs text-base-content/55">
+            <span
+              class="tooltip tooltip-top"
+              :data-tip="autoSaveStatusText"
+            >
+              <span
+                class="inline-block h-2 w-2 rounded-full"
+                :class="[
+                  autoSaveError
+                    ? 'bg-error'
+                    : isAutoSaving
+                      ? 'bg-warning animate-pulse'
+                      : (lastCloudSaveAt || lastLocalSaveAt)
+                        ? 'bg-success'
+                        : 'bg-base-content/30',
+                ]"
+              />
+            </span>
+            <span class="text-base-content/35">|</span>
             <span>{{ t('workspace.detail.updatedAtLabel') }}: {{ formatTime(headerDocument?.updated_at) }}</span>
             <span class="text-base-content/35">|</span>
             <span>{{ t('workspace.detail.resources.versionLabel') }}: {{ headerDocument?.current_version || 1 }}</span>
             <span class="text-base-content/35">|</span>
             <span>{{ t('workspace.detail.collaboratorsLabel') }}: {{ headerCollaborators.length }}</span>
+            <span v-if="remoteCollaborators.length > 0" class="text-base-content/35">|</span>
+            <span v-if="remoteCollaborators.length > 0" class="text-xs text-warning">
+              {{ remoteCollaborators.length }} online
+            </span>
           </div>
         </div>
 
         <div class="flex flex-wrap items-center justify-end gap-2">
           <div class="avatar-group -space-x-3 rtl:space-x-reverse">
-            <div v-for="person in headerCollaborators.slice(0, 5)" :key="person.id" class="avatar">
+            <!-- Static collaborators -->
+            <div v-for="person in headerCollaborators.slice(0, 3)" :key="`static-${person.id}`" class="avatar">
               <div class="w-7 border border-base-100 bg-base-300 text-[10px] text-base-content">
                 <img v-if="person.avatarUrl" :src="person.avatarUrl" :alt="person.name" />
                 <span v-else class="inline-flex h-full w-full items-center justify-center">{{ collaboratorInitial(person.name) }}</span>
               </div>
             </div>
-            <div v-if="headerCollaborators.length > 5" class="avatar placeholder">
-              <div class="w-7 border border-base-100 bg-neutral text-[10px] text-neutral-content">+{{ headerCollaborators.length - 5 }}</div>
+
+            <!-- Online collaborators with green border -->
+            <div
+              v-for="person in remoteCollaborators.slice(0, 2)"
+              :key="`online-${person.clientId}`"
+              class="avatar tooltip tooltip-bottom"
+              :data-tip="`${person.name} (online)`"
+            >
+              <div class="w-7 border-2 border-success bg-success/10 text-[10px] text-base-content flex items-center justify-center">
+                {{ person.name.charAt(0).toUpperCase() }}
+              </div>
+            </div>
+
+            <!-- Overflow indicator -->
+            <div
+              v-if="headerCollaborators.length + remoteCollaborators.length > 5"
+              class="avatar placeholder"
+            >
+              <div class="w-7 border border-base-100 bg-neutral text-[10px] text-neutral-content">
+                +{{ headerCollaborators.length + remoteCollaborators.length - 5 }}
+              </div>
             </div>
           </div>
           <button type="button" class="btn btn-sm rounded-sm" :disabled="submitting" @click="emit('save-draft')">{{ t('workspace.detail.saveDraft') }}</button>
@@ -149,6 +225,7 @@ function collaboratorInitial(name: string) {
         class="h-full"
         v-model="contentProxy"
         :model-json="editorJson"
+          :read-only="readOnly"
         @update:model-json="emit('update:editorJson', $event)"
       />
     </div>

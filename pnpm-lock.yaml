@@ -90,6 +90,9 @@ importers:
       '@tiptap/extension-color':
         specifier: ^3.20.0
         version: 3.20.0(@tiptap/extension-text-style@3.20.0(@tiptap/core@3.20.1(@tiptap/pm@3.20.1)))
+      '@tiptap/extension-font-family':
+        specifier: ^3.20.1
+        version: 3.20.1(@tiptap/extension-text-style@3.20.0(@tiptap/core@3.20.1(@tiptap/pm@3.20.1)))
       '@tiptap/extension-highlight':
         specifier: ^3.20.0
         version: 3.20.0(@tiptap/core@3.20.1(@tiptap/pm@3.20.1))
@@ -1220,6 +1223,11 @@ packages:
       '@floating-ui/dom': ^1.0.0
       '@tiptap/core': ^3.20.0
       '@tiptap/pm': ^3.20.0
+
+  '@tiptap/extension-font-family@3.20.1':
+    resolution: {integrity: sha512-aIkqMHL3U3Hh7pwCUKz0K/jqRvfn01Qif6ONgoj5gn7vwQNIPVASKovp+cE5cGP0f/vJLVrRfYJT1/KinZwGbQ==}
+    peerDependencies:
+      '@tiptap/extension-text-style': ^3.20.1
 
   '@tiptap/extension-gapcursor@3.20.0':
     resolution: {integrity: sha512-P/LasfvG9/qFq43ZAlNbAnPnXC+/RJf49buTrhtFvI9Zg0+Lbpjx1oh6oMHB19T88Y28KtrckfFZ8aTSUWDq6w==}
@@ -3635,6 +3643,10 @@ snapshots:
       '@tiptap/core': 3.20.1(@tiptap/pm@3.20.1)
       '@tiptap/pm': 3.20.1
     optional: true
+
+  '@tiptap/extension-font-family@3.20.1(@tiptap/extension-text-style@3.20.0(@tiptap/core@3.20.1(@tiptap/pm@3.20.1)))':
+    dependencies:
+      '@tiptap/extension-text-style': 3.20.0(@tiptap/core@3.20.1(@tiptap/pm@3.20.1))
 
   '@tiptap/extension-gapcursor@3.20.0(@tiptap/extensions@3.20.0(@tiptap/core@3.20.1(@tiptap/pm@3.20.1))(@tiptap/pm@3.20.1))':
     dependencies:

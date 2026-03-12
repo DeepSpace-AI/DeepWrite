@@ -5,6 +5,7 @@ import StarterKit from '@tiptap/starter-kit'
 import Underline from '@tiptap/extension-underline'
 import { TextStyle } from '@tiptap/extension-text-style'
 import Color from '@tiptap/extension-color'
+import FontFamily from '@tiptap/extension-font-family'
 import Highlight from '@tiptap/extension-highlight'
 import TextAlign from '@tiptap/extension-text-align'
 import TaskList from '@tiptap/extension-task-list'
@@ -24,12 +25,17 @@ interface Props {
   modelValue?: string
   modelJson?: Record<string, unknown> | null
   tools?: EditorTool[]
+  readOnly?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
   modelValue: '<p>开始创作吧 ✍️</p>',
   modelJson: null,
+  readOnly: false,
   tools: (): EditorTool[] => [
+    'fontFamily',
+    'textColor',
+    'bgColor',
     'bold',
     'italic',
     'underline',
@@ -78,6 +84,7 @@ const editor = useEditor({
     StarterKit,
     Underline,
     TextStyle,
+    FontFamily,
     Color,
     Highlight.configure({ multicolor: true }),
     TextAlign.configure({
@@ -102,6 +109,7 @@ const editor = useEditor({
     TableHeader,
   ],
   content: props.modelJson ?? props.modelValue,
+    editable: !props.readOnly,
   onUpdate: ({ editor: currentEditor }) => {
     emit('update:modelValue', currentEditor.getHTML())
     emit('update:modelJson', currentEditor.getJSON() as Record<string, unknown>)
@@ -135,6 +143,14 @@ watch(
   },
 )
 
+watch(
+  () => props.readOnly,
+  (readOnly) => {
+    const currentEditor = editor.value
+    if (!currentEditor) return
+    currentEditor.setEditable(!readOnly)
+  },
+)
 watch(
   () => props.modelValue,
   (value) => {

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, watch, onBeforeUnmount } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import IconArrowLeft from '~icons/mdi/arrow-left'
@@ -12,6 +12,7 @@ import LiteratureSearchPane from '@/views/workspace/components/LiteratureSearchP
 import DataAnalysisPane from '@/views/workspace/components/DataAnalysisPane.vue'
 import WorkspaceSettingsPane from '@/views/workspace/components/WorkspaceSettingsPane.vue'
 import { useWorkspaceResources } from '@/views/workspace/useWorkspaceResources'
+import { useCollaboration } from '@/views/workspace/useCollaboration'
 import type { Collaborator, MainPaneType, WorkspaceDocument } from '@/views/workspace/types'
 
 const route = useRoute()
@@ -51,6 +52,11 @@ const {
   previewFile,
 } = useWorkspaceResources(workspaceId)
 
+// Collaboration setup
+const currentCollaboration = ref<ReturnType<typeof useCollaboration> | null>(null)
+const collabError = ref('')
+const isUpdatingFromYjs = ref(false)
+
 const docCollaborators: Record<string, Collaborator[]> = {
   sample: [
     { id: 'u-1', name: 'Lin Chen' },
@@ -64,12 +70,29 @@ const editorContent = ref('<p></p>')
 const editorJson = ref<Record<string, unknown> | null>(null)
 const mainPaneType = ref<MainPaneType>('writing')
 const isSavingDraft = ref(false)
+const isApplyingDocumentContent = ref(false)
+const lastRemoteSavedHash = ref('')
+const isAutoSaving = ref(false)
+const autoSaveError = ref('')
+const lastLocalSaveAt = ref<number | null>(null)
+const lastCloudSaveAt = ref<number | null>(null)
+const LOCAL_DRAFT_DELAY_MS = 800
+const DB_AUTOSAVE_DELAY_MS = 5000
+let localDraftTimer: ReturnType<typeof setTimeout> | null = null
+let dbAutosaveTimer: ReturnType<typeof setTimeout> | null = null
 const headerDocument = computed(() => selectedDocument.value)
 const headerCollaborators = computed(() => {
   if (!headerDocument.value) return []
   return docCollaborators[headerDocument.value.id] || docCollaborators.sample || []
 })
 
+const remoteCollaborators = computed(() => {
+  return currentCollaboration.value?.remoteUsers.value || []
+})
+
+const isReadOnly = computed(() => {
+  return currentCollaboration.value?.state.readOnly ?? false
+})
 const isWritingMode = computed(() => mainPaneType.value === 'writing')
 const showWritingEditor = computed(() => isWritingMode.value && !!selectedDocument.value && isEditing.value)
 const isSubmitting = computed(() => isMutating.value || isSavingDraft.value)
@@ -88,17 +111,163 @@ function emptyDocumentContent() {
   return { type: 'doc', content: [] as unknown[] }
 }
 
+function serializeContent(value: Record<string, unknown> | null | undefined) {
+  try {
+    return JSON.stringify(value ?? emptyDocumentContent())
+  } catch {
+    return ''
+  }
+}
+
+function localDraftKey(documentId: string) {
+  return `deepwrite:draft:${workspaceId.value}:${documentId}`
+}
+
+function clearLocalDraftTimer() {
+  if (!localDraftTimer) return
+  clearTimeout(localDraftTimer)
+  localDraftTimer = null
+}
+
+function clearDbAutosaveTimer() {
+  if (!dbAutosaveTimer) return
+  clearTimeout(dbAutosaveTimer)
+  dbAutosaveTimer = null
+}
+
+function readLocalDraft(documentId: string) {
+  try {
+    const raw = window.localStorage.getItem(localDraftKey(documentId))
+    if (!raw) return null
+    const parsed = JSON.parse(raw) as {
+      contentJson?: Record<string, unknown> | null
+      contentHtml?: string
+      updatedAt?: number
+    }
+    if (!parsed || typeof parsed !== 'object') return null
+    return parsed
+  } catch {
+    return null
+  }
+}
+
+function writeLocalDraft() {
+  if (!selectedDocument.value) return
+  try {
+    const now = Date.now()
+    window.localStorage.setItem(
+      localDraftKey(selectedDocument.value.id),
+      JSON.stringify({
+        contentJson: editorJson.value,
+        contentHtml: editorContent.value,
+        updatedAt: now,
+      }),
+    )
+    lastLocalSaveAt.value = now
+  } catch {
+    // Ignore storage quota/private mode errors.
+  }
+}
+
+function scheduleLocalDraftSave() {
+  if (!selectedDocument.value || !isEditing.value) return
+  clearLocalDraftTimer()
+  localDraftTimer = setTimeout(() => {
+    writeLocalDraft()
+    localDraftTimer = null
+  }, LOCAL_DRAFT_DELAY_MS)
+}
+
+async function performDbAutosave() {
+  if (!selectedDocument.value || !isEditing.value) return
+  if (isSavingDraft.value || isMutating.value) {
+    scheduleDbAutosave()
+    return
+  }
+
+  const currentHash = serializeContent(editorJson.value)
+  if (!currentHash || currentHash === lastRemoteSavedHash.value) return
+
+  isAutoSaving.value = true
+  autoSaveError.value = ''
+  const saved = await saveDocument(
+    selectedDocument.value.id,
+    {
+      title: selectedDocument.value.title,
+      contentJson: editorJson.value,
+    },
+    {
+      source: 'autosave',
+      snapshot: false,
+    },
+  )
+
+  if (saved) {
+    selectedDocId.value = saved.id
+    editorJson.value = saved.content_json ?? editorJson.value
+    lastRemoteSavedHash.value = serializeContent(saved.content_json)
+    lastCloudSaveAt.value = Date.now()
+  }
+  else {
+    autoSaveError.value = t('workspace.detail.autoSaveError')
+  }
+  isAutoSaving.value = false
+}
+
+function scheduleDbAutosave() {
+  if (!selectedDocument.value || !isEditing.value) return
+  clearDbAutosaveTimer()
+  dbAutosaveTimer = setTimeout(async () => {
+    dbAutosaveTimer = null
+    await performDbAutosave()
+  }, DB_AUTOSAVE_DELAY_MS)
+}
+
 function beginEditDocument(doc: WorkspaceDocument) {
+  clearLocalDraftTimer()
+  clearDbAutosaveTimer()
+
+  const remoteContent = doc.content_json ?? emptyDocumentContent()
+  const remoteUpdatedAt = new Date(doc.updated_at || 0).getTime()
+  const localDraft = readLocalDraft(doc.id)
+  const localUpdatedAt = localDraft?.updatedAt || 0
+  const useLocalDraft = !!localDraft?.contentJson && localUpdatedAt > remoteUpdatedAt
+
+  isApplyingDocumentContent.value = true
   selectedDocId.value = doc.id
-  editorContent.value = '<p></p>'
-  editorJson.value = doc.content_json ?? emptyDocumentContent()
+  editorContent.value = useLocalDraft ? (localDraft?.contentHtml || '<p></p>') : '<p></p>'
+  editorJson.value = useLocalDraft ? (localDraft?.contentJson || remoteContent) : remoteContent
+  lastRemoteSavedHash.value = serializeContent(remoteContent)
+  autoSaveError.value = ''
+  lastLocalSaveAt.value = localUpdatedAt || null
+  lastCloudSaveAt.value = remoteUpdatedAt || null
   isEditing.value = true
   mainPaneType.value = 'writing'
+  setTimeout(() => {
+    isApplyingDocumentContent.value = false
+  }, 0)
+
+  // Initialize collaboration
+  collabError.value = ''
+  if (currentCollaboration.value) {
+    currentCollaboration.value.disconnect()
+  }
+  currentCollaboration.value = useCollaboration(doc.id, 'Anonymous')
+  currentCollaboration.value.connect().catch((err) => {
+    collabError.value = err instanceof Error ? err.message : 'Failed to connect'
+    console.error('[beginEditDocument] Collab error:', err)
+  })
 }
 
 function exitEditor() {
   isEditing.value = false
   mainPaneType.value = 'writing'
+
+  // Disconnect collaboration
+  if (currentCollaboration.value) {
+    currentCollaboration.value.disconnect()
+    currentCollaboration.value = null
+  }
 }
 
 function switchMainPane(type: MainPaneType) {
@@ -107,6 +276,8 @@ function switchMainPane(type: MainPaneType) {
 
 async function saveDraft() {
   if (!selectedDocument.value) return
+  clearDbAutosaveTimer()
+  autoSaveError.value = ''
   isSavingDraft.value = true
   const saved = await saveDocument(selectedDocument.value.id, {
     title: selectedDocument.value.title,
@@ -116,6 +287,8 @@ async function saveDraft() {
   if (saved) {
     selectedDocId.value = saved.id
     editorJson.value = saved.content_json ?? editorJson.value
+    lastRemoteSavedHash.value = serializeContent(saved.content_json)
+    lastCloudSaveAt.value = Date.now()
   }
   isSavingDraft.value = false
 }
@@ -134,6 +307,107 @@ function handleSelectedFileIdsUpdate(fileIds: string[]) {
 function backToList() {
   router.push({ name: 'workspace-list' })
 }
+
+watch(
+  () => [selectedDocId.value, isEditing.value, editorJson.value] as const,
+  () => {
+    if (!selectedDocId.value || !isEditing.value || isApplyingDocumentContent.value || isUpdatingFromYjs.value) return
+
+    // Sync editor to Yjs
+    if (currentCollaboration.value?.yText?.value) {
+      const yText = currentCollaboration.value.yText.value
+      const editorContentStr = JSON.stringify(editorJson.value ?? {})
+      const yjsContentStr = yText.toString()
+
+      // Only update if content actually changed
+      if (editorContentStr !== yjsContentStr) {
+        try {
+          // Clear and insert new content
+          yText.delete(0, yText.length)
+          yText.insert(0, editorContentStr)
+        } catch (err) {
+          console.warn('[sync] Failed to push editor to Yjs:', err)
+        }
+      }
+    }
+
+    scheduleLocalDraftSave()
+    scheduleDbAutosave()
+  },
+  { deep: true },
+)
+
+watch(
+  () => [selectedDocId.value, currentCollaboration.value?.state.isConnected],
+  () => {
+    clearDbAutosaveTimer()
+    clearLocalDraftTimer()
+
+    // Setup Yjs sync when collaboration is ready
+    if (currentCollaboration.value?.state.isConnected && selectedDocument.value && currentCollaboration.value.yText?.value) {
+      const yText = currentCollaboration.value.yText.value
+
+      // Sync initial content: Yjs -> Editor
+      // If Yjs has content, use it; otherwise, initialize Yjs with editor content
+      const yjsContent = yText.toString()
+      if (yjsContent && !isApplyingDocumentContent.value) {
+        // Parse Yjs content back to JSON
+        try {
+          const parsed = JSON.parse(yjsContent) as Record<string, unknown>
+          isUpdatingFromYjs.value = true
+          editorJson.value = parsed
+          editorContent.value = '<p></p>'
+          isUpdatingFromYjs.value = false
+        } catch {
+          console.warn('[sync] Failed to parse Yjs content as JSON')
+        }
+      } else if (!yjsContent && editorJson.value) {
+        // Initialize Yjs with current editor content
+        yText.insert(0, JSON.stringify(editorJson.value))
+      }
+
+      // Listen to Yjs updates
+      const handleYjsUpdate = () => {
+        try {
+          const yjsStr = yText.toString()
+          const parsed = JSON.parse(yjsStr) as Record<string, unknown>
+          isUpdatingFromYjs.value = true
+          editorJson.value = parsed
+          isUpdatingFromYjs.value = false
+        } catch {
+          console.warn('[sync] Failed to parse Yjs content on update')
+        }
+      }
+
+      yText.observe(handleYjsUpdate)
+
+      // Cleanup observer on unmount or editor change
+      return () => {
+        yText.unobserve(handleYjsUpdate)
+      }
+    }
+  },
+)
+
+watch(
+  () => selectedDocId.value,
+  () => {
+    clearDbAutosaveTimer()
+    clearLocalDraftTimer()
+  },
+)
+
+onBeforeUnmount(() => {
+  clearDbAutosaveTimer()
+  clearLocalDraftTimer()
+  writeLocalDraft()
+
+  // Cleanup collaboration
+  if (currentCollaboration.value) {
+    currentCollaboration.value.disconnect()
+    currentCollaboration.value = null
+  }
+})
 </script>
 
 <template>
@@ -213,6 +487,12 @@ function backToList() {
         :editor-json="editorJson"
         :header-document="headerDocument"
         :header-collaborators="headerCollaborators"
+        :remote-collaborators="remoteCollaborators"
+        :is-auto-saving="isAutoSaving"
+          :read-only="isReadOnly"
+        :auto-save-error="autoSaveError"
+        :last-local-save-at="lastLocalSaveAt"
+        :last-cloud-save-at="lastCloudSaveAt"
         :workspace-id="workspaceId"
         @select-root="selectFolder(null)"
         @select-folder="selectFolder($event)"
