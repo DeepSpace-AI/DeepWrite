@@ -89,6 +89,36 @@ export interface BatchDeleteWorkspaceFilesResult {
   failed: Array<{ file_id: string; reason: string }>
 }
 
+export type WorkspaceInvitationRole = 'admin' | 'editor' | 'viewer'
+
+export interface WorkspaceInvitation {
+  id: string
+  workspace_id: string
+  inviter_id: string
+  invitee_user_id?: string
+  invitee_email: string
+  role: WorkspaceInvitationRole | string
+  status: 'pending' | 'accepted' | 'rejected' | 'expired' | 'revoked' | string
+  expires_at: string
+  accepted_at?: string
+  rejected_at?: string
+  revoked_at?: string
+  created_at: string
+  updated_at: string
+}
+
+export interface CreateWorkspaceInvitationInput {
+  invitee_user_id?: string
+  invitee_email?: string
+  role: WorkspaceInvitationRole
+}
+
+export interface CreateWorkspaceInvitationResult {
+  invitation: WorkspaceInvitation
+  token: string
+  reused: boolean
+}
+
 export async function listWorkspaces(limit = 100, offset = 0): Promise<Workspace[]> {
   const res = await http.get('/workspaces', {
     params: { limit, offset },
@@ -193,4 +223,29 @@ export async function batchDeleteWorkspaceFiles(workspaceId: string, fileIds: st
     file_ids: fileIds,
   })
   return unwrapResponse<BatchDeleteWorkspaceFilesResult>(res)
+}
+
+export async function listWorkspaceInvitations(workspaceId: string, status?: string): Promise<WorkspaceInvitation[]> {
+  const res = await http.get(`/workspaces/${workspaceId}/invitations`, {
+    params: {
+      status: status || undefined,
+      limit: 100,
+      offset: 0,
+    },
+  })
+  return unwrapResponse<WorkspaceInvitation[]>(res)
+}
+
+export async function createWorkspaceInvitation(workspaceId: string, input: CreateWorkspaceInvitationInput): Promise<CreateWorkspaceInvitationResult> {
+  const res = await http.post(`/workspaces/${workspaceId}/invitations`, {
+    invitee_user_id: input.invitee_user_id || undefined,
+    invitee_email: input.invitee_email || undefined,
+    role: input.role,
+  })
+  return unwrapResponse<CreateWorkspaceInvitationResult>(res)
+}
+
+export async function revokeWorkspaceInvitation(workspaceId: string, invitationId: string): Promise<WorkspaceInvitation> {
+  const res = await http.post(`/workspaces/${workspaceId}/invitations/${invitationId}/revoke`)
+  return unwrapResponse<WorkspaceInvitation>(res)
 }

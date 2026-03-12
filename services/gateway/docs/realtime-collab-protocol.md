@@ -5,9 +5,11 @@
 ## 1. 传输层
 
 - 协议：WebSocket（二进制帧）
-- 路由：`/api/v1/documents/:id/collab/ws?token=...&name=...`
+- 路由：`/api/v1/documents/:id/collab/ws?token=...`
 - 鉴权：`collab-token`（短期 token，支持单次使用）
 - 心跳：服务端定时 ping，客户端需保持连接可读写
+
+说明：用户标识（`user.id`）与显示名（`user.name`）由服务端按 token 中的 `user_id` 回查数据库后注入，客户端自定义名称不会生效。
 
 ## 2. 编码规则
 

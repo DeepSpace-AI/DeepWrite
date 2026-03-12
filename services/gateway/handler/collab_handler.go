@@ -1,7 +1,9 @@
 package handler
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"net/http"
 	"sort"
@@ -10,6 +12,7 @@ import (
 	"time"
 
 	"github.com/deepwrite/serivces/gateway/models/document"
+	"github.com/deepwrite/serivces/gateway/models/user"
 	"github.com/deepwrite/serivces/gateway/pkg/collab"
 	"github.com/deepwrite/serivces/gateway/pkg/config"
 	gatewaylogger "github.com/deepwrite/serivces/gateway/pkg/logger"
@@ -36,6 +39,12 @@ type collabClient struct {
 	DocumentID   string
 	WorkspaceID  string
 	DisplayName  string
+}
+
+type awarenessEntry struct {
+	ClientID  uint64
+	Clock     uint64
+	StateJSON []byte
 }
 
 type collabRoom struct {
@@ -221,6 +230,12 @@ func (h *CollabHandler) ConnectWS(c *gin.Context) {
 		return
 	}
 
+	viewer, err := user.GetUserByID(c.Request.Context(), issued.UserID)
+	if err != nil {
+		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"code": 401, "message": "invalid collab user"})
+		return
+	}
+
 	conn, err := upgrader.Upgrade(c.Writer, c.Request, nil)
 	if err != nil {
 		return
@@ -236,7 +251,7 @@ func (h *CollabHandler) ConnectWS(c *gin.Context) {
 		Send:        make(chan []byte, 256),
 		DocumentID:  issued.DocumentID,
 		WorkspaceID: issued.WorkspaceID,
-		DisplayName: c.Query("name"),
+		DisplayName: resolveCollabDisplayName(viewer),
 	}
 
 	room, err := globalCollabManager.getOrCreateRoom(c.Request.Context(), issued.DocumentID, issued.WorkspaceID, cfg.Collab)
@@ -497,11 +512,124 @@ func (r *collabRoom) acceptUpdate(client *collabClient, subtype uint64, payload 
 }
 
 func (r *collabRoom) acceptAwareness(client *collabClient, payload []byte) {
+	canonicalPayload, err := buildCanonicalAwarenessPayload(client, payload)
+	if err != nil {
+		return
+	}
+
 	r.Mu.Lock()
-	r.AwarenessByClient[client] = append([]byte(nil), payload...)
+	r.AwarenessByClient[client] = append([]byte(nil), canonicalPayload...)
 	r.Mu.Unlock()
 
-	r.broadcast(client, collab.BuildAwarenessFrame(payload), false)
+	r.broadcast(client, collab.BuildAwarenessFrame(canonicalPayload), false)
+}
+
+func resolveCollabDisplayName(u user.User) string {
+	name := strings.TrimSpace(u.UserProfile.DisplayName)
+	if name != "" {
+		return name
+	}
+
+	email := strings.TrimSpace(u.Email)
+	if email == "" {
+		return strings.TrimSpace(u.ID)
+	}
+
+	parts := strings.SplitN(email, "@", 2)
+	if len(parts) == 0 {
+		return email
+	}
+	local := strings.TrimSpace(parts[0])
+	if local != "" {
+		return local
+	}
+
+	return email
+}
+
+func buildCanonicalAwarenessPayload(client *collabClient, payload []byte) ([]byte, error) {
+	entries, err := parseAwarenessPayload(payload)
+	if err != nil {
+		return nil, err
+	}
+
+	for i := range entries {
+		state := map[string]any{}
+		if len(entries[i].StateJSON) > 0 && string(entries[i].StateJSON) != "null" {
+			_ = json.Unmarshal(entries[i].StateJSON, &state)
+		}
+
+		userState := map[string]any{}
+		if existing, ok := state["user"].(map[string]any); ok {
+			for k, v := range existing {
+				userState[k] = v
+			}
+		}
+
+		userState["id"] = client.UserID
+		userState["name"] = client.DisplayName
+		state["user"] = userState
+
+		encoded, marshalErr := json.Marshal(state)
+		if marshalErr != nil {
+			return nil, marshalErr
+		}
+		entries[i].StateJSON = encoded
+	}
+
+	return encodeAwarenessPayload(entries), nil
+}
+
+func parseAwarenessPayload(payload []byte) ([]awarenessEntry, error) {
+	idx := 0
+	count, err := collab.DecodeVarUint(payload, &idx)
+	if err != nil {
+		return nil, err
+	}
+
+	entries := make([]awarenessEntry, 0, count)
+	for i := uint64(0); i < count; i++ {
+		clientID, err := collab.DecodeVarUint(payload, &idx)
+		if err != nil {
+			return nil, err
+		}
+		clock, err := collab.DecodeVarUint(payload, &idx)
+		if err != nil {
+			return nil, err
+		}
+		stateLen, err := collab.DecodeVarUint(payload, &idx)
+		if err != nil {
+			return nil, err
+		}
+
+		end := idx + int(stateLen)
+		if end < idx || end > len(payload) {
+			return nil, errors.New("invalid awareness payload")
+		}
+
+		stateJSON := append([]byte(nil), payload[idx:end]...)
+		idx = end
+
+		entries = append(entries, awarenessEntry{
+			ClientID:  clientID,
+			Clock:     clock,
+			StateJSON: stateJSON,
+		})
+	}
+
+	return entries, nil
+}
+
+func encodeAwarenessPayload(entries []awarenessEntry) []byte {
+	var buf bytes.Buffer
+	buf.Write(collab.EncodeVarUint(uint64(len(entries))))
+	for _, entry := range entries {
+		buf.Write(collab.EncodeVarUint(entry.ClientID))
+		buf.Write(collab.EncodeVarUint(entry.Clock))
+		buf.Write(collab.EncodeVarUint(uint64(len(entry.StateJSON))))
+		buf.Write(entry.StateJSON)
+	}
+	return buf.Bytes()
 }
 
 func (r *collabRoom) broadcast(sender *collabClient, frame []byte, includeSender bool) {

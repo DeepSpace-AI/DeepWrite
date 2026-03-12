@@ -43,7 +43,7 @@ type Version struct {
 	Source      string         `json:"source" gorm:"type:varchar(20);not null;default:'autosave'"`
 	Snapshot    bool           `json:"snapshot" gorm:"not null;default:false;index"`
 	Summary     string         `json:"summary" gorm:"type:varchar(255)"`
-	CreatedBy   string         `json:"created_by" gorm:"type:uuid"`
+	CreatedBy   *string        `json:"created_by,omitempty" gorm:"type:uuid"`
 	CreatedAt   time.Time      `json:"created_at" gorm:"autoCreateTime"`
 }
 

@@ -28,7 +28,10 @@ const props = defineProps<{
   headerCollaborators: Collaborator[]
   remoteCollaborators: Array<{ clientId: number; name: string; color?: string }>
   isAutoSaving: boolean
-    readOnly?: boolean
+  readOnly?: boolean
+  collabError?: string
+  isCollabConnecting?: boolean
+  isCollabConnected?: boolean
   autoSaveError?: string
   lastLocalSaveAt?: number | null
   lastCloudSaveAt?: number | null
@@ -108,6 +111,21 @@ const autoSaveStatusText = computed(() => {
   }
   return t('workspace.detail.autoSaveIdle')
 })
+
+const collabStatusText = computed(() => {
+  if (props.collabError) {
+    return props.collabError
+  }
+  if (props.isCollabConnecting) {
+    return '协作连接中'
+  }
+  if (props.isCollabConnected) {
+    return '协作已连接'
+  }
+  return '协作未连接'
+})
+
+const onlineCollaboratorCount = computed(() => props.headerCollaborators.length)
 </script>
 
 <template>
@@ -154,6 +172,25 @@ const autoSaveStatusText = computed(() => {
           <div class="mt-1 flex flex-wrap items-center gap-2 text-xs text-base-content/55">
             <span
               class="tooltip tooltip-top"
+              :data-tip="collabStatusText"
+            >
+              <span
+                class="inline-block h-2 w-2 rounded-full"
+                :class="[
+                  collabError
+                    ? 'bg-error'
+                    : isCollabConnecting
+                      ? 'bg-warning animate-pulse'
+                      : isCollabConnected
+                        ? 'bg-success'
+                        : 'bg-base-content/30',
+                ]"
+              />
+            </span>
+            <span>{{ collabStatusText }}</span>
+            <span class="text-base-content/35">|</span>
+            <span
+              class="tooltip tooltip-top"
               :data-tip="autoSaveStatusText"
             >
               <span
@@ -169,54 +206,48 @@ const autoSaveStatusText = computed(() => {
                 ]"
               />
             </span>
-            <span class="text-base-content/35">|</span>
             <span>{{ t('workspace.detail.updatedAtLabel') }}: {{ formatTime(headerDocument?.updated_at) }}</span>
             <span class="text-base-content/35">|</span>
             <span>{{ t('workspace.detail.resources.versionLabel') }}: {{ headerDocument?.current_version || 1 }}</span>
             <span class="text-base-content/35">|</span>
-            <span>{{ t('workspace.detail.collaboratorsLabel') }}: {{ headerCollaborators.length }}</span>
-            <span v-if="remoteCollaborators.length > 0" class="text-base-content/35">|</span>
-            <span v-if="remoteCollaborators.length > 0" class="text-xs text-warning">
-              {{ remoteCollaborators.length }} online
+            <span>{{ t('workspace.detail.collaboratorsLabel') }}: {{ onlineCollaboratorCount }}</span>
+            <span v-if="onlineCollaboratorCount > 0" class="text-base-content/35">|</span>
+            <span v-if="onlineCollaboratorCount > 0" class="text-xs text-warning">
+              {{ onlineCollaboratorCount }} online
             </span>
           </div>
         </div>
 
         <div class="flex flex-wrap items-center justify-end gap-2">
           <div class="avatar-group -space-x-3 rtl:space-x-reverse">
-            <!-- Static collaborators -->
-            <div v-for="person in headerCollaborators.slice(0, 3)" :key="`static-${person.id}`" class="avatar">
+            <div
+              v-for="person in headerCollaborators.slice(0, 5)"
+              :key="person.id"
+              class="avatar tooltip tooltip-bottom"
+              :data-tip="`${person.name} (online)`"
+            >
               <div class="w-7 border border-base-100 bg-base-300 text-[10px] text-base-content">
                 <img v-if="person.avatarUrl" :src="person.avatarUrl" :alt="person.name" />
                 <span v-else class="inline-flex h-full w-full items-center justify-center">{{ collaboratorInitial(person.name) }}</span>
               </div>
             </div>
 
-            <!-- Online collaborators with green border -->
             <div
-              v-for="person in remoteCollaborators.slice(0, 2)"
-              :key="`online-${person.clientId}`"
-              class="avatar tooltip tooltip-bottom"
-              :data-tip="`${person.name} (online)`"
-            >
-              <div class="w-7 border-2 border-success bg-success/10 text-[10px] text-base-content flex items-center justify-center">
-                {{ person.name.charAt(0).toUpperCase() }}
-              </div>
-            </div>
-
-            <!-- Overflow indicator -->
-            <div
-              v-if="headerCollaborators.length + remoteCollaborators.length > 5"
+              v-if="onlineCollaboratorCount > 5"
               class="avatar placeholder"
             >
               <div class="w-7 border border-base-100 bg-neutral text-[10px] text-neutral-content">
-                +{{ headerCollaborators.length + remoteCollaborators.length - 5 }}
+                +{{ onlineCollaboratorCount - 5 }}
               </div>
             </div>
           </div>
           <button type="button" class="btn btn-sm rounded-sm" :disabled="submitting" @click="emit('save-draft')">{{ t('workspace.detail.saveDraft') }}</button>
           <button type="button" class="btn btn-sm btn-ghost rounded-sm" @click="emit('exit-editor')">{{ t('workspace.detail.exitEditor') }}</button>
         </div>
+      </div>
+
+      <div v-if="collabError" class="mt-3 rounded-sm border border-error/30 bg-error/10 px-3 py-2 text-xs text-error">
+        {{ collabError }}
       </div>
     </div>
 
@@ -225,7 +256,7 @@ const autoSaveStatusText = computed(() => {
         class="h-full"
         v-model="contentProxy"
         :model-json="editorJson"
-          :read-only="readOnly"
+        :read-only="readOnly"
         @update:model-json="emit('update:editorJson', $event)"
       />
     </div>

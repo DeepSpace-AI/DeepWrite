@@ -11,6 +11,7 @@ import WritingWorkspacePane from '@/views/workspace/components/WritingWorkspaceP
 import LiteratureSearchPane from '@/views/workspace/components/LiteratureSearchPane.vue'
 import DataAnalysisPane from '@/views/workspace/components/DataAnalysisPane.vue'
 import WorkspaceSettingsPane from '@/views/workspace/components/WorkspaceSettingsPane.vue'
+import { useUserStore } from '@/stores/user'
 import { useWorkspaceResources } from '@/views/workspace/useWorkspaceResources'
 import { useCollaboration } from '@/views/workspace/useCollaboration'
 import type { Collaborator, MainPaneType, WorkspaceDocument } from '@/views/workspace/types'
@@ -18,6 +19,7 @@ import type { Collaborator, MainPaneType, WorkspaceDocument } from '@/views/work
 const route = useRoute()
 const router = useRouter()
 const { t } = useI18n()
+const userStore = useUserStore()
 
 const workspaceId = computed(() => String(route.params.id || ''))
 const isEditing = ref(false)
@@ -57,14 +59,6 @@ const currentCollaboration = ref<ReturnType<typeof useCollaboration> | null>(nul
 const collabError = ref('')
 const isUpdatingFromYjs = ref(false)
 
-const docCollaborators: Record<string, Collaborator[]> = {
-  sample: [
-    { id: 'u-1', name: 'Lin Chen' },
-    { id: 'u-2', name: 'Ava Sun' },
-    { id: 'u-3', name: 'Noah Gu' },
-  ],
-}
-
 const selectedDocument = computed(() => documents.value.find((doc) => doc.id === selectedDocId.value) || null)
 const editorContent = ref('<p></p>')
 const editorJson = ref<Record<string, unknown> | null>(null)
@@ -81,17 +75,43 @@ const DB_AUTOSAVE_DELAY_MS = 5000
 let localDraftTimer: ReturnType<typeof setTimeout> | null = null
 let dbAutosaveTimer: ReturnType<typeof setTimeout> | null = null
 const headerDocument = computed(() => selectedDocument.value)
-const headerCollaborators = computed(() => {
-  if (!headerDocument.value) return []
-  return docCollaborators[headerDocument.value.id] || docCollaborators.sample || []
-})
-
 const remoteCollaborators = computed(() => {
-  return currentCollaboration.value?.remoteUsers.value || []
+  return currentCollaboration.value?.remoteUsers || []
 })
 
 const isReadOnly = computed(() => {
   return currentCollaboration.value?.state.readOnly ?? false
+})
+const isCollabConnecting = computed(() => currentCollaboration.value?.state.isConnecting ?? false)
+const isCollabConnected = computed(() => currentCollaboration.value?.state.isConnected ?? false)
+const collabUserName = computed(() => {
+  const displayName = userStore.user?.displayName?.trim()
+  if (displayName) return displayName
+
+  const emailName = userStore.user?.email?.split('@')[0]?.trim()
+  if (emailName) return emailName
+
+  return 'Anonymous'
+})
+const headerCollaborators = computed<Collaborator[]>(() => {
+  if (!selectedDocument.value || !isCollabConnected.value) return []
+
+  const collaborators: Collaborator[] = []
+  const currentUserId = userStore.user?.id?.trim() || 'local-user'
+  collaborators.push({
+    id: currentUserId,
+    name: collabUserName.value,
+    avatarUrl: userStore.user?.avatarUrl || '',
+  })
+
+  remoteCollaborators.value.forEach((person) => {
+    collaborators.push({
+      id: `remote-${person.clientId}`,
+      name: person.name,
+    })
+  })
+
+  return collaborators
 })
 const isWritingMode = computed(() => mainPaneType.value === 'writing')
 const showWritingEditor = computed(() => isWritingMode.value && !!selectedDocument.value && isEditing.value)
@@ -252,8 +272,9 @@ function beginEditDocument(doc: WorkspaceDocument) {
   if (currentCollaboration.value) {
     currentCollaboration.value.disconnect()
   }
-  currentCollaboration.value = useCollaboration(doc.id, 'Anonymous')
-  currentCollaboration.value.connect().catch((err) => {
+  const collaboration = useCollaboration(doc.id, collabUserName.value)
+  currentCollaboration.value = collaboration
+  collaboration.connect().catch((err) => {
     collabError.value = err instanceof Error ? err.message : 'Failed to connect'
     console.error('[beginEditDocument] Collab error:', err)
   })
@@ -314,8 +335,8 @@ watch(
     if (!selectedDocId.value || !isEditing.value || isApplyingDocumentContent.value || isUpdatingFromYjs.value) return
 
     // Sync editor to Yjs
-    if (currentCollaboration.value?.yText?.value) {
-      const yText = currentCollaboration.value.yText.value
+    const yText = currentCollaboration.value?.yText
+    if (yText) {
       const editorContentStr = JSON.stringify(editorJson.value ?? {})
       const yjsContentStr = yText.toString()
 
@@ -344,8 +365,8 @@ watch(
     clearLocalDraftTimer()
 
     // Setup Yjs sync when collaboration is ready
-    if (currentCollaboration.value?.state.isConnected && selectedDocument.value && currentCollaboration.value.yText?.value) {
-      const yText = currentCollaboration.value.yText.value
+    const yText = currentCollaboration.value?.yText
+    if (currentCollaboration.value?.state.isConnected && selectedDocument.value && yText) {
 
       // Sync initial content: Yjs -> Editor
       // If Yjs has content, use it; otherwise, initialize Yjs with editor content
@@ -489,7 +510,10 @@ onBeforeUnmount(() => {
         :header-collaborators="headerCollaborators"
         :remote-collaborators="remoteCollaborators"
         :is-auto-saving="isAutoSaving"
-          :read-only="isReadOnly"
+        :read-only="isReadOnly"
+        :collab-error="collabError || currentCollaboration?.state.error || ''"
+        :is-collab-connecting="isCollabConnecting"
+        :is-collab-connected="isCollabConnected"
         :auto-save-error="autoSaveError"
         :last-local-save-at="lastLocalSaveAt"
         :last-cloud-save-at="lastCloudSaveAt"

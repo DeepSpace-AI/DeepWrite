@@ -29,7 +29,7 @@ export class ApiError extends Error {
   }
 }
 
-const gatewayBase = (import.meta.env.VITE_GATEWAY_BASE_URL as string | undefined)?.trim() || 'http://localhost:8080'
+export const gatewayBase = (import.meta.env.VITE_GATEWAY_BASE_URL as string | undefined)?.trim() || 'http://localhost:8080'
 
 export const http = axios.create({
   baseURL: `${gatewayBase}/api/v1`,

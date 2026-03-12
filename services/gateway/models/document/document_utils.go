@@ -22,6 +22,14 @@ type SaveVersionInput struct {
 	CreatedBy   string
 }
 
+func nullableUUID(value string) *string {
+	trimmed := strings.TrimSpace(value)
+	if trimmed == "" {
+		return nil
+	}
+	return &trimmed
+}
+
 func Create(ctx context.Context, doc *Document, createdBy string) error {
 	if doc == nil {
 		return errors.New("document is nil")
@@ -43,7 +51,7 @@ func Create(ctx context.Context, doc *Document, createdBy string) error {
 			ContentJSON: doc.ContentJSON,
 			Source:      VersionSourceManual,
 			Snapshot:    true,
-			CreatedBy:   strings.TrimSpace(createdBy),
+			CreatedBy:   nullableUUID(createdBy),
 			CreatedAt:   now,
 		}
 
@@ -132,7 +140,7 @@ func SaveVersion(ctx context.Context, input SaveVersionInput) (Document, Version
 			Source:      source,
 			Snapshot:    input.Snapshot,
 			Summary:     strings.TrimSpace(input.Summary),
-			CreatedBy:   strings.TrimSpace(input.CreatedBy),
+			CreatedBy:   nullableUUID(input.CreatedBy),
 			CreatedAt:   now,
 		}
 

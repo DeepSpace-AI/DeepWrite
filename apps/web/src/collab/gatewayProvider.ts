@@ -60,6 +60,12 @@ function buildAwarenessFrame(payload: Uint8Array): Uint8Array {
   return concatBytes(encodeVarUint(MESSAGE_AWARENESS), payload)
 }
 
+interface GatewayYjsProviderHooks {
+  onOpen?: () => void
+  onClose?: () => void
+  onError?: (error: Event) => void
+}
+
 export class GatewayYjsProvider {
   public readonly doc: Y.Doc
   public readonly awareness: Awareness
@@ -67,14 +73,16 @@ export class GatewayYjsProvider {
   private ws: WebSocket | null = null
   private readonly wsUrl: string
   private readonly name: string
+  private readonly hooks?: GatewayYjsProviderHooks
   private connected = false
   private awarenessHeartbeatTimer: number | null = null
 
-  constructor(doc: Y.Doc, wsUrl: string, name: string, awareness?: Awareness) {
+  constructor(doc: Y.Doc, wsUrl: string, name: string, awareness?: Awareness, hooks?: GatewayYjsProviderHooks) {
     this.doc = doc
     this.wsUrl = wsUrl
     this.name = name
     this.awareness = awareness ?? new Awareness(doc)
+    this.hooks = hooks
 
     this.doc.on('update', (update: Uint8Array, origin: unknown) => {
       if (origin === this || !this.connected) {
@@ -93,33 +101,59 @@ export class GatewayYjsProvider {
     })
   }
 
-  connect() {
-    this.ws = new WebSocket(this.wsUrl)
-    this.ws.binaryType = 'arraybuffer'
-
-    this.ws.onopen = () => {
-      this.connected = true
-      this.awareness.setLocalStateField('user', {
-        name: this.name,
-      })
-      this.startAwarenessHeartbeat()
-      this.send(buildSyncFrame(SYNC_STEP1, new Uint8Array()))
+  connect(): Promise<void> {
+    if (this.connected) {
+      return Promise.resolve()
     }
 
-    this.ws.onmessage = (event: MessageEvent<ArrayBuffer>) => {
-      const frame = new Uint8Array(event.data)
-      this.handleFrame(frame)
-    }
+    return new Promise((resolve, reject) => {
+      let settled = false
 
-    this.ws.onclose = () => {
-      this.connected = false
-      this.stopAwarenessHeartbeat()
-    }
+      this.ws = new WebSocket(this.wsUrl)
+      this.ws.binaryType = 'arraybuffer'
 
-    this.ws.onerror = () => {
-      this.connected = false
-      this.stopAwarenessHeartbeat()
-    }
+      this.ws.onopen = () => {
+        this.connected = true
+        this.awareness.setLocalStateField('user', {
+          name: this.name,
+        })
+        this.startAwarenessHeartbeat()
+        this.send(buildSyncFrame(SYNC_STEP1, new Uint8Array()))
+        this.hooks?.onOpen?.()
+
+        if (!settled) {
+          settled = true
+          resolve()
+        }
+      }
+
+      this.ws.onmessage = (event: MessageEvent<ArrayBuffer>) => {
+        const frame = new Uint8Array(event.data)
+        this.handleFrame(frame)
+      }
+
+      this.ws.onclose = () => {
+        this.connected = false
+        this.stopAwarenessHeartbeat()
+        this.hooks?.onClose?.()
+
+        if (!settled) {
+          settled = true
+          reject(new Error('Collaboration connection closed before ready'))
+        }
+      }
+
+      this.ws.onerror = (error) => {
+        this.connected = false
+        this.stopAwarenessHeartbeat()
+        this.hooks?.onError?.(error)
+
+        if (!settled) {
+          settled = true
+          reject(new Error('Failed to establish collaboration connection'))
+        }
+      }
+    })
   }
 
   disconnect() {
