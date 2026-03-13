@@ -26,6 +26,7 @@ export function useCollaboration(documentId: string, userName: string) {
   const yjsDoc = ref<Y.Doc | null>(null)
   const provider = ref<GatewayYjsProvider | null>(null)
   const yText = ref<Y.Text | null>(null)
+  const yContentMap = ref<Y.Map<string> | null>(null)
 
   // Remote users state
   const remoteUsers = ref<RemoteUserState[]>([])
@@ -67,6 +68,7 @@ export function useCollaboration(documentId: string, userName: string) {
     }
 
     yText.value = null
+    yContentMap.value = null
     remoteUsers.value = []
     state.isConnected = false
     state.isConnecting = false
@@ -174,10 +176,12 @@ export function useCollaboration(documentId: string, userName: string) {
 
       // Create shared text for content
       const text = doc.getText('content')
+      const contentMap = doc.getMap<string>('content_meta')
 
       yjsDoc.value = doc
       provider.value = prov
       yText.value = text
+      yContentMap.value = contentMap
 
       // Connect
       await prov.connect()
@@ -262,6 +266,7 @@ export function useCollaboration(documentId: string, userName: string) {
     yjsDoc,
     provider,
     yText,
+    yContentMap,
 
     // Methods
     connect,

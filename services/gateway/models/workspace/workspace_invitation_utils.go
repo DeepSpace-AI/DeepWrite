@@ -174,8 +174,11 @@ func AcceptInvitation(ctx context.Context, invitationID, token, userID, userEmai
 			return ErrInvitationExpired
 		}
 
-		if invitation.TokenHash == "" || invitation.TokenHash != hashInvitationToken(strings.TrimSpace(token)) {
-			return ErrInvitationTokenInvalid
+		trimmedToken := strings.TrimSpace(token)
+		if trimmedToken != "" {
+			if invitation.TokenHash == "" || invitation.TokenHash != hashInvitationToken(trimmedToken) {
+				return ErrInvitationTokenInvalid
+			}
 		}
 
 		if !isInviteeMatched(invitation, userID, userEmail) {
@@ -222,8 +225,11 @@ func RejectInvitation(ctx context.Context, invitationID, token, userID, userEmai
 			return ErrInvitationExpired
 		}
 
-		if invitation.TokenHash == "" || invitation.TokenHash != hashInvitationToken(strings.TrimSpace(token)) {
-			return ErrInvitationTokenInvalid
+		trimmedToken := strings.TrimSpace(token)
+		if trimmedToken != "" {
+			if invitation.TokenHash == "" || invitation.TokenHash != hashInvitationToken(trimmedToken) {
+				return ErrInvitationTokenInvalid
+			}
 		}
 
 		if !isInviteeMatched(invitation, userID, userEmail) {

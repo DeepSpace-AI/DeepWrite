@@ -2,6 +2,8 @@ import { createRouter, createWebHistory, type RouteRecordRaw } from 'vue-router'
 import defaultLayout from '@/layouts/defaultLayout.vue'
 import workbenchLayout from '@/layouts/workbenchLayout.vue'
 import workspaceDetailLayout from '@/layouts/workspaceDetailLayout.vue'
+import { useAuthStore } from '@/stores/auth'
+import { useUserStore } from '@/stores/user'
 
 const routes: RouteRecordRaw[] = [
   {
@@ -35,6 +37,7 @@ const routes: RouteRecordRaw[] = [
     path: '/',
     name: 'workbenchLayout',
     component: workbenchLayout,
+    meta: { requiresAuth: true },
     children: [
       {
         path: 'dashboard',
@@ -70,11 +73,17 @@ const routes: RouteRecordRaw[] = [
         name: 'agents',
         component: () => import('@/views/AgentsView.vue'),
       },
+      {
+        path: 'notifications',
+        name: 'notifications',
+        component: () => import('@/views/NotificationsView.vue'),
+      },
     ],
   },
   {
     path: '/workspace/:id',
     component: workspaceDetailLayout,
+    meta: { requiresAuth: true },
     children: [
       {
         path: '',
@@ -88,6 +97,28 @@ const routes: RouteRecordRaw[] = [
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes,
+})
+
+router.beforeEach((to) => {
+  const requiresAuth = to.matched.some(record => record.meta.requiresAuth)
+  if (!requiresAuth) {
+    return true
+  }
+
+  const authStore = useAuthStore()
+
+  if (!authStore.hasValidAccessToken()) {
+    authStore.clearTokens()
+    const userStore = useUserStore()
+    userStore.clearUser()
+
+    return {
+      name: 'login',
+      query: { redirect: to.fullPath },
+    }
+  }
+
+  return true
 })
 
 export default router

@@ -5,6 +5,7 @@ import { storeToRefs } from 'pinia'
 import { logout, updateCurrentUserPreferences } from '@/api/auth'
 import { useAuthStore } from '@/stores/auth'
 import { useUserStore } from '@/stores/user'
+import { useNotificationStore } from '@/stores/notification'
 import { useI18n } from 'vue-i18n'
 import { getCachedLocale, setAppLocale } from '../../locales/i18n'
 import IconViewDashboardOutline from '~icons/mdi/view-dashboard-outline'
@@ -12,15 +13,18 @@ import IconHomeOutline from '~icons/mdi/home-outline'
 import IconBookmarkOutline from '~icons/mdi/bookmark-outline'
 import IconViewGridOutline from '~icons/mdi/view-grid-outline'
 import IconRobotOutline from '~icons/mdi/robot-outline'
+import IconBellOutline from '~icons/mdi/bell-outline'
 import IconPlus from '~icons/mdi/plus'
 
 const router = useRouter()
 const route = useRoute()
 const authStore = useAuthStore()
 const userStore = useUserStore()
+const notificationStore = useNotificationStore()
 const { t } = useI18n()
 
 const { user } = storeToRefs(userStore)
+const { pendingCount } = storeToRefs(notificationStore)
 const selectedLanguage = ref(getCachedLocale() ?? 'zh-CN')
 const selectedTimezone = ref('UTC')
 const isDark = ref(false)
@@ -94,7 +98,12 @@ function openSubscription() {
   router.push({ name: 'dashboard', query: { tab: 'subscription' } })
 }
 
+function openNotifications() {
+  router.push({ name: 'notifications' })
+}
+
 async function handleLogout() {
+  notificationStore.clear()
   logout()
   await router.push({ name: 'login' })
 }
@@ -120,6 +129,7 @@ watch(
 onBeforeMount(() => {
   authStore.initializeFromStorage()
   userStore.initializeFromStorage()
+  notificationStore.refreshPendingCount()
 
   const theme = localStorage.getItem(THEME_KEY)
   if (theme === 'forest') {
@@ -139,7 +149,7 @@ onBeforeMount(() => {
     <div class="pointer-events-none absolute -right-24 bottom-0 h-80 w-80 rounded-full bg-primary/10 blur-3xl" />
 
     <div class="relative mx-auto px-4 py-4 lg:px-5">
-      <aside class="rounded-sm border border-base-300 bg-base-100/95 shadow-sm backdrop-blur lg:fixed lg:left-5 lg:top-4 lg:z-20 lg:flex lg:h-[calc(100vh-2rem)] lg:w-[280px] lg:flex-col">
+      <aside class="rounded-sm border border-base-300 bg-base-100/95 shadow-sm backdrop-blur lg:fixed lg:left-5 lg:top-4 lg:z-20 lg:flex lg:h-[calc(100vh-2rem)] lg:w-70 lg:flex-col">
         <div class="border-b border-base-300 px-5 py-4">
            <h1 class="heading-serif mt-2 text-xl font-bold text-base-content">{{ t('sidebar.title') }}</h1>
         </div>
@@ -244,48 +254,67 @@ onBeforeMount(() => {
               <p class="truncate text-xs text-base-content/55">{{ user?.email || 'guest@deepwrite.local' }}</p>
             </div>
 
-            <div class="dropdown dropdown-end dropdown-top ml-auto">
-              <button tabindex="0" class="btn btn-ghost btn-xs rounded-sm" :aria-label="t('sidebar.openMenu')">
-                <IconPlus class="h-4 w-4" />
+            <div class="ml-auto flex items-center gap-1">
+              <button
+                type="button"
+                class="btn btn-ghost btn-xs rounded-sm"
+                :aria-label="t('sidebar.notifications')"
+                @click="openNotifications"
+              >
+                <span class="relative inline-flex">
+                  <IconBellOutline class="h-4 w-4" />
+                  <span
+                    v-if="pendingCount > 0"
+                    class="absolute -right-2 -top-1 min-w-4 rounded-full bg-error px-1 text-center text-[10px] font-semibold leading-4 text-error-content"
+                  >
+                    {{ pendingCount > 99 ? '99+' : pendingCount }}
+                  </span>
+                </span>
               </button>
-              <div tabindex="0" class="dropdown-content z-[30] mt-2 w-64 rounded-sm border border-base-300 bg-base-100 p-2 shadow-lg">
-                <button type="button" class="btn btn-ghost btn-sm justify-start rounded-sm" @click="openProfileCenter">
-                  {{ t('userMenu.profile') }}
+
+              <div class="dropdown dropdown-end dropdown-top">
+                <button tabindex="0" class="btn btn-ghost btn-xs rounded-sm" :aria-label="t('sidebar.openMenu')">
+                  <IconPlus class="h-4 w-4" />
                 </button>
-                <button type="button" class="btn btn-ghost btn-sm justify-start rounded-sm" @click="openSystemSettings">
-                  {{ t('userMenu.settings') }}
-                </button>
-                <button type="button" class="btn btn-ghost btn-sm justify-start rounded-sm" @click="openSubscription">
-                  {{ t('userMenu.subscription') }}
-                </button>
+                <div tabindex="0" class="dropdown-content z-30 mt-2 w-64 rounded-sm border border-base-300 bg-base-100 p-2 shadow-lg">
+                  <button type="button" class="btn btn-ghost btn-sm justify-start rounded-sm" @click="openProfileCenter">
+                    {{ t('userMenu.profile') }}
+                  </button>
+                  <button type="button" class="btn btn-ghost btn-sm justify-start rounded-sm" @click="openSystemSettings">
+                    {{ t('userMenu.settings') }}
+                  </button>
+                  <button type="button" class="btn btn-ghost btn-sm justify-start rounded-sm" @click="openSubscription">
+                    {{ t('userMenu.subscription') }}
+                  </button>
 
-                <div class="my-2 border-t border-base-300" />
+                  <div class="my-2 border-t border-base-300" />
 
-                <label class="flex items-center justify-between gap-3 rounded-sm px-2 py-2 text-sm">
-                  <span class="text-base-content/80">{{ t('userMenu.darkMode') }}</span>
-                  <input
-                    type="checkbox"
-                    class="toggle toggle-sm"
-                    :checked="isDark"
-                    @change="applyTheme(($event.target as HTMLInputElement).checked)"
-                  />
-                </label>
+                  <label class="flex items-center justify-between gap-3 rounded-sm px-2 py-2 text-sm">
+                    <span class="text-base-content/80">{{ t('userMenu.darkMode') }}</span>
+                    <input
+                      type="checkbox"
+                      class="toggle toggle-sm"
+                      :checked="isDark"
+                      @change="applyTheme(($event.target as HTMLInputElement).checked)"
+                    />
+                  </label>
 
-                <label class="block px-2 py-1.5 text-xs text-base-content/60">{{ t('userMenu.language') }}</label>
-                <select v-model="selectedLanguage" class="select select-bordered select-sm w-full rounded-sm" @change="updateUserPreferences">
-                  <option v-for="item in languageOptions" :key="item.value" :value="item.value">{{ item.label }}</option>
-                </select>
+                  <label class="block px-2 py-1.5 text-xs text-base-content/60">{{ t('userMenu.language') }}</label>
+                  <select v-model="selectedLanguage" class="select select-bordered select-sm w-full rounded-sm" @change="updateUserPreferences">
+                    <option v-for="item in languageOptions" :key="item.value" :value="item.value">{{ item.label }}</option>
+                  </select>
 
-                <label class="mt-2 block px-2 py-1.5 text-xs text-base-content/60">{{ t('userMenu.timezone') }}</label>
-                <select v-model="selectedTimezone" class="select select-bordered select-sm w-full rounded-sm" @change="updateUserPreferences">
-                  <option v-for="item in timezoneOptions" :key="item.value" :value="item.value">{{ item.label }}</option>
-                </select>
+                  <label class="mt-2 block px-2 py-1.5 text-xs text-base-content/60">{{ t('userMenu.timezone') }}</label>
+                  <select v-model="selectedTimezone" class="select select-bordered select-sm w-full rounded-sm" @change="updateUserPreferences">
+                    <option v-for="item in timezoneOptions" :key="item.value" :value="item.value">{{ item.label }}</option>
+                  </select>
 
-                <div class="my-2 border-t border-base-300" />
+                  <div class="my-2 border-t border-base-300" />
 
-                <button type="button" class="btn btn-ghost btn-sm w-full justify-start rounded-sm text-error" @click="handleLogout">
-                  {{ t('userMenu.logout') }}
-                </button>
+                  <button type="button" class="btn btn-ghost btn-sm w-full justify-start rounded-sm text-error" @click="handleLogout">
+                    {{ t('userMenu.logout') }}
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -304,7 +333,7 @@ onBeforeMount(() => {
         </div>
       </aside>
 
-      <main class="space-y-5 lg:ml-[300px] lg:min-h-[calc(100vh-2rem)]">
+      <main class="space-y-5 lg:ml-75 lg:min-h-[calc(100vh-2rem)]">
         <RouterView />
       </main>
     </div>

@@ -226,18 +226,21 @@ func (h *CollabHandler) ConnectWS(c *gin.Context) {
 
 	issued, err := document.ConsumeCollabToken(c.Request.Context(), rawToken, documentID, cfg.Collab.TokenSingleUse)
 	if err != nil {
+		gatewaylogger.S().Warnw("collab ws token rejected", "document_id", documentID, "err", err)
 		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"code": 401, "message": "invalid collab token"})
 		return
 	}
 
 	viewer, err := user.GetUserByID(c.Request.Context(), issued.UserID)
 	if err != nil {
+		gatewaylogger.S().Warnw("collab ws user lookup failed", "document_id", documentID, "user_id", issued.UserID, "err", err)
 		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"code": 401, "message": "invalid collab user"})
 		return
 	}
 
 	conn, err := upgrader.Upgrade(c.Writer, c.Request, nil)
 	if err != nil {
+		gatewaylogger.S().Warnw("collab ws upgrade failed", "document_id", documentID, "user_id", issued.UserID, "err", err)
 		return
 	}
 
@@ -256,13 +259,17 @@ func (h *CollabHandler) ConnectWS(c *gin.Context) {
 
 	room, err := globalCollabManager.getOrCreateRoom(c.Request.Context(), issued.DocumentID, issued.WorkspaceID, cfg.Collab)
 	if err != nil {
+		gatewaylogger.S().Errorw("collab room init failed", "document_id", issued.DocumentID, "workspace_id", issued.WorkspaceID, "err", err)
 		_ = conn.Close()
 		return
 	}
 	room.addClient(client)
+	gatewaylogger.S().Infow("collab ws connected", "document_id", client.DocumentID, "workspace_id", client.WorkspaceID, "session_id", client.SessionID, "user_id", client.UserID, "role", client.Role)
 
 	// 连接建立后主动请求客户端发送当前状态，并回放已持久化更新。
+	gatewaylogger.S().Infow("collab ws enqueue sync step1", "document_id", client.DocumentID, "session_id", client.SessionID)
 	client.Send <- collab.BuildSyncFrame(collab.SyncStep1, nil)
+	gatewaylogger.S().Infow("collab ws replay updates", "document_id", client.DocumentID, "session_id", client.SessionID)
 	room.replayUpdates(client)
 
 	go h.writePump(client, cfg.Collab)
@@ -271,6 +278,7 @@ func (h *CollabHandler) ConnectWS(c *gin.Context) {
 
 func (h *CollabHandler) readPump(room *collabRoom, client *collabClient, cfg config.CollabConfig) {
 	defer func() {
+		gatewaylogger.S().Infow("collab ws disconnected", "document_id", client.DocumentID, "session_id", client.SessionID, "user_id", client.UserID, "updates", client.UpdateCount, "bytes_in", client.BytesIn)
 		room.removeClient(client)
 		h.persistAudit(room, client)
 		close(client.Send)
@@ -287,6 +295,7 @@ func (h *CollabHandler) readPump(room *collabRoom, client *collabClient, cfg con
 	for {
 		_, message, err := client.Conn.ReadMessage()
 		if err != nil {
+			gatewaylogger.S().Debugw("collab ws read end", "document_id", client.DocumentID, "session_id", client.SessionID, "err", err)
 			return
 		}
 		client.LastSeenAt = time.Now()
@@ -294,17 +303,22 @@ func (h *CollabHandler) readPump(room *collabRoom, client *collabClient, cfg con
 		started := time.Now()
 		messageType, subtype, payload, err := collab.ParseIncomingFrame(message)
 		if err != nil {
+			gatewaylogger.S().Warnw("collab frame parse failed", "document_id", client.DocumentID, "session_id", client.SessionID, "bytes", len(message), "err", err)
 			continue
 		}
+
+		gatewaylogger.S().Infow("collab frame received", "document_id", client.DocumentID, "session_id", client.SessionID, "user_id", client.UserID, "message_type", messageType, "subtype", subtype, "payload_bytes", len(payload))
 
 		switch messageType {
 		case collab.MessageSync:
 			switch subtype {
 			case collab.SyncStep1:
 				// 简化实现：由客户端先发完整状态到服务端；这里返回空 step2，后续靠 update 广播收敛。
+				gatewaylogger.S().Infow("collab sync step1 received", "document_id", client.DocumentID, "session_id", client.SessionID)
 				client.Send <- collab.BuildSyncFrame(collab.SyncStep2, []byte{})
 			case collab.SyncStep2, collab.SyncUpdate:
 				if !canEditWorkspace(client.Role) {
+					gatewaylogger.S().Warnw("collab update dropped by role", "document_id", client.DocumentID, "session_id", client.SessionID, "user_id", client.UserID, "role", client.Role, "subtype", subtype, "payload_bytes", len(payload))
 					continue
 				}
 				room.acceptUpdate(client, subtype, payload)
@@ -332,11 +346,19 @@ func (h *CollabHandler) writePump(client *collabClient, cfg config.CollabConfig)
 				_ = client.Conn.WriteMessage(websocket.CloseMessage, []byte{})
 				return
 			}
+			messageType, subtype, payload, parseErr := collab.ParseIncomingFrame(msg)
+			if parseErr != nil {
+				gatewaylogger.S().Warnw("collab ws outbound frame parse failed", "document_id", client.DocumentID, "session_id", client.SessionID, "bytes", len(msg), "err", parseErr)
+			} else {
+				gatewaylogger.S().Infow("collab frame sent", "document_id", client.DocumentID, "session_id", client.SessionID, "user_id", client.UserID, "message_type", messageType, "subtype", subtype, "payload_bytes", len(payload))
+			}
 			if err := client.Conn.WriteMessage(websocket.BinaryMessage, msg); err != nil {
+				gatewaylogger.S().Debugw("collab ws write failed", "document_id", client.DocumentID, "session_id", client.SessionID, "err", err)
 				return
 			}
 		case <-ticker.C:
 			if err := client.Conn.WriteMessage(websocket.PingMessage, nil); err != nil {
+				gatewaylogger.S().Debugw("collab ws ping failed", "document_id", client.DocumentID, "session_id", client.SessionID, "err", err)
 				return
 			}
 		}
@@ -501,7 +523,8 @@ func (r *collabRoom) acceptUpdate(client *collabClient, subtype uint64, payload 
 	r.Mu.Unlock()
 
 	frame := collab.BuildSyncFrame(collab.SyncUpdate, payload)
-	r.broadcast(client, frame, false)
+	recipients := r.broadcast(client, frame, false)
+	gatewaylogger.S().Debugw("collab update accepted", "document_id", r.DocumentID, "session_id", client.SessionID, "user_id", client.UserID, "seq", item.Seq, "payload_bytes", len(payload), "recipients", recipients)
 
 	client.UpdateCount++
 	client.BytesIn += int64(len(payload))
@@ -521,7 +544,8 @@ func (r *collabRoom) acceptAwareness(client *collabClient, payload []byte) {
 	r.AwarenessByClient[client] = append([]byte(nil), canonicalPayload...)
 	r.Mu.Unlock()
 
-	r.broadcast(client, collab.BuildAwarenessFrame(canonicalPayload), false)
+	recipients := r.broadcast(client, collab.BuildAwarenessFrame(canonicalPayload), false)
+	gatewaylogger.S().Debugw("collab awareness accepted", "document_id", r.DocumentID, "session_id", client.SessionID, "user_id", client.UserID, "payload_bytes", len(canonicalPayload), "recipients", recipients)
 }
 
 func resolveCollabDisplayName(u user.User) string {
@@ -632,18 +656,21 @@ func encodeAwarenessPayload(entries []awarenessEntry) []byte {
 	return buf.Bytes()
 }
 
-func (r *collabRoom) broadcast(sender *collabClient, frame []byte, includeSender bool) {
+func (r *collabRoom) broadcast(sender *collabClient, frame []byte, includeSender bool) int {
 	r.Mu.Lock()
 	defer r.Mu.Unlock()
+	recipients := 0
 	for client := range r.Clients {
 		if !includeSender && client == sender {
 			continue
 		}
 		select {
 		case client.Send <- frame:
+			recipients++
 		default:
 		}
 	}
+	return recipients
 }
 
 func (r *collabRoom) flush(force bool) {

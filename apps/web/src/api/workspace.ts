@@ -105,6 +105,7 @@ export interface WorkspaceInvitation {
   revoked_at?: string
   created_at: string
   updated_at: string
+  action_token?: string
 }
 
 export interface CreateWorkspaceInvitationInput {
@@ -117,6 +118,11 @@ export interface CreateWorkspaceInvitationResult {
   invitation: WorkspaceInvitation
   token: string
   reused: boolean
+}
+
+export interface ResolveWorkspaceInvitationInput {
+  token?: string
+  actionToken?: string
 }
 
 export async function listWorkspaces(limit = 100, offset = 0): Promise<Workspace[]> {
@@ -247,5 +253,32 @@ export async function createWorkspaceInvitation(workspaceId: string, input: Crea
 
 export async function revokeWorkspaceInvitation(workspaceId: string, invitationId: string): Promise<WorkspaceInvitation> {
   const res = await http.post(`/workspaces/${workspaceId}/invitations/${invitationId}/revoke`)
+  return unwrapResponse<WorkspaceInvitation>(res)
+}
+
+export async function listMyWorkspaceInvitations(status?: string): Promise<WorkspaceInvitation[]> {
+  const res = await http.get('/invitations/me', {
+    params: {
+      status: status || undefined,
+      limit: 100,
+      offset: 0,
+    },
+  })
+  return unwrapResponse<WorkspaceInvitation[]>(res)
+}
+
+export async function acceptWorkspaceInvitation(invitationId: string, input: ResolveWorkspaceInvitationInput): Promise<WorkspaceInvitation> {
+  const res = await http.post(`/invitations/${invitationId}/accept`, {
+    token: input.token || undefined,
+    action_token: input.actionToken || undefined,
+  })
+  return unwrapResponse<WorkspaceInvitation>(res)
+}
+
+export async function rejectWorkspaceInvitation(invitationId: string, input: ResolveWorkspaceInvitationInput): Promise<WorkspaceInvitation> {
+  const res = await http.post(`/invitations/${invitationId}/reject`, {
+    token: input.token || undefined,
+    action_token: input.actionToken || undefined,
+  })
   return unwrapResponse<WorkspaceInvitation>(res)
 }

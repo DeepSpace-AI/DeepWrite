@@ -6,6 +6,33 @@ const CACHE_KEY_ACCESS = 'deepwrite_access_token'
 const CACHE_KEY_REFRESH = 'deepwrite_refresh_token'
 /** Token 的缓存过期时间：24 小时 */
 const TOKEN_TTL = CACHE_TTL.ONE_DAY
+
+function decodeBase64Url(input: string): string {
+  const normalized = input.replace(/-/g, '+').replace(/_/g, '/')
+  const paddingLength = (4 - (normalized.length % 4)) % 4
+  return atob(`${normalized}${'='.repeat(paddingLength)}`)
+}
+
+function isJwtExpired(token: string, skewSeconds = 30): boolean {
+  try {
+    const parts = token.split('.')
+    const payloadPart = parts[1]
+    if (!payloadPart) {
+      return true
+    }
+
+    const payload = JSON.parse(decodeBase64Url(payloadPart)) as { exp?: number }
+    if (typeof payload.exp !== 'number') {
+      return true
+    }
+
+    const nowInSeconds = Math.floor(Date.now() / 1000)
+    return payload.exp <= nowInSeconds + skewSeconds
+  } catch {
+    return true
+  }
+}
+
 export const useAuthStore = defineStore('auth', () => {
   const accessToken = ref<string>('')
   const refreshToken = ref<string>('')
@@ -31,6 +58,19 @@ export const useAuthStore = defineStore('auth', () => {
     cacheManager.removeMultiple([CACHE_KEY_ACCESS, CACHE_KEY_REFRESH])
   }
 
+  function getEffectiveAccessToken() {
+    return accessToken.value || cacheManager.get<string>(CACHE_KEY_ACCESS) || ''
+  }
+
+  function hasValidAccessToken() {
+    const token = getEffectiveAccessToken().trim()
+    if (!token) {
+      return false
+    }
+
+    return !isJwtExpired(token)
+  }
+
   function initializeFromStorage() {
     const storedAccess = cacheManager.get<string>(CACHE_KEY_ACCESS) || ''
     const storedRefresh = cacheManager.get<string>(CACHE_KEY_REFRESH) || ''
@@ -45,6 +85,8 @@ export const useAuthStore = defineStore('auth', () => {
     setTokens,
     setAccessToken,
     clearTokens,
+    getEffectiveAccessToken,
+    hasValidAccessToken,
     initializeFromStorage,
   }
 })

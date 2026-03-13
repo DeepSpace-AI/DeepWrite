@@ -14,10 +14,21 @@ import (
 	"github.com/deepwrite/serivces/gateway/pkg/response"
 	"github.com/deepwrite/serivces/gateway/pkg/storages"
 	"github.com/gin-gonic/gin"
+	gojwt "github.com/golang-jwt/jwt/v5"
 	"gorm.io/gorm"
 )
 
 type WorkspaceHandler struct{}
+
+const invitationActionTokenType = "workspace_invitation_action"
+
+type invitationActionClaims struct {
+	InviteID string `json:"invite_id"`
+	UserID   string `json:"user_id"`
+	Email    string `json:"email"`
+	Action   string `json:"action"`
+	gojwt.RegisteredClaims
+}
 
 // @Summary      工作区列表
 // @Description  获取当前登录用户可访问的工作区列表
@@ -1382,7 +1393,37 @@ func (h *WorkspaceHandler) ListMyInvitations(c *gin.Context) {
 		return
 	}
 
-	response.Success(c, response.SuccessCode, invitations)
+	payload := make([]gin.H, 0, len(invitations))
+	for _, invitation := range invitations {
+		row := gin.H{
+			"id":              invitation.ID,
+			"workspace_id":    invitation.WorkspaceID,
+			"inviter_id":      invitation.InviterID,
+			"invitee_user_id": invitation.InviteeUserID,
+			"invitee_email":   invitation.InviteeEmail,
+			"role":            invitation.Role,
+			"status":          invitation.Status,
+			"expires_at":      invitation.ExpiresAt,
+			"accepted_at":     invitation.AcceptedAt,
+			"rejected_at":     invitation.RejectedAt,
+			"revoked_at":      invitation.RevokedAt,
+			"created_at":      invitation.CreatedAt,
+			"updated_at":      invitation.UpdatedAt,
+		}
+
+		if invitation.Status == workspace.InvitationStatusPending {
+			actionToken, tokenErr := generateInvitationActionToken(invitation.ID, userID, userEmail)
+			if tokenErr != nil {
+				response.Failed(c, response.ErrorUnknownCode, "生成邀请操作令牌失败")
+				return
+			}
+			row["action_token"] = actionToken
+		}
+
+		payload = append(payload, row)
+	}
+
+	response.Success(c, response.SuccessCode, payload)
 }
 
 // @Summary      接受邀请
@@ -1419,7 +1460,13 @@ func (h *WorkspaceHandler) AcceptInvitation(c *gin.Context) {
 		return
 	}
 
-	accepted, err := workspace.AcceptInvitation(c.Request.Context(), inviteID, req.Token, userID, userEmail)
+	resolvedToken, resolveErr := h.resolveInvitationToken(req, inviteID, userID, userEmail)
+	if resolveErr != nil {
+		h.handleInvitationStateError(c, resolveErr, "接受邀请失败")
+		return
+	}
+
+	accepted, err := workspace.AcceptInvitation(c.Request.Context(), inviteID, resolvedToken, userID, userEmail)
 	if err != nil {
 		h.handleInvitationStateError(c, err, "接受邀请失败")
 		return
@@ -1462,7 +1509,13 @@ func (h *WorkspaceHandler) RejectInvitation(c *gin.Context) {
 		return
 	}
 
-	rejected, err := workspace.RejectInvitation(c.Request.Context(), inviteID, req.Token, userID, userEmail)
+	resolvedToken, resolveErr := h.resolveInvitationToken(req, inviteID, userID, userEmail)
+	if resolveErr != nil {
+		h.handleInvitationStateError(c, resolveErr, "拒绝邀请失败")
+		return
+	}
+
+	rejected, err := workspace.RejectInvitation(c.Request.Context(), inviteID, resolvedToken, userID, userEmail)
 	if err != nil {
 		h.handleInvitationStateError(c, err, "拒绝邀请失败")
 		return
@@ -1477,6 +1530,87 @@ func getInvitationExpireAt() time.Time {
 		expireHours = 24 * 7
 	}
 	return time.Now().Add(time.Duration(expireHours) * time.Hour)
+}
+
+func (h *WorkspaceHandler) resolveInvitationToken(req request.ResolveWorkspaceInvitationRequest, inviteID, userID, userEmail string) (string, error) {
+	token := strings.TrimSpace(req.Token)
+	if token != "" {
+		return token, nil
+	}
+
+	actionToken := strings.TrimSpace(req.ActionToken)
+	if actionToken == "" {
+		return "", workspace.ErrInvitationTokenInvalid
+	}
+
+	claims, err := parseInvitationActionToken(actionToken)
+	if err != nil {
+		return "", workspace.ErrInvitationTokenInvalid
+	}
+
+	if strings.TrimSpace(claims.InviteID) != strings.TrimSpace(inviteID) {
+		return "", workspace.ErrInvitationTokenInvalid
+	}
+	if strings.TrimSpace(claims.UserID) != strings.TrimSpace(userID) {
+		return "", workspace.ErrInvitationTargetInvalid
+	}
+	if normalizeHandlerEmail(claims.Email) != normalizeHandlerEmail(userEmail) {
+		return "", workspace.ErrInvitationTargetInvalid
+	}
+
+	return "", nil
+}
+
+func generateInvitationActionToken(inviteID, userID, userEmail string) (string, error) {
+	now := time.Now()
+	expireAt := now.Add(time.Duration(getInvitationActionTokenMinutes()) * time.Minute)
+	claims := invitationActionClaims{
+		InviteID: strings.TrimSpace(inviteID),
+		UserID:   strings.TrimSpace(userID),
+		Email:    normalizeHandlerEmail(userEmail),
+		Action:   invitationActionTokenType,
+		RegisteredClaims: gojwt.RegisteredClaims{
+			Issuer:    config.GetGlobalConfig().JWT.Issuer,
+			Subject:   strings.TrimSpace(userID),
+			IssuedAt:  gojwt.NewNumericDate(now),
+			ExpiresAt: gojwt.NewNumericDate(expireAt),
+		},
+	}
+
+	token := gojwt.NewWithClaims(gojwt.SigningMethodHS256, claims)
+	return token.SignedString([]byte(config.GetGlobalConfig().JWT.SecretKey))
+}
+
+func parseInvitationActionToken(tokenString string) (*invitationActionClaims, error) {
+	claims := &invitationActionClaims{}
+	token, err := gojwt.ParseWithClaims(strings.TrimSpace(tokenString), claims, func(token *gojwt.Token) (interface{}, error) {
+		if _, ok := token.Method.(*gojwt.SigningMethodHMAC); !ok {
+			return nil, errors.New("unexpected signing method")
+		}
+		return []byte(config.GetGlobalConfig().JWT.SecretKey), nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	if !token.Valid {
+		return nil, errors.New("invalid invitation action token")
+	}
+	if claims.Action != invitationActionTokenType || strings.TrimSpace(claims.InviteID) == "" || strings.TrimSpace(claims.UserID) == "" {
+		return nil, errors.New("invalid invitation action token claims")
+	}
+	return claims, nil
+}
+
+func getInvitationActionTokenMinutes() int {
+	minutes := config.GetInt("WORKSPACE.INVITATION_ACTION_TOKEN_MINUTES")
+	if minutes <= 0 {
+		minutes = 30
+	}
+	return minutes
+}
+
+func normalizeHandlerEmail(email string) string {
+	return strings.ToLower(strings.TrimSpace(email))
 }
 
 func (h *WorkspaceHandler) handleInvitationStateError(c *gin.Context, err error, fallbackMsg string) {

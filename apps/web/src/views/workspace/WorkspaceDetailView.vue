@@ -205,7 +205,17 @@ async function performDbAutosave() {
     return
   }
 
-  const currentHash = serializeContent(editorJson.value)
+  const collabMapStr = currentCollaboration.value?.yContentMap?.get('content_json') || ''
+  const collabJson = (() => {
+    if (!collabMapStr) return editorJson.value
+    try {
+      return JSON.parse(collabMapStr) as Record<string, unknown>
+    } catch {
+      return editorJson.value
+    }
+  })()
+
+  const currentHash = serializeContent(collabJson)
   if (!currentHash || currentHash === lastRemoteSavedHash.value) return
 
   isAutoSaving.value = true
@@ -214,7 +224,7 @@ async function performDbAutosave() {
     selectedDocument.value.id,
     {
       title: selectedDocument.value.title,
-      contentJson: editorJson.value,
+      contentJson: collabJson,
     },
     {
       source: 'autosave',
@@ -334,18 +344,26 @@ watch(
   () => {
     if (!selectedDocId.value || !isEditing.value || isApplyingDocumentContent.value || isUpdatingFromYjs.value) return
 
-    // Sync editor to Yjs
-    const yText = currentCollaboration.value?.yText
-    if (yText) {
+    // Sync editor to Yjs (prefer atomic map field over raw text stream)
+    const collaboration = currentCollaboration.value
+    const yText = collaboration?.yText
+    const contentMap = collaboration?.yContentMap
+    if (collaboration?.state.isConnected) {
       const editorContentStr = JSON.stringify(editorJson.value ?? {})
-      const yjsContentStr = yText.toString()
+      const mapContentStr = (contentMap?.get('content_json') || '').toString()
+      const yjsContentStr = mapContentStr || yText?.toString() || ''
 
       // Only update if content actually changed
       if (editorContentStr !== yjsContentStr) {
         try {
-          // Clear and insert new content
-          yText.delete(0, yText.length)
-          yText.insert(0, editorContentStr)
+          // Keep delete+insert in a single transaction to avoid transient invalid states.
+          collaboration?.yjsDoc?.transact(() => {
+            contentMap?.set('content_json', editorContentStr)
+            if (yText && yText.toString() !== editorContentStr) {
+              yText.delete(0, yText.length)
+              yText.insert(0, editorContentStr)
+            }
+          }, 'editor-sync')
         } catch (err) {
           console.warn('[sync] Failed to push editor to Yjs:', err)
         }
@@ -360,17 +378,19 @@ watch(
 
 watch(
   () => [selectedDocId.value, currentCollaboration.value?.state.isConnected],
-  () => {
+  (_, __, onCleanup) => {
     clearDbAutosaveTimer()
     clearLocalDraftTimer()
 
     // Setup Yjs sync when collaboration is ready
-    const yText = currentCollaboration.value?.yText
-    if (currentCollaboration.value?.state.isConnected && selectedDocument.value && yText) {
+    const collaboration = currentCollaboration.value
+    const yText = collaboration?.yText
+    const contentMap = collaboration?.yContentMap
+    if (collaboration?.state.isConnected && selectedDocument.value) {
 
       // Sync initial content: Yjs -> Editor
-      // If Yjs has content, use it; otherwise, initialize Yjs with editor content
-      const yjsContent = yText.toString()
+      // Prefer atomic map payload, fallback to legacy text payload for compatibility.
+      const yjsContent = (contentMap?.get('content_json') || '').toString() || yText?.toString() || ''
       if (yjsContent && !isApplyingDocumentContent.value) {
         // Parse Yjs content back to JSON
         try {
@@ -384,13 +404,23 @@ watch(
         }
       } else if (!yjsContent && editorJson.value) {
         // Initialize Yjs with current editor content
-        yText.insert(0, JSON.stringify(editorJson.value))
+        collaboration?.yjsDoc?.transact(() => {
+          const initialContent = JSON.stringify(editorJson.value)
+          contentMap?.set('content_json', initialContent)
+          if (yText && yText.toString() !== initialContent) {
+            yText.delete(0, yText.length)
+            yText.insert(0, initialContent)
+          }
+        }, 'editor-bootstrap')
       }
 
       // Listen to Yjs updates
       const handleYjsUpdate = () => {
         try {
-          const yjsStr = yText.toString()
+          const yjsStr = (contentMap?.get('content_json') || '').toString() || yText?.toString() || ''
+          if (!yjsStr) {
+            return
+          }
           const parsed = JSON.parse(yjsStr) as Record<string, unknown>
           isUpdatingFromYjs.value = true
           editorJson.value = parsed
@@ -400,12 +430,22 @@ watch(
         }
       }
 
-      yText.observe(handleYjsUpdate)
+      if (contentMap) {
+        contentMap.observe(handleYjsUpdate)
+      }
+      if (yText) {
+        yText.observe(handleYjsUpdate)
+      }
 
       // Cleanup observer on unmount or editor change
-      return () => {
-        yText.unobserve(handleYjsUpdate)
-      }
+      onCleanup(() => {
+        if (contentMap) {
+          contentMap.unobserve(handleYjsUpdate)
+        }
+        if (yText) {
+          yText.unobserve(handleYjsUpdate)
+        }
+      })
     }
   },
 )

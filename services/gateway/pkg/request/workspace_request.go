@@ -48,5 +48,6 @@ type CreateWorkspaceInvitationRequest struct {
 }
 
 type ResolveWorkspaceInvitationRequest struct {
-	Token string `json:"token" binding:"required"`
+	Token       string `json:"token" binding:"omitempty"`
+	ActionToken string `json:"action_token" binding:"omitempty"`
 }

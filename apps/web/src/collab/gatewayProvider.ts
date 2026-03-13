@@ -7,6 +7,16 @@ const MESSAGE_AWARENESS = 1
 const SYNC_STEP1 = 0
 const SYNC_STEP2 = 1
 const SYNC_UPDATE = 2
+const COLLAB_DEBUG = import.meta.env.DEV || (import.meta.env.VITE_COLLAB_DEBUG === 'true')
+
+function debugLog(event: string, fields?: Record<string, unknown>) {
+  if (!COLLAB_DEBUG) return
+  if (fields) {
+    console.info('[collab][provider]', event, fields)
+    return
+  }
+  console.info('[collab][provider]', event)
+}
 
 function encodeVarUint(value: number): Uint8Array {
   const bytes: number[] = []
@@ -111,9 +121,11 @@ export class GatewayYjsProvider {
 
       this.ws = new WebSocket(this.wsUrl)
       this.ws.binaryType = 'arraybuffer'
+      debugLog('ws_connect_start', { wsUrl: this.wsUrl, clientId: this.doc.clientID, name: this.name })
 
       this.ws.onopen = () => {
         this.connected = true
+        debugLog('ws_open', { wsUrl: this.wsUrl, clientId: this.doc.clientID })
         this.awareness.setLocalStateField('user', {
           name: this.name,
         })
@@ -129,12 +141,14 @@ export class GatewayYjsProvider {
 
       this.ws.onmessage = (event: MessageEvent<ArrayBuffer>) => {
         const frame = new Uint8Array(event.data)
+        debugLog('ws_message', { bytes: frame.length })
         this.handleFrame(frame)
       }
 
       this.ws.onclose = () => {
         this.connected = false
         this.stopAwarenessHeartbeat()
+        debugLog('ws_close', { wsUrl: this.wsUrl, clientId: this.doc.clientID })
         this.hooks?.onClose?.()
 
         if (!settled) {
@@ -146,6 +160,7 @@ export class GatewayYjsProvider {
       this.ws.onerror = (error) => {
         this.connected = false
         this.stopAwarenessHeartbeat()
+        debugLog('ws_error', { wsUrl: this.wsUrl, clientId: this.doc.clientID })
         this.hooks?.onError?.(error)
 
         if (!settled) {
@@ -172,8 +187,24 @@ export class GatewayYjsProvider {
 
   private send(payload: Uint8Array) {
     if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
+      debugLog('ws_send_dropped', {
+        reason: !this.ws ? 'missing_socket' : `state_${this.ws.readyState}`,
+        bytes: payload.length,
+      })
       return
     }
+    let msgType = -1
+    let subtype = -1
+    try {
+      const decoded = decodeVarUint(payload, 0)
+      msgType = decoded.value
+      if (msgType === MESSAGE_SYNC) {
+        subtype = decodeVarUint(payload, decoded.next).value
+      }
+    } catch {
+      // Ignore decode failure in diagnostics.
+    }
+    debugLog('ws_send', { msgType, subtype, bytes: payload.length, clientId: this.doc.clientID })
     this.ws.send(payload)
   }
 
@@ -203,11 +234,13 @@ export class GatewayYjsProvider {
     let idx = 0
     const msg = decodeVarUint(frame, idx)
     idx = msg.next
+    debugLog('ws_frame', { msgType: msg.value, bytes: frame.length, clientId: this.doc.clientID })
 
     if (msg.value === MESSAGE_SYNC) {
       const syncType = decodeVarUint(frame, idx)
       idx = syncType.next
       const payload = frame.slice(idx)
+      debugLog('ws_sync_frame', { syncType: syncType.value, payloadBytes: payload.length, clientId: this.doc.clientID })
 
       if (syncType.value === SYNC_STEP1) {
         const fullState = Y.encodeStateAsUpdate(this.doc)
@@ -225,6 +258,7 @@ export class GatewayYjsProvider {
 
     if (msg.value === MESSAGE_AWARENESS) {
       const payload = frame.slice(idx)
+      debugLog('ws_awareness_frame', { payloadBytes: payload.length, clientId: this.doc.clientID })
       applyAwarenessUpdate(this.awareness, payload, this)
     }
   }
