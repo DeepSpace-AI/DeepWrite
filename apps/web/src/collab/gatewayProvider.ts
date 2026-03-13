@@ -76,21 +76,27 @@ interface GatewayYjsProviderHooks {
   onError?: (error: Event) => void
 }
 
+export interface GatewayPresenceUser {
+  name: string
+  avatarUrl?: string
+  color?: string
+}
+
 export class GatewayYjsProvider {
   public readonly doc: Y.Doc
   public readonly awareness: Awareness
 
   private ws: WebSocket | null = null
   private readonly wsUrl: string
-  private readonly name: string
+  private readonly user: GatewayPresenceUser
   private readonly hooks?: GatewayYjsProviderHooks
   private connected = false
   private awarenessHeartbeatTimer: number | null = null
 
-  constructor(doc: Y.Doc, wsUrl: string, name: string, awareness?: Awareness, hooks?: GatewayYjsProviderHooks) {
+  constructor(doc: Y.Doc, wsUrl: string, user: GatewayPresenceUser, awareness?: Awareness, hooks?: GatewayYjsProviderHooks) {
     this.doc = doc
     this.wsUrl = wsUrl
-    this.name = name
+    this.user = user
     this.awareness = awareness ?? new Awareness(doc)
     this.hooks = hooks
 
@@ -121,14 +127,19 @@ export class GatewayYjsProvider {
 
       this.ws = new WebSocket(this.wsUrl)
       this.ws.binaryType = 'arraybuffer'
-      debugLog('ws_connect_start', { wsUrl: this.wsUrl, clientId: this.doc.clientID, name: this.name })
+      debugLog('ws_connect_start', { wsUrl: this.wsUrl, clientId: this.doc.clientID, name: this.user.name })
 
       this.ws.onopen = () => {
         this.connected = true
         debugLog('ws_open', { wsUrl: this.wsUrl, clientId: this.doc.clientID })
         this.awareness.setLocalStateField('user', {
-          name: this.name,
+          name: this.user.name,
+          avatarUrl: this.user.avatarUrl || '',
+          color: this.user.color,
         })
+        if (this.user.color) {
+          this.awareness.setLocalStateField('color', this.user.color)
+        }
         this.startAwarenessHeartbeat()
         this.send(buildSyncFrame(SYNC_STEP1, new Uint8Array()))
         this.hooks?.onOpen?.()
@@ -182,7 +193,14 @@ export class GatewayYjsProvider {
   }
 
   setLocalSelection(anchor: number, head: number) {
+    if (!Number.isFinite(anchor) || !Number.isFinite(head)) {
+      return
+    }
     this.awareness.setLocalStateField('selection', { anchor, head })
+  }
+
+  clearLocalSelection() {
+    this.awareness.setLocalStateField('selection', null)
   }
 
   private send(payload: Uint8Array) {

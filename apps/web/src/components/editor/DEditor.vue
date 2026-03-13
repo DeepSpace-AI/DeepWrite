@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { watch, ref } from 'vue'
+import { watch, ref, nextTick, onBeforeUnmount, onMounted } from 'vue'
 import { EditorContent, useEditor } from '@tiptap/vue-3'
 import StarterKit from '@tiptap/starter-kit'
 import Underline from '@tiptap/extension-underline'
@@ -26,12 +26,14 @@ interface Props {
   modelJson?: Record<string, unknown> | null
   tools?: EditorTool[]
   readOnly?: boolean
+  remoteCursors?: Array<{ clientId: number; name: string; avatarUrl?: string; color?: string; selection?: { anchor: number; head: number } }>
 }
 
 const props = withDefaults(defineProps<Props>(), {
   modelValue: '<p>开始创作吧 ✍️</p>',
   modelJson: null,
   readOnly: false,
+  remoteCursors: () => [],
   tools: (): EditorTool[] => [
     'fontFamily',
     'textColor',
@@ -71,13 +73,101 @@ const props = withDefaults(defineProps<Props>(), {
 const emit = defineEmits<{
   'update:modelValue': [value: string]
   'update:modelJson': [value: Record<string, unknown>]
+  'local-selection-change': [value: { anchor: number; head: number } | null]
 }>()
 
-// Slash menu state
 const slashMenuVisible = ref(false)
 const slashMenuX = ref(0)
 const slashMenuY = ref(0)
 const slashQuery = ref('')
+const editorBodyRef = ref<HTMLElement | null>(null)
+
+interface RemoteCursorMarker {
+  clientId: number
+  name: string
+  avatarUrl?: string
+  color: string
+  top: number
+  left: number
+}
+
+const remoteCursorMarkers = ref<RemoteCursorMarker[]>([])
+let cursorUpdateTimer: number | null = null
+let scrollContainer: HTMLElement | null = null
+
+function clampSelectionPos(pos: number, size: number) {
+  return Math.max(1, Math.min(pos, size + 1))
+}
+
+function queueRemoteCursorUpdate() {
+  if (cursorUpdateTimer !== null) {
+    window.cancelAnimationFrame(cursorUpdateTimer)
+  }
+  cursorUpdateTimer = window.requestAnimationFrame(() => {
+    cursorUpdateTimer = null
+    updateRemoteCursorMarkers()
+  })
+}
+
+function updateRemoteCursorMarkers() {
+  const currentEditor = editor.value
+  const body = editorBodyRef.value
+  const scroller = scrollContainer
+  if (!currentEditor || !body || !scroller) {
+    remoteCursorMarkers.value = []
+    return
+  }
+
+  const containerRect = body.getBoundingClientRect()
+  const docSize = currentEditor.state.doc.content.size
+  const nextMarkers: RemoteCursorMarker[] = []
+
+  props.remoteCursors.forEach((cursor) => {
+    const selection = cursor.selection
+    if (!selection) return
+
+    const pos = clampSelectionPos(selection.head, docSize)
+    try {
+      const coords = currentEditor.view.coordsAtPos(pos)
+      nextMarkers.push({
+        clientId: cursor.clientId,
+        name: cursor.name,
+        avatarUrl: cursor.avatarUrl,
+        color: cursor.color || '#3b82f6',
+        top: coords.top - containerRect.top + scroller.scrollTop,
+        left: coords.left - containerRect.left + scroller.scrollLeft,
+      })
+    } catch {
+      // Ignore invalid selection positions from stale awareness state.
+    }
+  })
+
+  remoteCursorMarkers.value = nextMarkers
+}
+
+function emitLocalSelection() {
+  const currentEditor = editor.value
+  if (!currentEditor) {
+    emit('local-selection-change', null)
+    return
+  }
+  const { anchor, head } = currentEditor.state.selection
+  emit('local-selection-change', { anchor, head })
+}
+
+function detachScrollListener() {
+  if (!scrollContainer) return
+  scrollContainer.removeEventListener('scroll', queueRemoteCursorUpdate)
+  scrollContainer = null
+}
+
+function attachScrollListener() {
+  detachScrollListener()
+  const body = editorBodyRef.value
+  if (!body) return
+  scrollContainer = body.querySelector('.d-editor-content') as HTMLElement | null
+  scrollContainer?.addEventListener('scroll', queueRemoteCursorUpdate, { passive: true })
+}
 
 const editor = useEditor({
   extensions: [
@@ -109,12 +199,11 @@ const editor = useEditor({
     TableHeader,
   ],
   content: props.modelJson ?? props.modelValue,
-    editable: !props.readOnly,
+  editable: !props.readOnly,
   onUpdate: ({ editor: currentEditor }) => {
     emit('update:modelValue', currentEditor.getHTML())
     emit('update:modelJson', currentEditor.getJSON() as Record<string, unknown>)
 
-    // 检测 Slash 命令
     const { $from } = currentEditor.state.selection
     const text = currentEditor.state.doc.textBetween(Math.max(0, $from.pos - 50), $from.pos)
     const match = text.match(/\/(\w*)$/)
@@ -122,14 +211,21 @@ const editor = useEditor({
     if (match) {
       slashQuery.value = match[1] || ''
       slashMenuVisible.value = true
-
-      // 获取光标位置
       const coords = currentEditor.view.coordsAtPos($from.pos)
       slashMenuX.value = coords.left
       slashMenuY.value = coords.top
     } else {
       slashMenuVisible.value = false
     }
+
+    queueRemoteCursorUpdate()
+  },
+  onSelectionUpdate: () => {
+    emitLocalSelection()
+    queueRemoteCursorUpdate()
+  },
+  onBlur: () => {
+    emit('local-selection-change', null)
   },
 })
 
@@ -140,6 +236,7 @@ watch(
     if (!currentEditor || !value) return
     if (JSON.stringify(value) === JSON.stringify(currentEditor.getJSON())) return
     currentEditor.commands.setContent(value)
+    queueRemoteCursorUpdate()
   },
 )
 
@@ -151,6 +248,7 @@ watch(
     currentEditor.setEditable(!readOnly)
   },
 )
+
 watch(
   () => props.modelValue,
   (value) => {
@@ -158,16 +256,70 @@ watch(
     if (!currentEditor) return
     if (value === currentEditor.getHTML()) return
     currentEditor.commands.setContent(value)
+    queueRemoteCursorUpdate()
   },
 )
 
+watch(
+  () => props.remoteCursors,
+  () => {
+    queueRemoteCursorUpdate()
+  },
+  { deep: true },
+)
+
+watch(
+  () => editor.value,
+  async (currentEditor) => {
+    if (!currentEditor) return
+    await nextTick()
+    attachScrollListener()
+    emitLocalSelection()
+    queueRemoteCursorUpdate()
+  },
+  { immediate: true },
+)
+
+onMounted(() => {
+  attachScrollListener()
+  window.addEventListener('resize', queueRemoteCursorUpdate)
+})
+
+onBeforeUnmount(() => {
+  if (cursorUpdateTimer !== null) {
+    window.cancelAnimationFrame(cursorUpdateTimer)
+    cursorUpdateTimer = null
+  }
+  detachScrollListener()
+  window.removeEventListener('resize', queueRemoteCursorUpdate)
+})
 </script>
 
 <template>
   <div class="d-editor flex h-full min-h-0 flex-col bg-base-100">
     <DEditorToolbar :editor="editor ?? null" :tools="props.tools" />
 
-    <div class="d-editor-body relative min-h-0 flex-1 overflow-hidden">
+    <div ref="editorBodyRef" class="d-editor-body relative min-h-0 flex-1 overflow-hidden">
+      <div class="d-editor-remote-cursor-layer" aria-hidden="true">
+        <div
+          v-for="marker in remoteCursorMarkers"
+          :key="marker.clientId"
+          class="d-editor-remote-cursor"
+          :style="{
+            top: `${marker.top}px`,
+            left: `${marker.left}px`,
+            '--cursor-color': marker.color,
+          }"
+        >
+          <span class="d-editor-remote-cursor-line" />
+          <div class="d-editor-remote-cursor-card">
+            <img v-if="marker.avatarUrl" :src="marker.avatarUrl" :alt="marker.name" class="d-editor-remote-cursor-avatar" />
+            <span v-else class="d-editor-remote-cursor-avatar d-editor-remote-cursor-avatar-fallback">{{ marker.name.slice(0, 1).toUpperCase() }}</span>
+            <span class="d-editor-remote-cursor-name">{{ marker.name }}</span>
+          </div>
+        </div>
+      </div>
+
       <EditorContent
         v-if="editor"
         :editor="editor"
@@ -182,7 +334,6 @@ watch(
       />
     </div>
 
-    <!-- Slash Menu -->
     <DEditorSlashMenu
       :editor="editor ?? null"
       :visible="slashMenuVisible"

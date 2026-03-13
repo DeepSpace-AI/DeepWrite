@@ -94,6 +94,46 @@ func GetWorkSpaceByID(ctx context.Context, id string) (Workspace, error) {
 	return ws, err
 }
 
+func ListWorkspaceMembers(ctx context.Context, workspaceID string) ([]Members, error) {
+	var members []Members
+	err := database.DB.WithContext(ctx).
+		Where("workspace_id = ?", strings.TrimSpace(workspaceID)).
+		Order("role asc, user_id asc").
+		Find(&members).Error
+	return members, err
+}
+
+func GetWorkspaceMember(ctx context.Context, workspaceID, userID string) (Members, error) {
+	var member Members
+	err := database.DB.WithContext(ctx).
+		Where("workspace_id = ? AND user_id = ?", strings.TrimSpace(workspaceID), strings.TrimSpace(userID)).
+		First(&member).Error
+	return member, err
+}
+
+func UpdateWorkspaceMemberRole(ctx context.Context, workspaceID, userID, role string) (Members, error) {
+	member, err := GetWorkspaceMember(ctx, workspaceID, userID)
+	if err != nil {
+		return Members{}, err
+	}
+
+	member.Role = strings.TrimSpace(role)
+	err = database.DB.WithContext(ctx).
+		Model(&Members{}).
+		Where("workspace_id = ? AND user_id = ?", strings.TrimSpace(workspaceID), strings.TrimSpace(userID)).
+		Update("role", member.Role).Error
+	if err != nil {
+		return Members{}, err
+	}
+
+	return member, nil
+}
+
+func RemoveWorkspaceMember(ctx context.Context, workspaceID, userID string) error {
+	return database.DB.WithContext(ctx).
+		Delete(&Members{}, "workspace_id = ? AND user_id = ?", strings.TrimSpace(workspaceID), strings.TrimSpace(userID)).Error
+}
+
 func ListByUser(ctx context.Context, userID string, limit, offset int) ([]Workspace, error) {
 	query := database.DB.WithContext(ctx).
 		Model(&Workspace{}).
@@ -281,7 +321,7 @@ func UpsertWorkspaceFile(ctx context.Context, input UpsertWorkspaceFileInput) (W
 	err := database.DB.WithContext(ctx).
 		Clauses(clause.OnConflict{
 			Columns:   []clause.Column{{Name: "object_key"}},
-			DoUpdates: clause.AssignmentColumns([]string{"workspace_id", "folder_id", "file_name", "content_type", "size", "etag", "uploaded_by", "updated_at"}),
+			DoUpdates: clause.AssignmentColumns([]string{"workspace_id", "folder_id", "file_name", "content_type", "size", "e_tag", "uploaded_by", "updated_at"}),
 		}).
 		Create(&file).Error
 	if err != nil {

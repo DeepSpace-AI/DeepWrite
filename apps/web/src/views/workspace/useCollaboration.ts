@@ -4,10 +4,22 @@ import { gatewayBase } from '@/api/http'
 import { getCollabToken } from '@/api/document'
 import { GatewayYjsProvider } from '@/collab/gatewayProvider'
 
+interface RemoteSelectionState {
+  anchor: number
+  head: number
+}
+
 export interface RemoteUserState {
   clientId: number
   name: string
+  avatarUrl?: string
   color?: string
+  selection?: RemoteSelectionState
+}
+
+interface LocalCollabUser {
+  name: string
+  avatarUrl?: string
 }
 
 export interface CollabState {
@@ -21,7 +33,37 @@ const RECONNECT_BASE_DELAY_MS = 1000
 const RECONNECT_MAX_DELAY_MS = 15000
 const RECONNECT_MAX_ATTEMPTS = 8
 
-export function useCollaboration(documentId: string, userName: string) {
+const COLLAB_COLORS = [
+  '#ef4444',
+  '#f97316',
+  '#eab308',
+  '#22c55e',
+  '#06b6d4',
+  '#3b82f6',
+  '#8b5cf6',
+  '#ec4899',
+]
+
+function colorByClientId(clientId: number) {
+  return COLLAB_COLORS[Math.abs(clientId) % COLLAB_COLORS.length] || '#3b82f6'
+}
+
+function normalizeSelection(value: unknown): RemoteSelectionState | undefined {
+  if (!value || typeof value !== 'object') return undefined
+  const candidate = value as { anchor?: unknown, head?: unknown }
+  if (typeof candidate.anchor !== 'number' || typeof candidate.head !== 'number') {
+    return undefined
+  }
+  if (!Number.isFinite(candidate.anchor) || !Number.isFinite(candidate.head)) {
+    return undefined
+  }
+  return {
+    anchor: candidate.anchor,
+    head: candidate.head,
+  }
+}
+
+export function useCollaboration(documentId: string, localUser: LocalCollabUser) {
   // Yjs document and provider
   const yjsDoc = ref<Y.Doc | null>(null)
   const provider = ref<GatewayYjsProvider | null>(null)
@@ -141,7 +183,12 @@ export function useCollaboration(documentId: string, userName: string) {
 
       // Create Yjs doc and provider
       const doc = yjsDoc.value ?? new Y.Doc()
-      const prov = new GatewayYjsProvider(doc, wsUrl, userName, undefined, {
+      const localColor = colorByClientId(doc.clientID)
+      const prov = new GatewayYjsProvider(doc, wsUrl, {
+        name: localUser.name,
+        avatarUrl: localUser.avatarUrl || '',
+        color: localColor,
+      }, undefined, {
         onOpen: () => {
           if (thisConnectSequence !== connectSequence) {
             return
@@ -202,17 +249,20 @@ export function useCollaboration(documentId: string, userName: string) {
           if (clientId === doc.clientID) {
             return
           }
-          const user = clientState?.user as { name?: string } | undefined
+          const user = clientState?.user as { name?: string, avatarUrl?: string, color?: string } | undefined
           if (user?.name) {
+            const selection = normalizeSelection(clientState?.selection)
             users.push({
               clientId,
               name: user.name,
-              color: clientState?.color as string | undefined,
+              avatarUrl: user.avatarUrl || '',
+              color: user.color || (clientState?.color as string | undefined) || colorByClientId(clientId),
+              selection,
             })
           }
         })
 
-        remoteUsers.value = users
+        remoteUsers.value = users.sort((a, b) => a.name.localeCompare(b.name, 'zh-CN'))
       }
 
       // Initial sync of awareness states

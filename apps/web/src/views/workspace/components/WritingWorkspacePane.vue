@@ -20,13 +20,14 @@ const props = defineProps<{
   uploadingFiles: boolean
   submitting: boolean
   resourceErrorMessage?: string
+  uploadStatusMessage?: string
   showWritingEditor: boolean
   selectedDocument: WorkspaceDocument | null
   editorContent: string
   editorJson: Record<string, unknown> | null
   headerDocument: WorkspaceDocument | null
   headerCollaborators: Collaborator[]
-  remoteCollaborators: Array<{ clientId: number; name: string; color?: string }>
+  remoteCollaborators: Array<{ clientId: number; name: string; avatarUrl?: string; color?: string; selection?: { anchor: number; head: number } }>
   isAutoSaving: boolean
   readOnly?: boolean
   collabError?: string
@@ -55,6 +56,7 @@ const emit = defineEmits<{
   (e: 'update:selectedFileIds', value: string[]): void
   (e: 'update:editorContent', value: string): void
   (e: 'update:editorJson', value: Record<string, unknown> | null): void
+  (e: 'collab-selection-change', value: { anchor: number; head: number } | null): void
   (e: 'save-draft'): void
   (e: 'exit-editor'): void
 }>()
@@ -126,6 +128,15 @@ const collabStatusText = computed(() => {
 })
 
 const onlineCollaboratorCount = computed(() => props.headerCollaborators.length)
+
+function collaboratorAvatarStyle(color?: string) {
+  if (!color) return undefined
+  return {
+    backgroundColor: `${color}22`,
+    borderColor: color,
+    color,
+  }
+}
 </script>
 
 <template>
@@ -144,6 +155,7 @@ const onlineCollaboratorCount = computed(() => props.headerCollaborators.length)
     :uploading-files="uploadingFiles"
     :submitting="submitting"
     :error-message="resourceErrorMessage"
+    :upload-status-message="uploadStatusMessage"
     @select-root="emit('select-root')"
     @select-folder="emit('select-folder', $event)"
     @toggle-folder="emit('toggle-folder', $event)"
@@ -226,7 +238,10 @@ const onlineCollaboratorCount = computed(() => props.headerCollaborators.length)
               class="avatar tooltip tooltip-bottom"
               :data-tip="`${person.name} (online)`"
             >
-              <div class="w-7 border border-base-100 bg-base-300 text-[10px] text-base-content">
+              <div
+                class="w-7 border border-base-100 bg-base-300 text-[10px] text-base-content"
+                :style="collaboratorAvatarStyle(person.color)"
+              >
                 <img v-if="person.avatarUrl" :src="person.avatarUrl" :alt="person.name" />
                 <span v-else class="inline-flex h-full w-full items-center justify-center">{{ collaboratorInitial(person.name) }}</span>
               </div>
@@ -257,7 +272,9 @@ const onlineCollaboratorCount = computed(() => props.headerCollaborators.length)
         v-model="contentProxy"
         :model-json="editorJson"
         :read-only="readOnly"
+        :remote-cursors="remoteCollaborators"
         @update:model-json="emit('update:editorJson', $event)"
+        @local-selection-change="emit('collab-selection-change', $event)"
       />
     </div>
   </main>

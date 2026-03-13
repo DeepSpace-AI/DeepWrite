@@ -30,6 +30,7 @@ const props = defineProps<{
   uploadingFiles: boolean
   submitting: boolean
   errorMessage?: string
+  uploadStatusMessage?: string
 }>()
 
 const emit = defineEmits<{
@@ -278,6 +279,18 @@ watch(
 
     <div v-if="errorMessage" class="border-b border-base-300 bg-error/8 px-4 py-2 text-xs text-error">
       {{ errorMessage }}
+    </div>
+
+    <div
+      v-if="uploadStatusMessage"
+      class="border-b border-base-300 px-4 py-2 text-xs"
+      :class="uploadingFiles ? 'bg-info/10 text-info' : 'bg-success/10 text-success'
+      "
+    >
+      <div class="flex items-center gap-2">
+        <span v-if="uploadingFiles" class="loading loading-spinner loading-xs" />
+        <span>{{ uploadStatusMessage }}</span>
+      </div>
     </div>
 
     <div class="min-h-0 flex-1 overflow-hidden">

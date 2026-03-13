@@ -51,4 +51,5 @@ export interface Collaborator {
   id: string
   name: string
   avatarUrl?: string
+  color?: string
 }

@@ -51,3 +51,7 @@ type ResolveWorkspaceInvitationRequest struct {
 	Token       string `json:"token" binding:"omitempty"`
 	ActionToken string `json:"action_token" binding:"omitempty"`
 }
+
+type UpdateWorkspaceMemberRoleRequest struct {
+	Role string `json:"role" binding:"required,oneof=admin editor viewer"`
+}

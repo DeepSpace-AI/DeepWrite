@@ -35,6 +35,7 @@ const {
   currentFolderDocuments,
   currentFolderFiles,
   errorMessage,
+  uploadStatusMessage,
   isLoadingFolders,
   isLoadingDocuments,
   isLoadingFiles,
@@ -108,6 +109,8 @@ const headerCollaborators = computed<Collaborator[]>(() => {
     collaborators.push({
       id: `remote-${person.clientId}`,
       name: person.name,
+      avatarUrl: person.avatarUrl || '',
+      color: person.color,
     })
   })
 
@@ -282,12 +285,29 @@ function beginEditDocument(doc: WorkspaceDocument) {
   if (currentCollaboration.value) {
     currentCollaboration.value.disconnect()
   }
-  const collaboration = useCollaboration(doc.id, collabUserName.value)
+  const collaboration = useCollaboration(doc.id, {
+    name: collabUserName.value,
+    avatarUrl: userStore.user?.avatarUrl || '',
+  })
   currentCollaboration.value = collaboration
   collaboration.connect().catch((err) => {
     collabError.value = err instanceof Error ? err.message : 'Failed to connect'
     console.error('[beginEditDocument] Collab error:', err)
   })
+}
+
+function handleCollabSelectionChange(selection: { anchor: number, head: number } | null) {
+  const prov = currentCollaboration.value?.provider
+  if (!prov) {
+    return
+  }
+
+  if (!selection) {
+    prov.clearLocalSelection()
+    return
+  }
+
+  prov.setLocalSelection(selection.anchor, selection.head)
 }
 
 function exitEditor() {
@@ -542,6 +562,7 @@ onBeforeUnmount(() => {
         :uploading-files="isUploadingFiles"
         :submitting="isSubmitting"
         :resource-error-message="errorMessage"
+        :upload-status-message="uploadStatusMessage"
         :show-writing-editor="showWritingEditor"
         :selected-document="selectedDocument"
         :editor-content="editorContent"
@@ -574,6 +595,7 @@ onBeforeUnmount(() => {
         @update:selected-file-ids="handleSelectedFileIdsUpdate($event)"
         @update:editor-content="editorContent = $event"
         @update:editor-json="editorJson = $event"
+        @collab-selection-change="handleCollabSelectionChange($event)"
         @save-draft="saveDraft"
         @exit-editor="exitEditor"
       />

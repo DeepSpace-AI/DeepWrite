@@ -55,12 +55,31 @@ export function useWorkspaceResources(workspaceId: Ref<string>) {
   const selectedFolderId = ref<string | null>(null)
   const selectedFileIds = ref<string[]>([])
   const errorMessage = ref('')
+  const uploadStatusMessage = ref('')
 
   const isLoadingFolders = ref(false)
   const isLoadingDocuments = ref(false)
   const isLoadingFiles = ref(false)
   const isMutating = ref(false)
   const isUploadingFiles = ref(false)
+  let uploadStatusTimer: ReturnType<typeof setTimeout> | null = null
+
+  function clearUploadStatusTimer() {
+    if (!uploadStatusTimer) return
+    clearTimeout(uploadStatusTimer)
+    uploadStatusTimer = null
+  }
+
+  function setUploadStatusMessage(message: string, autoClearMS = 0) {
+    clearUploadStatusTimer()
+    uploadStatusMessage.value = message
+    if (autoClearMS > 0) {
+      uploadStatusTimer = setTimeout(() => {
+        uploadStatusMessage.value = ''
+        uploadStatusTimer = null
+      }, autoClearMS)
+    }
+  }
 
   const folderMap = computed<Record<string, WorkspaceFolder>>(() => {
     const map: Record<string, WorkspaceFolder> = {}
@@ -136,6 +155,8 @@ export function useWorkspaceResources(workspaceId: Ref<string>) {
 
   function clearError() {
     errorMessage.value = ''
+    clearUploadStatusTimer()
+    uploadStatusMessage.value = ''
   }
 
   function resetState() {
@@ -409,10 +430,14 @@ export function useWorkspaceResources(workspaceId: Ref<string>) {
 
     isUploadingFiles.value = true
     clearError()
+    setUploadStatusMessage(`正在上传 0/${filesToUpload.length} 个文件...`)
     const uploaded: WorkspaceFile[] = []
 
     try {
-      for (const file of filesToUpload) {
+      for (let i = 0; i < filesToUpload.length; i++) {
+        const file = filesToUpload[i]!
+        setUploadStatusMessage(`正在上传 ${i + 1}/${filesToUpload.length}：${file.name}`)
+
         const ticket = await presignWorkspaceUpload(workspaceId.value, {
           folder_id: selectedFolderId.value,
           file_name: file.name,
@@ -444,9 +469,13 @@ export function useWorkspaceResources(workspaceId: Ref<string>) {
       }
 
       await loadFiles(selectedFolderId.value)
+      if (uploaded.length > 0) {
+        setUploadStatusMessage(`上传成功：${uploaded.length} 个文件`, 4000)
+      }
       return uploaded
     } catch (error) {
       updateError(error, '上传文件失败')
+      setUploadStatusMessage('上传失败，请重试', 4000)
       return []
     } finally {
       isUploadingFiles.value = false
@@ -524,6 +553,7 @@ export function useWorkspaceResources(workspaceId: Ref<string>) {
     currentFolderDocuments,
     currentFolderFiles,
     errorMessage,
+    uploadStatusMessage,
     isLoadingFolders,
     isLoadingDocuments,
     isLoadingFiles,

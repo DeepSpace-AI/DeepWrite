@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/deepwrite/serivces/gateway/models/user"
 	"github.com/deepwrite/serivces/gateway/models/workspace"
 	"github.com/deepwrite/serivces/gateway/pkg/config"
 	"github.com/deepwrite/serivces/gateway/pkg/request"
@@ -1130,6 +1131,243 @@ func (h *WorkspaceHandler) BatchDeleteFiles(c *gin.Context) {
 		"deleted_ids": deletableIDs,
 		"failed":      failed,
 	})
+}
+
+// @Summary      工作区成员列表
+// @Description  获取工作区成员列表（需 owner/admin 权限）
+// @Tags         Workspace
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        id path string true "工作区ID"
+// @Success      200 {object} response.Response "获取成功"
+// @Failure      401 {object} response.Response "未授权"
+// @Failure      403 {object} response.Response "无权限访问"
+// @Failure      404 {object} response.Response "工作区不存在"
+// @Failure      500 {object} response.Response "服务器错误"
+// @Router       /workspaces/{id}/members [get]
+func (h *WorkspaceHandler) ListMembers(c *gin.Context) {
+	userID := strings.TrimSpace(c.GetString("user_id"))
+	if userID == "" {
+		response.Failed(c, response.ErrorUnauthorizedCode, "unauthorized")
+		return
+	}
+
+	workspaceID := strings.TrimSpace(c.Param("id"))
+	if workspaceID == "" {
+		response.Failed(c, response.ErrorBadRequestCode, "workspace id is required")
+		return
+	}
+
+	ws, err := workspace.GetWorkSpaceByID(c.Request.Context(), workspaceID)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			response.Failed(c, 404, "工作区不存在")
+			return
+		}
+		response.Failed(c, response.ErrorUnknownCode, "获取工作区失败")
+		return
+	}
+
+	if !ws.IsAdmin(userID) {
+		response.Failed(c, response.ErrorForbiddenCode, "无权限查看成员")
+		return
+	}
+
+	members, err := workspace.ListWorkspaceMembers(c.Request.Context(), workspaceID)
+	if err != nil {
+		response.Failed(c, response.ErrorUnknownCode, "获取成员列表失败")
+		return
+	}
+
+	rows := make([]gin.H, 0, len(members))
+	for _, member := range members {
+		profile, profileErr := user.GetUserByID(c.Request.Context(), member.UserId)
+		if profileErr != nil {
+			rows = append(rows, gin.H{
+				"user_id": member.UserId,
+				"role":    member.Role,
+			})
+			continue
+		}
+
+		rows = append(rows, gin.H{
+			"user_id":            member.UserId,
+			"role":               member.Role,
+			"email":              strings.TrimSpace(profile.Email),
+			"display_name":       strings.TrimSpace(profile.UserProfile.DisplayName),
+			"avatar_url":         strings.TrimSpace(profile.UserProfile.AvatarURL),
+			"status":             strings.TrimSpace(profile.Status),
+			"is_workspace_owner": member.Role == workspace.RoleOwner,
+		})
+	}
+
+	response.Success(c, response.SuccessCode, rows)
+}
+
+// @Summary      更新工作区成员角色
+// @Description  更新成员角色（需 owner/admin 权限）
+// @Tags         Workspace
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        id path string true "工作区ID"
+// @Param        user_id path string true "成员用户ID"
+// @Param        request body request.UpdateWorkspaceMemberRoleRequest true "角色参数"
+// @Success      200 {object} response.Response "更新成功"
+// @Failure      400 {object} response.Response "请求参数错误"
+// @Failure      401 {object} response.Response "未授权"
+// @Failure      403 {object} response.Response "无权限操作"
+// @Failure      404 {object} response.Response "成员不存在"
+// @Failure      500 {object} response.Response "服务器错误"
+// @Router       /workspaces/{id}/members/{user_id} [put]
+func (h *WorkspaceHandler) UpdateMemberRole(c *gin.Context) {
+	operatorID := strings.TrimSpace(c.GetString("user_id"))
+	if operatorID == "" {
+		response.Failed(c, response.ErrorUnauthorizedCode, "unauthorized")
+		return
+	}
+
+	workspaceID := strings.TrimSpace(c.Param("id"))
+	targetUserID := strings.TrimSpace(c.Param("user_id"))
+	if workspaceID == "" || targetUserID == "" {
+		response.Failed(c, response.ErrorBadRequestCode, "workspace id and user id are required")
+		return
+	}
+
+	var req request.UpdateWorkspaceMemberRoleRequest
+	if ok := request.ValidateStruct(c, &req); !ok {
+		return
+	}
+
+	ws, err := workspace.GetWorkSpaceByID(c.Request.Context(), workspaceID)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			response.Failed(c, 404, "工作区不存在")
+			return
+		}
+		response.Failed(c, response.ErrorUnknownCode, "获取工作区失败")
+		return
+	}
+
+	if !ws.IsAdmin(operatorID) {
+		response.Failed(c, response.ErrorForbiddenCode, "无权限管理成员")
+		return
+	}
+
+	targetMember, err := workspace.GetWorkspaceMember(c.Request.Context(), workspaceID, targetUserID)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			response.Failed(c, 404, "成员不存在")
+			return
+		}
+		response.Failed(c, response.ErrorUnknownCode, "获取成员失败")
+		return
+	}
+
+	if targetMember.Role == workspace.RoleOwner {
+		response.Failed(c, response.ErrorForbiddenCode, "不能修改所有者角色")
+		return
+	}
+
+	operatorRole := ws.GetUserRole(operatorID)
+	nextRole := strings.TrimSpace(req.Role)
+
+	if operatorRole == workspace.RoleAdmin {
+		if targetMember.Role == workspace.RoleAdmin {
+			response.Failed(c, response.ErrorForbiddenCode, "管理员不能修改其他管理员")
+			return
+		}
+		if nextRole == workspace.RoleAdmin {
+			response.Failed(c, response.ErrorForbiddenCode, "管理员不能授予管理员角色")
+			return
+		}
+	}
+
+	updated, err := workspace.UpdateWorkspaceMemberRole(c.Request.Context(), workspaceID, targetUserID, nextRole)
+	if err != nil {
+		response.Failed(c, response.ErrorUnknownCode, "更新成员角色失败")
+		return
+	}
+
+	response.Success(c, response.SuccessCode, updated)
+}
+
+// @Summary      移除工作区成员
+// @Description  移除成员（需 owner/admin 权限）
+// @Tags         Workspace
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        id path string true "工作区ID"
+// @Param        user_id path string true "成员用户ID"
+// @Success      200 {object} response.Response "移除成功"
+// @Failure      401 {object} response.Response "未授权"
+// @Failure      403 {object} response.Response "无权限操作"
+// @Failure      404 {object} response.Response "成员不存在"
+// @Failure      500 {object} response.Response "服务器错误"
+// @Router       /workspaces/{id}/members/{user_id} [delete]
+func (h *WorkspaceHandler) RemoveMember(c *gin.Context) {
+	operatorID := strings.TrimSpace(c.GetString("user_id"))
+	if operatorID == "" {
+		response.Failed(c, response.ErrorUnauthorizedCode, "unauthorized")
+		return
+	}
+
+	workspaceID := strings.TrimSpace(c.Param("id"))
+	targetUserID := strings.TrimSpace(c.Param("user_id"))
+	if workspaceID == "" || targetUserID == "" {
+		response.Failed(c, response.ErrorBadRequestCode, "workspace id and user id are required")
+		return
+	}
+
+	ws, err := workspace.GetWorkSpaceByID(c.Request.Context(), workspaceID)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			response.Failed(c, 404, "工作区不存在")
+			return
+		}
+		response.Failed(c, response.ErrorUnknownCode, "获取工作区失败")
+		return
+	}
+
+	if !ws.IsAdmin(operatorID) {
+		response.Failed(c, response.ErrorForbiddenCode, "无权限管理成员")
+		return
+	}
+
+	if operatorID == targetUserID {
+		response.Failed(c, response.ErrorForbiddenCode, "不能移除自己")
+		return
+	}
+
+	targetMember, err := workspace.GetWorkspaceMember(c.Request.Context(), workspaceID, targetUserID)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			response.Failed(c, 404, "成员不存在")
+			return
+		}
+		response.Failed(c, response.ErrorUnknownCode, "获取成员失败")
+		return
+	}
+
+	if targetMember.Role == workspace.RoleOwner {
+		response.Failed(c, response.ErrorForbiddenCode, "不能移除所有者")
+		return
+	}
+
+	operatorRole := ws.GetUserRole(operatorID)
+	if operatorRole == workspace.RoleAdmin && targetMember.Role == workspace.RoleAdmin {
+		response.Failed(c, response.ErrorForbiddenCode, "管理员不能移除其他管理员")
+		return
+	}
+
+	if err := workspace.RemoveWorkspaceMember(c.Request.Context(), workspaceID, targetUserID); err != nil {
+		response.Failed(c, response.ErrorUnknownCode, "移除成员失败")
+		return
+	}
+
+	response.Success(c, response.SuccessCode, gin.H{"user_id": targetUserID})
 }
 
 // @Summary      工作区邀请列表

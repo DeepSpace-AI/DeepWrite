@@ -69,6 +69,9 @@ func SetupAPIRoutes(r *gin.Engine) {
 			workspaceGroup.GET("/:id/invitations", workspaceHandler.ListInvitations)
 			workspaceGroup.POST("/:id/invitations", workspaceHandler.CreateInvitation)
 			workspaceGroup.POST("/:id/invitations/:invite_id/revoke", workspaceHandler.RevokeInvitation)
+			workspaceGroup.GET("/:id/members", workspaceHandler.ListMembers)
+			workspaceGroup.PUT("/:id/members/:user_id", workspaceHandler.UpdateMemberRole)
+			workspaceGroup.DELETE("/:id/members/:user_id", workspaceHandler.RemoveMember)
 		}
 
 		invitationGroup := v1.Group("/invitations")
