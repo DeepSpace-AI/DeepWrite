@@ -17,6 +17,12 @@ type SaveDocumentVersionRequest struct {
 	Summary     string         `json:"summary"`
 }
 
+type UpdateDocumentMetaRequest struct {
+	Title       string `json:"title" binding:"omitempty,max=255"`
+	FolderID    string `json:"folder_id" binding:"omitempty,uuid"`
+	ClearFolder bool   `json:"clear_folder"`
+}
+
 type RestoreDocumentVersionRequest struct {
 	Version int64 `json:"version" binding:"required,min=1"`
 }

@@ -22,6 +22,12 @@ type SaveVersionInput struct {
 	CreatedBy   string
 }
 
+type UpdateMetaInput struct {
+	Title       string
+	FolderID    *string
+	ClearFolder bool
+}
+
 func nullableUUID(value string) *string {
 	trimmed := strings.TrimSpace(value)
 	if trimmed == "" {
@@ -103,6 +109,38 @@ func ListByWorkspace(ctx context.Context, workspaceID string, limit, offset int)
 func Delete(ctx context.Context, documentID string) error {
 	return database.DB.WithContext(ctx).
 		Delete(&Document{}, "id = ?", documentID).Error
+}
+
+func UpdateMeta(ctx context.Context, documentID string, input UpdateMetaInput) (Document, error) {
+	var doc Document
+	err := database.DB.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).
+			Where("id = ?", strings.TrimSpace(documentID)).
+			First(&doc).Error; err != nil {
+			return err
+		}
+
+		updates := map[string]any{}
+		if title := strings.TrimSpace(input.Title); title != "" {
+			updates["title"] = title
+		}
+
+		if input.ClearFolder {
+			updates["folder_id"] = nil
+		} else if input.FolderID != nil {
+			updates["folder_id"] = input.FolderID
+		}
+
+		if len(updates) > 0 {
+			if err := tx.Model(&Document{}).Where("id = ?", doc.ID).Updates(updates).Error; err != nil {
+				return err
+			}
+		}
+
+		return tx.Where("id = ?", doc.ID).First(&doc).Error
+	})
+
+	return doc, err
 }
 
 func SaveVersion(ctx context.Context, input SaveVersionInput) (Document, Version, error) {

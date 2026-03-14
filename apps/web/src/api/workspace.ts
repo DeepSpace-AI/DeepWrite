@@ -89,6 +89,12 @@ export interface CompleteWorkspaceUploadInput {
   file_name: string
 }
 
+export interface UpdateWorkspaceFileInput {
+  folder_id?: string | null
+  clear_folder?: boolean
+  file_name?: string
+}
+
 export interface WorkspaceFileDetailResponse {
   file: WorkspaceFile
   preview_url?: string
@@ -228,6 +234,15 @@ export async function completeWorkspaceUpload(workspaceId: string, input: Comple
     file_name: input.file_name,
   })
   return unwrapResponse<WorkspaceFileDetailResponse>(res)
+}
+
+export async function updateWorkspaceFile(workspaceId: string, fileId: string, input: UpdateWorkspaceFileInput): Promise<WorkspaceFile> {
+  const res = await http.put(`/workspaces/${workspaceId}/files/${fileId}`, {
+    folder_id: input.folder_id || undefined,
+    clear_folder: input.clear_folder ?? false,
+    file_name: input.file_name,
+  })
+  return unwrapResponse<WorkspaceFile>(res)
 }
 
 export async function deleteWorkspaceFile(workspaceId: string, fileId: string): Promise<void> {

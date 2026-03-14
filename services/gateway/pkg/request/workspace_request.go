@@ -37,6 +37,12 @@ type CompleteWorkspaceUploadRequest struct {
 	FileName  string `json:"file_name" binding:"required,max=255"`
 }
 
+type UpdateWorkspaceFileRequest struct {
+	FolderID    string `json:"folder_id" binding:"omitempty,uuid"`
+	ClearFolder bool   `json:"clear_folder"`
+	FileName    string `json:"file_name" binding:"omitempty,max=255"`
+}
+
 type BatchDeleteWorkspaceFilesRequest struct {
 	FileIDs []string `json:"file_ids" binding:"required,min=1,dive,required,uuid"`
 }

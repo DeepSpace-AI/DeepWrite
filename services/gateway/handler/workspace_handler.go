@@ -953,6 +953,107 @@ func (h *WorkspaceHandler) CompleteUpload(c *gin.Context) {
 	})
 }
 
+// @Summary      更新工作区文件元数据
+// @Description  更新文件名称或所在文件夹（不移动对象存储文件）
+// @Tags         Workspace
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        id path string true "工作区ID"
+// @Param        file_id path string true "文件ID"
+// @Param        request body request.UpdateWorkspaceFileRequest true "文件元数据更新参数"
+// @Success      200 {object} response.Response "更新成功"
+// @Failure      400 {object} response.Response "请求参数错误"
+// @Failure      401 {object} response.Response "未授权"
+// @Failure      403 {object} response.Response "无权限操作"
+// @Failure      404 {object} response.Response "工作区、文件或文件夹不存在"
+// @Failure      500 {object} response.Response "服务器错误"
+// @Router       /workspaces/{id}/files/{file_id} [put]
+func (h *WorkspaceHandler) UpdateFile(c *gin.Context) {
+	userID := strings.TrimSpace(c.GetString("user_id"))
+	if userID == "" {
+		response.Failed(c, response.ErrorUnauthorizedCode, "unauthorized")
+		return
+	}
+
+	workspaceID := strings.TrimSpace(c.Param("id"))
+	fileID := strings.TrimSpace(c.Param("file_id"))
+	if workspaceID == "" || fileID == "" {
+		response.Failed(c, response.ErrorBadRequestCode, "workspace id and file id are required")
+		return
+	}
+
+	ws, err := workspace.GetWorkSpaceByID(c.Request.Context(), workspaceID)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			response.Failed(c, 404, "工作区不存在")
+			return
+		}
+		response.Failed(c, response.ErrorUnknownCode, "获取工作区失败")
+		return
+	}
+
+	if !ws.IsEditor(userID) {
+		response.Failed(c, response.ErrorForbiddenCode, "无权限更新文件")
+		return
+	}
+
+	var req request.UpdateWorkspaceFileRequest
+	if ok := request.ValidateStruct(c, &req); !ok {
+		return
+	}
+
+	file, err := workspace.GetWorkspaceFileByID(c.Request.Context(), fileID)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			response.Failed(c, 404, "文件不存在")
+			return
+		}
+		response.Failed(c, response.ErrorUnknownCode, "获取文件失败")
+		return
+	}
+
+	if file.WorkspaceID != workspaceID {
+		response.Failed(c, 404, "文件不存在")
+		return
+	}
+
+	trimmedFolderID := strings.TrimSpace(req.FolderID)
+	var folderPtr *string
+	if trimmedFolderID != "" {
+		folder, err := workspace.GetFolderByID(c.Request.Context(), trimmedFolderID)
+		if err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				response.Failed(c, 404, "文件夹不存在")
+				return
+			}
+			response.Failed(c, response.ErrorUnknownCode, "获取文件夹失败")
+			return
+		}
+		if folder.WorkspaceID != workspaceID {
+			response.Failed(c, response.ErrorBadRequestCode, "folder does not belong to workspace")
+			return
+		}
+		folderPtr = &trimmedFolderID
+	}
+
+	updated, err := workspace.UpdateWorkspaceFile(c.Request.Context(), fileID, workspace.UpdateWorkspaceFileInput{
+		FileName:    strings.TrimSpace(req.FileName),
+		FolderID:    folderPtr,
+		ClearFolder: req.ClearFolder,
+	})
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			response.Failed(c, 404, "文件不存在")
+			return
+		}
+		response.Failed(c, response.ErrorUnknownCode, "更新文件失败")
+		return
+	}
+
+	response.Success(c, response.SuccessCode, updated)
+}
+
 // @Summary      删除工作区文件
 // @Description  删除对象存储文件并删除文件元数据（需 editor/admin/owner 权限）
 // @Tags         Workspace

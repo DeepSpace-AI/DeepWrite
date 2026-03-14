@@ -1,9 +1,11 @@
 package bootstrap
 
 import (
+	"context"
 	"fmt"
 	"time"
 
+	"github.com/deepwrite/serivces/gateway/models/ai"
 	"github.com/deepwrite/serivces/gateway/models/document"
 	"github.com/deepwrite/serivces/gateway/models/user"
 	"github.com/deepwrite/serivces/gateway/models/workspace"
@@ -40,6 +42,8 @@ func SetupDB() {
 
 func AutoMigrate() {
 	if err := database.DB.AutoMigrate(
+		&ai.Provider{},
+		&ai.ProviderModel{},
 		&user.User{},
 		&user.Profile{},
 		&workspace.Workspace{},
@@ -58,6 +62,9 @@ func AutoMigrate() {
 	}
 
 	if err := database.DB.Exec(`ALTER TABLE documents ALTER COLUMN folder_id DROP NOT NULL`).Error; err != nil {
+		panic(err)
+	}
+	if err := ai.BackfillProviderRelations(context.Background()); err != nil {
 		panic(err)
 	}
 }

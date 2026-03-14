@@ -160,6 +160,8 @@ pnpm gen:openapi    # 生成 swagger 文档（gateway）
 
 Python Worker 预留服务，当前处于初始化阶段，可用于后续异步任务（如文档处理、索引、通知等）。
 
+- 实施方案文档：`services/worker/IMPLEMENTATION_PLAN.md`
+
 ## 开发建议
 
 - 新增接口后执行 `pnpm gen:openapi`，保持 Swagger 文档同步。

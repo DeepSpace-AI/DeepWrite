@@ -2,8 +2,10 @@ import { computed, ref, watch, type Ref } from 'vue'
 import { ApiError } from '@/api/http'
 import {
   createDocument,
+  deleteDocument as deleteDocumentById,
   listDocuments,
   saveDocumentVersion,
+  updateDocumentMeta,
 } from '@/api/document'
 import {
   batchDeleteWorkspaceFiles,
@@ -15,6 +17,7 @@ import {
   listWorkspaceFiles,
   listWorkspaceFolders,
   presignWorkspaceUpload,
+  updateWorkspaceFile,
   updateWorkspaceFolder,
 } from '@/api/workspace'
 import type { VisibleFolderNode, WorkspaceDocument, WorkspaceFile, WorkspaceFolder } from '@/views/workspace/types'
@@ -380,19 +383,45 @@ export function useWorkspaceResources(workspaceId: Ref<string>) {
   }
 
   async function renameDocument(documentId: string, title: string) {
+    return updateDocument(documentId, { title })
+  }
+
+  async function moveDocument(documentId: string, folderId: string | null) {
+    return updateDocument(documentId, {
+      folderId,
+      clearFolder: !folderId,
+    })
+  }
+
+  async function updateDocument(documentId: string, input: { title?: string; folderId?: string | null; clearFolder?: boolean }) {
     isMutating.value = true
     clearError()
     try {
-      const result = await saveDocumentVersion(documentId, {
-        title,
-        source: 'manual',
-        snapshot: false,
+      const result = await updateDocumentMeta(documentId, {
+        title: input.title,
+        folder_id: input.folderId,
+        clear_folder: input.clearFolder ?? false,
       })
-      upsertDocument(result.document)
-      return result.document
+      upsertDocument(result)
+      return result
     } catch (error) {
-      updateError(error, '重命名文档失败')
+      updateError(error, '更新文档失败')
       return null
+    } finally {
+      isMutating.value = false
+    }
+  }
+
+  async function deleteDocument(documentId: string) {
+    isMutating.value = true
+    clearError()
+    try {
+      await deleteDocumentById(documentId)
+      documents.value = documents.value.filter((document) => document.id !== documentId)
+      return true
+    } catch (error) {
+      updateError(error, '删除文档失败')
+      return false
     } finally {
       isMutating.value = false
     }
@@ -499,6 +528,41 @@ export function useWorkspaceResources(workspaceId: Ref<string>) {
     }
   }
 
+  async function renameFile(fileId: string, fileName: string) {
+    return updateFile(fileId, { fileName })
+  }
+
+  async function moveFile(fileId: string, folderId: string | null) {
+    const updated = await updateFile(fileId, {
+      folderId,
+      clearFolder: !folderId,
+    })
+    if (updated) {
+      selectedFileIds.value = selectedFileIds.value.filter((id) => id !== fileId)
+    }
+    return updated
+  }
+
+  async function updateFile(fileId: string, input: { fileName?: string; folderId?: string | null; clearFolder?: boolean }) {
+    if (!workspaceId.value) return null
+    isMutating.value = true
+    clearError()
+    try {
+      const updated = await updateWorkspaceFile(workspaceId.value, fileId, {
+        file_name: input.fileName,
+        folder_id: input.folderId,
+        clear_folder: input.clearFolder ?? false,
+      })
+      await loadFiles(selectedFolderId.value)
+      return updated
+    } catch (error) {
+      updateError(error, '更新文件失败')
+      return null
+    } finally {
+      isMutating.value = false
+    }
+  }
+
   async function batchDeleteFiles(fileIds: string[]) {
     if (!workspaceId.value || !fileIds.length) return false
     isMutating.value = true
@@ -568,8 +632,12 @@ export function useWorkspaceResources(workspaceId: Ref<string>) {
     deleteFolder,
     createNewDocument,
     renameDocument,
+    moveDocument,
+    deleteDocument,
     saveDocument,
     uploadFilesToCurrentFolder,
+    renameFile,
+    moveFile,
     deleteFile,
     batchDeleteFiles,
     previewFile,

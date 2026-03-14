@@ -51,6 +51,58 @@ definitions:
     - file_name
     - object_key
     type: object
+  request.CreateAIProviderModelRequest:
+    properties:
+      api_key:
+        maxLength: 8192
+        type: string
+      audio_speech_path:
+        maxLength: 255
+        type: string
+      audio_transcriptions_path:
+        maxLength: 255
+        type: string
+      base_url:
+        maxLength: 1024
+        type: string
+      chat_completions_path:
+        maxLength: 255
+        type: string
+      chat_responses_path:
+        maxLength: 255
+        type: string
+      embeddings_path:
+        maxLength: 255
+        type: string
+      enabled:
+        type: boolean
+      extra_headers:
+        additionalProperties:
+          type: string
+        type: object
+      model:
+        maxLength: 120
+        type: string
+      models_path:
+        maxLength: 255
+        type: string
+      organization:
+        maxLength: 255
+        type: string
+      provider:
+        maxLength: 64
+        type: string
+      request_model:
+        maxLength: 120
+        type: string
+      rerank_path:
+        maxLength: 255
+        type: string
+    required:
+    - api_key
+    - base_url
+    - model
+    type: object
   request.CreateDocumentRequest:
     properties:
       content_json:
@@ -195,10 +247,10 @@ definitions:
     type: object
   request.ResolveWorkspaceInvitationRequest:
     properties:
+      action_token:
+        type: string
       token:
         type: string
-    required:
-    - token
     type: object
   request.RestoreDocumentVersionRequest:
     properties:
@@ -232,6 +284,64 @@ definitions:
     required:
     - content_json
     type: object
+  request.UpdateAIProviderModelRequest:
+    properties:
+      api_key:
+        maxLength: 8192
+        type: string
+      audio_speech_path:
+        maxLength: 255
+        type: string
+      audio_transcriptions_path:
+        maxLength: 255
+        type: string
+      base_url:
+        maxLength: 1024
+        type: string
+      chat_completions_path:
+        maxLength: 255
+        type: string
+      chat_responses_path:
+        maxLength: 255
+        type: string
+      embeddings_path:
+        maxLength: 255
+        type: string
+      enabled:
+        type: boolean
+      extra_headers:
+        additionalProperties:
+          type: string
+        type: object
+      model:
+        maxLength: 120
+        type: string
+      models_path:
+        maxLength: 255
+        type: string
+      organization:
+        maxLength: 255
+        type: string
+      provider:
+        maxLength: 64
+        type: string
+      request_model:
+        maxLength: 120
+        type: string
+      rerank_path:
+        maxLength: 255
+        type: string
+    type: object
+  request.UpdateDocumentMetaRequest:
+    properties:
+      clear_folder:
+        type: boolean
+      folder_id:
+        type: string
+      title:
+        maxLength: 255
+        type: string
+    type: object
   request.UpdateFolderRequest:
     properties:
       description:
@@ -240,6 +350,27 @@ definitions:
       name:
         maxLength: 255
         type: string
+    type: object
+  request.UpdateWorkspaceFileRequest:
+    properties:
+      clear_folder:
+        type: boolean
+      file_name:
+        maxLength: 255
+        type: string
+      folder_id:
+        type: string
+    type: object
+  request.UpdateWorkspaceMemberRoleRequest:
+    properties:
+      role:
+        enum:
+        - admin
+        - editor
+        - viewer
+        type: string
+    required:
+    - role
     type: object
   request.UpdateWorkspaceRequest:
     properties:
@@ -278,7 +409,6 @@ definitions:
         type: string
     required:
     - avatar_url
-    - bio
     - display_name
     type: object
   response.Response:
@@ -340,6 +470,224 @@ info:
   title: DeepWrite Gateway API
   version: "1.0"
 paths:
+  /ai/providers:
+    get:
+      consumes:
+      - application/json
+      description: 获取 AI 提供商模型配置列表，支持按 enabled 过滤
+      parameters:
+      - description: 是否启用
+        in: query
+        name: enabled
+        type: boolean
+      - description: 分页大小
+        in: query
+        name: limit
+        type: integer
+      - description: 偏移量
+        in: query
+        name: offset
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 获取成功
+          schema:
+            $ref: '#/definitions/response.Response'
+        "400":
+          description: 请求参数错误
+          schema:
+            $ref: '#/definitions/response.Response'
+        "401":
+          description: 未授权
+          schema:
+            $ref: '#/definitions/response.Response'
+        "403":
+          description: 无权限访问
+          schema:
+            $ref: '#/definitions/response.Response'
+        "500":
+          description: 服务器错误
+          schema:
+            $ref: '#/definitions/response.Response'
+      security:
+      - BearerAuth: []
+      summary: AI 模型配置列表
+      tags:
+      - AI
+    post:
+      consumes:
+      - application/json
+      description: 创建一个新的 AI 提供商模型配置（模型、密钥、端点等）
+      parameters:
+      - description: AI 模型配置
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/request.CreateAIProviderModelRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: 创建成功
+          schema:
+            $ref: '#/definitions/response.Response'
+        "400":
+          description: 请求参数错误
+          schema:
+            $ref: '#/definitions/response.Response'
+        "401":
+          description: 未授权
+          schema:
+            $ref: '#/definitions/response.Response'
+        "403":
+          description: 无权限访问
+          schema:
+            $ref: '#/definitions/response.Response'
+        "500":
+          description: 服务器错误
+          schema:
+            $ref: '#/definitions/response.Response'
+      security:
+      - BearerAuth: []
+      summary: 创建 AI 模型配置
+      tags:
+      - AI
+  /ai/providers/{model}:
+    delete:
+      consumes:
+      - application/json
+      description: 根据模型标识删除 AI 提供商配置
+      parameters:
+      - description: 模型标识
+        in: path
+        name: model
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 删除成功
+          schema:
+            $ref: '#/definitions/response.Response'
+        "400":
+          description: 请求参数错误
+          schema:
+            $ref: '#/definitions/response.Response'
+        "401":
+          description: 未授权
+          schema:
+            $ref: '#/definitions/response.Response'
+        "403":
+          description: 无权限访问
+          schema:
+            $ref: '#/definitions/response.Response'
+        "404":
+          description: 模型配置不存在
+          schema:
+            $ref: '#/definitions/response.Response'
+        "500":
+          description: 服务器错误
+          schema:
+            $ref: '#/definitions/response.Response'
+      security:
+      - BearerAuth: []
+      summary: 删除 AI 模型配置
+      tags:
+      - AI
+    get:
+      consumes:
+      - application/json
+      description: 根据模型标识获取单个 AI 提供商配置
+      parameters:
+      - description: 模型标识
+        in: path
+        name: model
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 获取成功
+          schema:
+            $ref: '#/definitions/response.Response'
+        "400":
+          description: 请求参数错误
+          schema:
+            $ref: '#/definitions/response.Response'
+        "401":
+          description: 未授权
+          schema:
+            $ref: '#/definitions/response.Response'
+        "403":
+          description: 无权限访问
+          schema:
+            $ref: '#/definitions/response.Response'
+        "404":
+          description: 模型配置不存在
+          schema:
+            $ref: '#/definitions/response.Response'
+        "500":
+          description: 服务器错误
+          schema:
+            $ref: '#/definitions/response.Response'
+      security:
+      - BearerAuth: []
+      summary: 获取 AI 模型配置
+      tags:
+      - AI
+    put:
+      consumes:
+      - application/json
+      description: 根据模型标识更新 AI 提供商模型配置（可部分更新）
+      parameters:
+      - description: 模型标识
+        in: path
+        name: model
+        required: true
+        type: string
+      - description: AI 模型配置更新参数
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/request.UpdateAIProviderModelRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 更新成功
+          schema:
+            $ref: '#/definitions/response.Response'
+        "400":
+          description: 请求参数错误
+          schema:
+            $ref: '#/definitions/response.Response'
+        "401":
+          description: 未授权
+          schema:
+            $ref: '#/definitions/response.Response'
+        "403":
+          description: 无权限访问
+          schema:
+            $ref: '#/definitions/response.Response'
+        "404":
+          description: 模型配置不存在
+          schema:
+            $ref: '#/definitions/response.Response'
+        "500":
+          description: 服务器错误
+          schema:
+            $ref: '#/definitions/response.Response'
+      security:
+      - BearerAuth: []
+      summary: 更新 AI 模型配置
+      tags:
+      - AI
   /auth/login:
     post:
       consumes:
@@ -565,6 +913,42 @@ paths:
       tags:
       - Document
   /documents/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: 删除指定文档及其历史版本
+      parameters:
+      - description: 文档ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 删除成功
+          schema:
+            $ref: '#/definitions/response.Response'
+        "401":
+          description: 未授权
+          schema:
+            $ref: '#/definitions/response.Response'
+        "403":
+          description: 无权限删除文档
+          schema:
+            $ref: '#/definitions/response.Response'
+        "404":
+          description: 文档不存在
+          schema:
+            $ref: '#/definitions/response.Response'
+        "500":
+          description: 服务器错误
+          schema:
+            $ref: '#/definitions/response.Response'
+      summary: 删除文档
+      tags:
+      - Document
     get:
       consumes:
       - application/json
@@ -591,6 +975,52 @@ paths:
           schema:
             $ref: '#/definitions/response.Response'
       summary: 获取文档详情
+      tags:
+      - Document
+    patch:
+      consumes:
+      - application/json
+      description: 更新文档标题或所在文件夹，不会创建新版本
+      parameters:
+      - description: 文档ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: 文档元数据更新参数
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/request.UpdateDocumentMetaRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 更新成功
+          schema:
+            $ref: '#/definitions/response.Response'
+        "400":
+          description: 请求参数错误
+          schema:
+            $ref: '#/definitions/response.Response'
+        "401":
+          description: 未授权
+          schema:
+            $ref: '#/definitions/response.Response'
+        "403":
+          description: 无权限编辑文档
+          schema:
+            $ref: '#/definitions/response.Response'
+        "404":
+          description: 文档不存在
+          schema:
+            $ref: '#/definitions/response.Response'
+        "500":
+          description: 服务器错误
+          schema:
+            $ref: '#/definitions/response.Response'
+      summary: 更新文档元数据
       tags:
       - Document
     put:
@@ -1528,6 +1958,59 @@ paths:
       summary: 获取工作区文件详情
       tags:
       - Workspace
+    put:
+      consumes:
+      - application/json
+      description: 更新文件名称或所在文件夹（不移动对象存储文件）
+      parameters:
+      - description: 工作区ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: 文件ID
+        in: path
+        name: file_id
+        required: true
+        type: string
+      - description: 文件元数据更新参数
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/request.UpdateWorkspaceFileRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 更新成功
+          schema:
+            $ref: '#/definitions/response.Response'
+        "400":
+          description: 请求参数错误
+          schema:
+            $ref: '#/definitions/response.Response'
+        "401":
+          description: 未授权
+          schema:
+            $ref: '#/definitions/response.Response'
+        "403":
+          description: 无权限操作
+          schema:
+            $ref: '#/definitions/response.Response'
+        "404":
+          description: 工作区、文件或文件夹不存在
+          schema:
+            $ref: '#/definitions/response.Response'
+        "500":
+          description: 服务器错误
+          schema:
+            $ref: '#/definitions/response.Response'
+      security:
+      - BearerAuth: []
+      summary: 更新工作区文件元数据
+      tags:
+      - Workspace
   /workspaces/{id}/files/batch-delete:
     post:
       consumes:
@@ -2006,6 +2489,142 @@ paths:
       security:
       - BearerAuth: []
       summary: 撤销工作区邀请
+      tags:
+      - Workspace
+  /workspaces/{id}/members:
+    get:
+      consumes:
+      - application/json
+      description: 获取工作区成员列表（需 owner/admin 权限）
+      parameters:
+      - description: 工作区ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 获取成功
+          schema:
+            $ref: '#/definitions/response.Response'
+        "401":
+          description: 未授权
+          schema:
+            $ref: '#/definitions/response.Response'
+        "403":
+          description: 无权限访问
+          schema:
+            $ref: '#/definitions/response.Response'
+        "404":
+          description: 工作区不存在
+          schema:
+            $ref: '#/definitions/response.Response'
+        "500":
+          description: 服务器错误
+          schema:
+            $ref: '#/definitions/response.Response'
+      security:
+      - BearerAuth: []
+      summary: 工作区成员列表
+      tags:
+      - Workspace
+  /workspaces/{id}/members/{user_id}:
+    delete:
+      consumes:
+      - application/json
+      description: 移除成员（需 owner/admin 权限）
+      parameters:
+      - description: 工作区ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: 成员用户ID
+        in: path
+        name: user_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 移除成功
+          schema:
+            $ref: '#/definitions/response.Response'
+        "401":
+          description: 未授权
+          schema:
+            $ref: '#/definitions/response.Response'
+        "403":
+          description: 无权限操作
+          schema:
+            $ref: '#/definitions/response.Response'
+        "404":
+          description: 成员不存在
+          schema:
+            $ref: '#/definitions/response.Response'
+        "500":
+          description: 服务器错误
+          schema:
+            $ref: '#/definitions/response.Response'
+      security:
+      - BearerAuth: []
+      summary: 移除工作区成员
+      tags:
+      - Workspace
+    put:
+      consumes:
+      - application/json
+      description: 更新成员角色（需 owner/admin 权限）
+      parameters:
+      - description: 工作区ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: 成员用户ID
+        in: path
+        name: user_id
+        required: true
+        type: string
+      - description: 角色参数
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/request.UpdateWorkspaceMemberRoleRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 更新成功
+          schema:
+            $ref: '#/definitions/response.Response'
+        "400":
+          description: 请求参数错误
+          schema:
+            $ref: '#/definitions/response.Response'
+        "401":
+          description: 未授权
+          schema:
+            $ref: '#/definitions/response.Response'
+        "403":
+          description: 无权限操作
+          schema:
+            $ref: '#/definitions/response.Response'
+        "404":
+          description: 成员不存在
+          schema:
+            $ref: '#/definitions/response.Response'
+        "500":
+          description: 服务器错误
+          schema:
+            $ref: '#/definitions/response.Response'
+      security:
+      - BearerAuth: []
+      summary: 更新工作区成员角色
       tags:
       - Workspace
 securityDefinitions:

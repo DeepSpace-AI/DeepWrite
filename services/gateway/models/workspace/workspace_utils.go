@@ -40,6 +40,12 @@ type UpdateFolderInput struct {
 	Description string
 }
 
+type UpdateWorkspaceFileInput struct {
+	FileName    string
+	FolderID    *string
+	ClearFolder bool
+}
+
 func (w *Workspace) IsOwner(userID string) bool {
 	for _, member := range w.Members {
 		if member.UserId == userID && member.Role == RoleOwner {
@@ -362,6 +368,38 @@ func GetWorkspaceFileByID(ctx context.Context, fileID string) (WorkspaceFile, er
 	err := database.DB.WithContext(ctx).
 		Where("id = ?", strings.TrimSpace(fileID)).
 		First(&file).Error
+	return file, err
+}
+
+func UpdateWorkspaceFile(ctx context.Context, fileID string, input UpdateWorkspaceFileInput) (WorkspaceFile, error) {
+	var file WorkspaceFile
+	err := database.DB.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).
+			Where("id = ?", strings.TrimSpace(fileID)).
+			First(&file).Error; err != nil {
+			return err
+		}
+
+		updates := map[string]any{}
+		if trimmedName := strings.TrimSpace(input.FileName); trimmedName != "" {
+			updates["file_name"] = trimmedName
+		}
+
+		if input.ClearFolder {
+			updates["folder_id"] = nil
+		} else if input.FolderID != nil {
+			updates["folder_id"] = input.FolderID
+		}
+
+		if len(updates) > 0 {
+			if err := tx.Model(&WorkspaceFile{}).Where("id = ?", file.ID).Updates(updates).Error; err != nil {
+				return err
+			}
+		}
+
+		return tx.Where("id = ?", file.ID).First(&file).Error
+	})
+
 	return file, err
 }
 

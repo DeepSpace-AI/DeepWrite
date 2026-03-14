@@ -64,6 +64,7 @@ func SetupAPIRoutes(r *gin.Engine) {
 			workspaceGroup.POST("/:id/files", workspaceHandler.UploadFile)
 			workspaceGroup.POST("/:id/files/complete", workspaceHandler.CompleteUpload)
 			workspaceGroup.POST("/:id/files/batch-delete", workspaceHandler.BatchDeleteFiles)
+			workspaceGroup.PUT(":id/files/:file_id", workspaceHandler.UpdateFile)
 			workspaceGroup.DELETE("/:id/files/:file_id", workspaceHandler.DeleteFile)
 
 			workspaceGroup.GET("/:id/invitations", workspaceHandler.ListInvitations)
@@ -86,15 +87,28 @@ func SetupAPIRoutes(r *gin.Engine) {
 		documentGroup.Use(middleware.AuthMiddleware())
 		documentHandler := new(handler.DocumentHandler)
 		collabHandler := new(handler.CollabHandler)
+		aiProviderHandler := new(handler.AIProviderHandler)
 		{
 			documentGroup.POST("", documentHandler.Create)
 			documentGroup.GET("", documentHandler.List)
 			documentGroup.GET("/:id", documentHandler.GetByID)
+			documentGroup.PATCH(":id", documentHandler.UpdateMeta)
 			documentGroup.PUT("/:id", documentHandler.SaveVersion)
+			documentGroup.DELETE(":id", documentHandler.Delete)
 			documentGroup.GET("/:id/versions", documentHandler.VersionHistory)
 			documentGroup.POST("/:id/restore", documentHandler.RestoreVersion)
 			documentGroup.POST("/:id/collab-token", collabHandler.IssueToken)
 			documentGroup.POST("/:id/collab/content", collabHandler.SyncContent)
+		}
+
+		aiProviderGroup := v1.Group("/ai/providers")
+		aiProviderGroup.Use(middleware.AuthMiddleware())
+		{
+			aiProviderGroup.GET("", aiProviderHandler.List)
+			aiProviderGroup.POST("", aiProviderHandler.Create)
+			aiProviderGroup.GET("/:model", aiProviderHandler.GetByModel)
+			aiProviderGroup.PUT("/:model", aiProviderHandler.Update)
+			aiProviderGroup.DELETE("/:model", aiProviderHandler.Delete)
 		}
 
 		// 协作文档 WebSocket 使用短期 token 鉴权，不复用 AuthMiddleware。

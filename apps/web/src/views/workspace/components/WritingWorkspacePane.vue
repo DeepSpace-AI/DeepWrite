@@ -49,7 +49,11 @@ const emit = defineEmits<{
   (e: 'create-document', payload: { title: string }): void
   (e: 'begin-edit', doc: WorkspaceDocument): void
   (e: 'rename-document', payload: { documentId: string; title: string }): void
+  (e: 'move-document', payload: { documentId: string; folderId: string | null }): void
+  (e: 'delete-document', documentId: string): void
   (e: 'upload-files', files: File[]): void
+  (e: 'rename-file', payload: { fileId: string; fileName: string }): void
+  (e: 'move-file', payload: { fileId: string; folderId: string | null }): void
   (e: 'delete-file', fileId: string): void
   (e: 'preview-file', fileId: string): void
   (e: 'batch-delete-files', fileIds: string[]): void
@@ -165,7 +169,11 @@ function collaboratorAvatarStyle(color?: string) {
     @create-document="emit('create-document', $event)"
     @open-document="emit('begin-edit', $event)"
     @rename-document="emit('rename-document', $event)"
+    @move-document="emit('move-document', $event)"
+    @delete-document="emit('delete-document', $event)"
     @upload-files="emit('upload-files', $event)"
+    @rename-file="emit('rename-file', $event)"
+    @move-file="emit('move-file', $event)"
     @delete-file="emit('delete-file', $event)"
     @preview-file="emit('preview-file', $event)"
     @batch-delete-files="emit('batch-delete-files', $event)"

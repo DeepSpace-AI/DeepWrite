@@ -5,6 +5,7 @@ import IconChevronDown from '~icons/mdi/chevron-down'
 import IconChevronRight from '~icons/mdi/chevron-right'
 import IconDeleteOutline from '~icons/mdi/delete-outline'
 import IconFileDocumentOutline from '~icons/mdi/file-document-outline'
+import IconFileMoveOutline from '~icons/mdi/file-move-outline'
 import IconFileOutline from '~icons/mdi/file-outline'
 import IconFilePlusOutline from '~icons/mdi/file-document-plus-outline'
 import IconFolderOutline from '~icons/mdi/folder-outline'
@@ -13,6 +14,7 @@ import IconPencilOutline from '~icons/mdi/pencil-outline'
 import IconTrayArrowUp from '~icons/mdi/tray-arrow-up'
 import IconEyeOutline from '~icons/mdi/eye-outline'
 import WorkspaceEntryModal from '@/views/workspace/modal/WorkspaceEntryModal.vue'
+import ResourceMoveModal from '@/views/workspace/modal/ResourceMoveModal.vue'
 import type { VisibleFolderNode, WorkspaceDocument, WorkspaceFile, WorkspaceFolder } from '@/views/workspace/types'
 
 const props = defineProps<{
@@ -43,7 +45,11 @@ const emit = defineEmits<{
   (e: 'create-document', payload: { title: string }): void
   (e: 'open-document', document: WorkspaceDocument): void
   (e: 'rename-document', payload: { documentId: string; title: string }): void
+  (e: 'move-document', payload: { documentId: string; folderId: string | null }): void
+  (e: 'delete-document', documentId: string): void
   (e: 'upload-files', files: File[]): void
+  (e: 'rename-file', payload: { fileId: string; fileName: string }): void
+  (e: 'move-file', payload: { fileId: string; folderId: string | null }): void
   (e: 'delete-file', fileId: string): void
   (e: 'preview-file', fileId: string): void
   (e: 'batch-delete-files', fileIds: string[]): void
@@ -59,15 +65,30 @@ const createFolderOpen = ref(false)
 const renameFolderOpen = ref(false)
 const createDocumentOpen = ref(false)
 const renameDocumentOpen = ref(false)
+const renameFileOpen = ref(false)
+const moveDocumentOpen = ref(false)
+const moveFileOpen = ref(false)
 const pendingCreateFolderSubmit = ref(false)
+const pendingRenameFolderSubmit = ref(false)
 const pendingCreateDocumentSubmit = ref(false)
+const pendingRenameDocumentSubmit = ref(false)
+const pendingRenameFileSubmit = ref(false)
+const pendingMoveDocumentSubmit = ref(false)
+const pendingMoveFileSubmit = ref(false)
 const contextMenuVisible = ref(false)
 const contextMenuX = ref(0)
 const contextMenuY = ref(0)
+const contextMenuType = ref<'area' | 'folder' | 'document' | 'file'>('area')
 const contextTargetFolderId = ref<string | null>(null)
+const contextMenuFolder = ref<WorkspaceFolder | null>(null)
+const contextMenuDocument = ref<WorkspaceDocument | null>(null)
+const contextMenuFile = ref<WorkspaceFile | null>(null)
 
 const editingFolder = ref<WorkspaceFolder | null>(null)
 const editingDocument = ref<WorkspaceDocument | null>(null)
+const editingFile = ref<WorkspaceFile | null>(null)
+const movingDocument = ref<WorkspaceDocument | null>(null)
+const movingFile = ref<WorkspaceFile | null>(null)
 
 const selectedFileIdSet = computed(() => new Set(props.selectedFileIds))
 
@@ -105,7 +126,38 @@ function closeContextMenu() {
 function openContextMenu(event: MouseEvent, folderId: string | null) {
   event.preventDefault()
   event.stopPropagation()
+  contextMenuType.value = 'area'
   contextTargetFolderId.value = folderId
+  contextMenuX.value = event.clientX
+  contextMenuY.value = event.clientY
+  contextMenuVisible.value = true
+}
+
+function openFolderContextMenu(event: MouseEvent, folder: WorkspaceFolder) {
+  event.preventDefault()
+  event.stopPropagation()
+  contextMenuType.value = 'folder'
+  contextMenuFolder.value = folder
+  contextMenuX.value = event.clientX
+  contextMenuY.value = event.clientY
+  contextMenuVisible.value = true
+}
+
+function openDocumentContextMenu(event: MouseEvent, document: WorkspaceDocument) {
+  event.preventDefault()
+  event.stopPropagation()
+  contextMenuType.value = 'document'
+  contextMenuDocument.value = document
+  contextMenuX.value = event.clientX
+  contextMenuY.value = event.clientY
+  contextMenuVisible.value = true
+}
+
+function openFileContextMenu(event: MouseEvent, file: WorkspaceFile) {
+  event.preventDefault()
+  event.stopPropagation()
+  contextMenuType.value = 'file'
+  contextMenuFile.value = file
   contextMenuX.value = event.clientX
   contextMenuY.value = event.clientY
   contextMenuVisible.value = true
@@ -139,6 +191,90 @@ function openCreateDocumentFromContext() {
   })
 }
 
+function handleContextCreateSubfolder() {
+  const folder = contextMenuFolder.value
+  closeContextMenu()
+  if (folder) emit('select-folder', folder.id)
+  nextTick(() => openFolderCreateModal())
+}
+
+function handleContextNewDocumentInFolder() {
+  const folder = contextMenuFolder.value
+  closeContextMenu()
+  if (folder) emit('select-folder', folder.id)
+  nextTick(() => openDocumentCreateModal())
+}
+
+function handleContextRenameFolder() {
+  if (!contextMenuFolder.value) return
+  const folder = contextMenuFolder.value
+  closeContextMenu()
+  openFolderRenameModal(folder)
+}
+
+function handleContextDeleteFolder() {
+  if (!contextMenuFolder.value) return
+  const folder = contextMenuFolder.value
+  closeContextMenu()
+  confirmDeleteFolder(folder)
+}
+
+function handleContextOpenDocument() {
+  if (!contextMenuDocument.value) return
+  const doc = contextMenuDocument.value
+  closeContextMenu()
+  emit('open-document', doc)
+}
+
+function handleContextRenameDocument() {
+  if (!contextMenuDocument.value) return
+  const doc = contextMenuDocument.value
+  closeContextMenu()
+  openDocumentRenameModal(doc)
+}
+
+function handleContextMoveDocument() {
+  if (!contextMenuDocument.value) return
+  const doc = contextMenuDocument.value
+  closeContextMenu()
+  openDocumentMoveModal(doc)
+}
+
+function handleContextDeleteDocument() {
+  if (!contextMenuDocument.value) return
+  const doc = contextMenuDocument.value
+  closeContextMenu()
+  confirmDeleteDocument(doc)
+}
+
+function handleContextRenameFile() {
+  if (!contextMenuFile.value) return
+  const file = contextMenuFile.value
+  closeContextMenu()
+  openFileRenameModal(file)
+}
+
+function handleContextMoveFile() {
+  if (!contextMenuFile.value) return
+  const file = contextMenuFile.value
+  closeContextMenu()
+  openFileMoveModal(file)
+}
+
+function handleContextPreviewFile() {
+  if (!contextMenuFile.value) return
+  const fileId = contextMenuFile.value.id
+  closeContextMenu()
+  emit('preview-file', fileId)
+}
+
+function handleContextDeleteFile() {
+  if (!contextMenuFile.value) return
+  const file = contextMenuFile.value
+  closeContextMenu()
+  confirmDeleteFile(file.id, file.file_name)
+}
+
 function handleCreateFolderSubmit(payload: { name: string; description: string }) {
   pendingCreateFolderSubmit.value = true
   emit('create-folder', {
@@ -164,6 +300,66 @@ function handleCreateDocumentSubmit(payload: { name: string }) {
 function openDocumentRenameModal(document: WorkspaceDocument) {
   editingDocument.value = document
   renameDocumentOpen.value = true
+}
+
+function openDocumentMoveModal(document: WorkspaceDocument) {
+  movingDocument.value = document
+  moveDocumentOpen.value = true
+}
+
+function openFileRenameModal(file: WorkspaceFile) {
+  editingFile.value = file
+  renameFileOpen.value = true
+}
+
+function openFileMoveModal(file: WorkspaceFile) {
+  movingFile.value = file
+  moveFileOpen.value = true
+}
+
+function handleRenameFolderSubmit(payload: { name: string; description: string }) {
+  if (!editingFolder.value) return
+  pendingRenameFolderSubmit.value = true
+  emit('rename-folder', {
+    folderId: editingFolder.value.id,
+    ...payload,
+  })
+}
+
+function handleRenameDocumentSubmit(payload: { name: string }) {
+  if (!editingDocument.value) return
+  pendingRenameDocumentSubmit.value = true
+  emit('rename-document', {
+    documentId: editingDocument.value.id,
+    title: payload.name,
+  })
+}
+
+function handleRenameFileSubmit(payload: { name: string }) {
+  if (!editingFile.value) return
+  pendingRenameFileSubmit.value = true
+  emit('rename-file', {
+    fileId: editingFile.value.id,
+    fileName: payload.name,
+  })
+}
+
+function handleMoveDocumentSubmit(payload: { folderId: string | null }) {
+  if (!movingDocument.value) return
+  pendingMoveDocumentSubmit.value = true
+  emit('move-document', {
+    documentId: movingDocument.value.id,
+    folderId: payload.folderId,
+  })
+}
+
+function handleMoveFileSubmit(payload: { folderId: string | null }) {
+  if (!movingFile.value) return
+  pendingMoveFileSubmit.value = true
+  emit('move-file', {
+    fileId: movingFile.value.id,
+    folderId: payload.folderId,
+  })
 }
 
 function handleFilePick(event: Event) {
@@ -200,6 +396,11 @@ function confirmDeleteFile(fileId: string, fileName: string) {
   emit('delete-file', fileId)
 }
 
+function confirmDeleteDocument(document: WorkspaceDocument) {
+  if (!window.confirm(t('workspace.detail.resources.confirmDeleteDocument', { name: document.title }))) return
+  emit('delete-document', document.id)
+}
+
 function confirmBatchDeleteFiles() {
   if (!props.selectedFileIds.length) return
   if (!window.confirm(t('workspace.detail.resources.confirmBatchDeleteFiles', { count: props.selectedFileIds.length }))) return
@@ -218,11 +419,46 @@ watch(
       pendingCreateFolderSubmit.value = false
     }
 
+    if (pendingRenameFolderSubmit.value) {
+      if (!props.errorMessage) {
+        renameFolderOpen.value = false
+      }
+      pendingRenameFolderSubmit.value = false
+    }
+
     if (pendingCreateDocumentSubmit.value) {
       if (!props.errorMessage) {
         createDocumentOpen.value = false
       }
       pendingCreateDocumentSubmit.value = false
+    }
+
+    if (pendingRenameDocumentSubmit.value) {
+      if (!props.errorMessage) {
+        renameDocumentOpen.value = false
+      }
+      pendingRenameDocumentSubmit.value = false
+    }
+
+    if (pendingRenameFileSubmit.value) {
+      if (!props.errorMessage) {
+        renameFileOpen.value = false
+      }
+      pendingRenameFileSubmit.value = false
+    }
+
+    if (pendingMoveDocumentSubmit.value) {
+      if (!props.errorMessage) {
+        moveDocumentOpen.value = false
+      }
+      pendingMoveDocumentSubmit.value = false
+    }
+
+    if (pendingMoveFileSubmit.value) {
+      if (!props.errorMessage) {
+        moveFileOpen.value = false
+      }
+      pendingMoveFileSubmit.value = false
     }
   },
 )
@@ -309,9 +545,9 @@ watch(
             <div
               v-for="node in visibleFolders"
               :key="node.folder.id"
-              class="group flex items-center gap-1 rounded-sm pr-1"
+              class="flex items-center gap-1 rounded-sm pr-1"
               :class="selectedFolderId === node.folder.id ? 'bg-primary/8' : 'hover:bg-base-200/60'"
-              @contextmenu="openContextMenu($event, node.folder.id)"
+              @contextmenu.stop="openFolderContextMenu($event, node.folder)"
             >
               <button
                 type="button"
@@ -330,15 +566,6 @@ watch(
                 <IconFolderOutline class="size-4 shrink-0 text-base-content/65" />
                 <span class="truncate text-sm text-base-content">{{ node.folder.name }}</span>
               </button>
-
-              <div class="flex shrink-0 items-center gap-0.5 opacity-0 transition-opacity group-hover:opacity-100">
-                <button type="button" class="btn btn-ghost btn-xs rounded-sm" :disabled="submitting" @click="openFolderRenameModal(node.folder)">
-                  <IconPencilOutline class="size-3.5" />
-                </button>
-                <button type="button" class="btn btn-ghost btn-xs rounded-sm text-error" :disabled="submitting" @click="confirmDeleteFolder(node.folder)">
-                  <IconDeleteOutline class="size-3.5" />
-                </button>
-              </div>
             </div>
           </div>
         </div>
@@ -370,24 +597,18 @@ watch(
             <div
               v-for="document in currentFolderDocuments"
               :key="document.id"
-              class="rounded-sm border border-base-300 px-3 py-2"
+              class="cursor-pointer rounded-sm border border-base-300 px-3 py-2"
               :class="activeDocumentId === document.id ? 'border-primary bg-primary/6' : 'bg-base-100 hover:bg-base-200/50'"
+              @click="emit('open-document', document)"
+              @contextmenu.stop="openDocumentContextMenu($event, document)"
             >
-              <div class="flex items-start justify-between gap-2">
-                <button type="button" class="min-w-0 flex-1 text-left" @click="emit('open-document', document)">
-                  <div class="flex items-center gap-2">
-                    <IconFileDocumentOutline class="size-4 shrink-0 text-base-content/65" />
-                    <p class="truncate text-sm font-medium text-base-content">{{ document.title }}</p>
-                  </div>
-                  <p class="mt-1 text-[11px] text-base-content/50">
-                    {{ t('workspace.detail.resources.documentMeta', { time: formatTime(document.updated_at), version: document.current_version || 1 }) }}
-                  </p>
-                </button>
-
-                <button type="button" class="btn btn-ghost btn-xs rounded-sm" :disabled="submitting" @click="openDocumentRenameModal(document)">
-                  <IconPencilOutline class="size-3.5" />
-                </button>
+              <div class="flex items-center gap-2">
+                <IconFileDocumentOutline class="size-4 shrink-0 text-base-content/65" />
+                <p class="truncate text-sm font-medium text-base-content">{{ document.title }}</p>
               </div>
+              <p class="mt-1 text-[11px] text-base-content/50">
+                {{ t('workspace.detail.resources.documentMeta', { time: formatTime(document.updated_at), version: document.current_version || 1 }) }}
+              </p>
             </div>
           </div>
         </div>
@@ -415,7 +636,7 @@ watch(
           </div>
 
           <div v-else class="space-y-2">
-            <div v-for="file in currentFolderFiles" :key="file.id" class="rounded-sm border border-base-300 bg-base-100 px-3 py-2">
+            <div v-for="file in currentFolderFiles" :key="file.id" class="rounded-sm border border-base-300 bg-base-100 px-3 py-2" @contextmenu.stop="openFileContextMenu($event, file)">
               <div class="flex items-start gap-2">
                 <input
                   type="checkbox"
@@ -433,15 +654,6 @@ watch(
                     {{ t('workspace.detail.resources.fileMeta', { size: formatSize(file.size), time: formatTime(file.updated_at) }) }}
                   </p>
                 </div>
-
-                <div class="flex shrink-0 items-center gap-1">
-                  <button type="button" class="btn btn-ghost btn-xs rounded-sm" @click="emit('preview-file', file.id)">
-                    <IconEyeOutline class="size-3.5" />
-                  </button>
-                  <button type="button" class="btn btn-ghost btn-xs rounded-sm text-error" :disabled="submitting" @click="confirmDeleteFile(file.id, file.file_name)">
-                    <IconDeleteOutline class="size-3.5" />
-                  </button>
-                </div>
               </div>
             </div>
           </div>
@@ -452,16 +664,87 @@ watch(
     <Teleport to="body">
       <div
         v-if="contextMenuVisible"
-        class="fixed z-50 min-w-36 rounded-sm border border-base-300 bg-base-100 p-1 shadow-lg"
+        class="fixed z-50 min-w-44 overflow-hidden rounded-sm border border-base-300 bg-base-100 py-1 text-sm shadow-lg"
         :style="{ left: `${contextMenuX}px`, top: `${contextMenuY}px` }"
         @click.stop
       >
-        <button type="button" class="btn btn-ghost btn-sm w-full justify-start rounded-sm" :disabled="submitting" @click="openCreateFolderFromContext">
-          {{ t('workspace.detail.resources.createFolder') }}
-        </button>
-        <button type="button" class="btn btn-ghost btn-sm w-full justify-start rounded-sm" :disabled="submitting" @click="openCreateDocumentFromContext">
-          {{ t('workspace.detail.resources.createDocument') }}
-        </button>
+        <!-- 空白区域右键：新建操作 -->
+        <template v-if="contextMenuType === 'area'">
+          <button type="button" class="flex w-full items-center gap-2 px-3 py-1.5 hover:bg-base-200 disabled:opacity-50" :disabled="submitting" @click="openCreateFolderFromContext">
+            <IconFolderPlusOutline class="size-4 text-base-content/65" />
+            {{ t('workspace.detail.resources.createFolder') }}
+          </button>
+          <button type="button" class="flex w-full items-center gap-2 px-3 py-1.5 hover:bg-base-200 disabled:opacity-50" :disabled="submitting" @click="openCreateDocumentFromContext">
+            <IconFilePlusOutline class="size-4 text-base-content/65" />
+            {{ t('workspace.detail.resources.createDocument') }}
+          </button>
+        </template>
+
+        <!-- 文件夹右键菜单 -->
+        <template v-else-if="contextMenuType === 'folder'">
+          <button type="button" class="flex w-full items-center gap-2 px-3 py-1.5 hover:bg-base-200 disabled:opacity-50" :disabled="submitting" @click="handleContextCreateSubfolder">
+            <IconFolderPlusOutline class="size-4 text-base-content/65" />
+            {{ t('workspace.detail.resources.actionCreateSubfolder') }}
+          </button>
+          <button type="button" class="flex w-full items-center gap-2 px-3 py-1.5 hover:bg-base-200 disabled:opacity-50" :disabled="submitting" @click="handleContextNewDocumentInFolder">
+            <IconFilePlusOutline class="size-4 text-base-content/65" />
+            {{ t('workspace.detail.resources.actionNewDocumentHere') }}
+          </button>
+          <div class="my-1 border-t border-base-200" />
+          <button type="button" class="flex w-full items-center gap-2 px-3 py-1.5 hover:bg-base-200 disabled:opacity-50" :disabled="submitting" @click="handleContextRenameFolder">
+            <IconPencilOutline class="size-4 text-base-content/65" />
+            {{ t('workspace.detail.resources.actionRename') }}
+          </button>
+          <div class="my-1 border-t border-base-200" />
+          <button type="button" class="flex w-full items-center gap-2 px-3 py-1.5 text-error hover:bg-error/8 disabled:opacity-50" :disabled="submitting" @click="handleContextDeleteFolder">
+            <IconDeleteOutline class="size-4" />
+            {{ t('workspace.detail.resources.actionDelete') }}
+          </button>
+        </template>
+
+        <!-- 文档右键菜单 -->
+        <template v-else-if="contextMenuType === 'document'">
+          <button type="button" class="flex w-full items-center gap-2 px-3 py-1.5 hover:bg-base-200" @click="handleContextOpenDocument">
+            <IconFileDocumentOutline class="size-4 text-base-content/65" />
+            {{ t('workspace.detail.resources.actionOpen') }}
+          </button>
+          <div class="my-1 border-t border-base-200" />
+          <button type="button" class="flex w-full items-center gap-2 px-3 py-1.5 hover:bg-base-200 disabled:opacity-50" :disabled="submitting" @click="handleContextRenameDocument">
+            <IconPencilOutline class="size-4 text-base-content/65" />
+            {{ t('workspace.detail.resources.actionRename') }}
+          </button>
+          <button type="button" class="flex w-full items-center gap-2 px-3 py-1.5 hover:bg-base-200 disabled:opacity-50" :disabled="submitting" @click="handleContextMoveDocument">
+            <IconFileMoveOutline class="size-4 text-base-content/65" />
+            {{ t('workspace.detail.resources.actionMove') }}
+          </button>
+          <div class="my-1 border-t border-base-200" />
+          <button type="button" class="flex w-full items-center gap-2 px-3 py-1.5 text-error hover:bg-error/8 disabled:opacity-50" :disabled="submitting" @click="handleContextDeleteDocument">
+            <IconDeleteOutline class="size-4" />
+            {{ t('workspace.detail.resources.actionDelete') }}
+          </button>
+        </template>
+
+        <!-- 文件右键菜单 -->
+        <template v-else-if="contextMenuType === 'file'">
+          <button type="button" class="flex w-full items-center gap-2 px-3 py-1.5 hover:bg-base-200" @click="handleContextPreviewFile">
+            <IconEyeOutline class="size-4 text-base-content/65" />
+            {{ t('workspace.detail.resources.actionPreview') }}
+          </button>
+          <div class="my-1 border-t border-base-200" />
+          <button type="button" class="flex w-full items-center gap-2 px-3 py-1.5 hover:bg-base-200 disabled:opacity-50" :disabled="submitting" @click="handleContextRenameFile">
+            <IconPencilOutline class="size-4 text-base-content/65" />
+            {{ t('workspace.detail.resources.actionRename') }}
+          </button>
+          <button type="button" class="flex w-full items-center gap-2 px-3 py-1.5 hover:bg-base-200 disabled:opacity-50" :disabled="submitting" @click="handleContextMoveFile">
+            <IconFileMoveOutline class="size-4 text-base-content/65" />
+            {{ t('workspace.detail.resources.actionMove') }}
+          </button>
+          <div class="my-1 border-t border-base-200" />
+          <button type="button" class="flex w-full items-center gap-2 px-3 py-1.5 text-error hover:bg-error/8 disabled:opacity-50" :disabled="submitting" @click="handleContextDeleteFile">
+            <IconDeleteOutline class="size-4" />
+            {{ t('workspace.detail.resources.actionDelete') }}
+          </button>
+        </template>
       </div>
     </Teleport>
 
@@ -496,7 +779,7 @@ watch(
       :error-message="errorMessage"
       :initial-name="editingFolder?.name || ''"
       :initial-description="editingFolder?.description || ''"
-      @submit="editingFolder && emit('rename-folder', { folderId: editingFolder.id, ...$event })"
+      @submit="handleRenameFolderSubmit"
     />
 
     <WorkspaceEntryModal
@@ -521,7 +804,48 @@ watch(
       :submitting="submitting"
       :error-message="errorMessage"
       :initial-name="editingDocument?.title || ''"
-      @submit="editingDocument && emit('rename-document', { documentId: editingDocument.id, title: $event.name })"
+      @submit="handleRenameDocumentSubmit"
+    />
+
+    <WorkspaceEntryModal
+      v-model="renameFileOpen"
+      :title="t('workspace.detail.resources.renameFileTitle')"
+      :subtitle="t('workspace.detail.resources.renameFileSubtitle')"
+      :name-label="t('workspace.detail.resources.nameLabel')"
+      :name-placeholder="t('workspace.detail.resources.fileNamePlaceholder')"
+      :submit-text="t('workspace.detail.resources.confirmRenameFile')"
+      :submitting="submitting"
+      :error-message="errorMessage"
+      :initial-name="editingFile?.file_name || ''"
+      @submit="handleRenameFileSubmit"
+    />
+
+    <ResourceMoveModal
+      v-model="moveDocumentOpen"
+      :title="t('workspace.detail.resources.moveDocumentTitle')"
+      :subtitle="t('workspace.detail.resources.moveDocumentSubtitle', { name: movingDocument?.title || '' })"
+      :root-label="t('workspace.detail.resources.rootFolder')"
+      :destination-label="t('workspace.detail.resources.targetFolderLabel')"
+      :confirm-text="t('workspace.detail.resources.confirmMoveDocument')"
+      :visible-folders="visibleFolders"
+      :current-folder-id="movingDocument?.folder_id || null"
+      :submitting="submitting"
+      :error-message="errorMessage"
+      @submit="handleMoveDocumentSubmit"
+    />
+
+    <ResourceMoveModal
+      v-model="moveFileOpen"
+      :title="t('workspace.detail.resources.moveFileTitle')"
+      :subtitle="t('workspace.detail.resources.moveFileSubtitle', { name: movingFile?.file_name || '' })"
+      :root-label="t('workspace.detail.resources.rootFolder')"
+      :destination-label="t('workspace.detail.resources.targetFolderLabel')"
+      :confirm-text="t('workspace.detail.resources.confirmMoveFile')"
+      :visible-folders="visibleFolders"
+      :current-folder-id="movingFile?.folder_id || null"
+      :submitting="submitting"
+      :error-message="errorMessage"
+      @submit="handleMoveFileSubmit"
     />
   </aside>
 </template>

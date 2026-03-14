@@ -18,6 +18,12 @@ export interface SaveDocumentVersionInput {
   summary?: string
 }
 
+export interface UpdateDocumentMetaInput {
+  title?: string
+  folder_id?: string | null
+  clear_folder?: boolean
+}
+
 export interface SaveDocumentVersionResult {
   document: WorkspaceDocument
 }
@@ -64,6 +70,15 @@ export async function getDocumentById(documentId: string): Promise<WorkspaceDocu
   return unwrapResponse<WorkspaceDocument>(res)
 }
 
+export async function updateDocumentMeta(documentId: string, input: UpdateDocumentMetaInput): Promise<WorkspaceDocument> {
+  const res = await http.patch(`/documents/${documentId}`, {
+    title: input.title,
+    folder_id: input.folder_id || undefined,
+    clear_folder: input.clear_folder ?? false,
+  })
+  return unwrapResponse<WorkspaceDocument>(res)
+}
+
 export async function saveDocumentVersion(documentId: string, input: SaveDocumentVersionInput): Promise<SaveDocumentVersionResult> {
   const res = await http.put(`/documents/${documentId}`, {
     title: input.title,
@@ -80,6 +95,11 @@ export async function listDocumentVersions(documentId: string, limit = 50, offse
     params: { limit, offset },
   })
   return unwrapResponse<DocumentVersion[]>(res)
+}
+
+export async function deleteDocument(documentId: string): Promise<void> {
+  const res = await http.delete(`/documents/${documentId}`)
+  unwrapResponse<unknown>(res)
 }
 
 export interface CollabTokenResponse {

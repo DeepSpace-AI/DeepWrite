@@ -48,8 +48,12 @@ const {
   deleteFolder,
   createNewDocument,
   renameDocument,
+  moveDocument,
+  deleteDocument,
   saveDocument,
   uploadFilesToCurrentFolder,
+  renameFile,
+  moveFile,
   deleteFile,
   batchDeleteFiles,
   previewFile,
@@ -351,6 +355,17 @@ async function handleCreateDocument(payload: { title: string }) {
   }
 }
 
+async function handleDeleteDocument(documentId: string) {
+  const deletingCurrent = selectedDocId.value === documentId
+  const success = await deleteDocument(documentId)
+  if (success && deletingCurrent) {
+    selectedDocId.value = ''
+    editorJson.value = null
+    editorContent.value = '<p></p>'
+    exitEditor()
+  }
+}
+
 function handleSelectedFileIdsUpdate(fileIds: string[]) {
   selectedFileIds.value = fileIds
 }
@@ -588,7 +603,11 @@ onBeforeUnmount(() => {
         @create-document="handleCreateDocument"
         @begin-edit="beginEditDocument"
         @rename-document="renameDocument($event.documentId, $event.title)"
+        @move-document="moveDocument($event.documentId, $event.folderId)"
+        @delete-document="handleDeleteDocument($event)"
         @upload-files="uploadFilesToCurrentFolder($event)"
+        @rename-file="renameFile($event.fileId, $event.fileName)"
+        @move-file="moveFile($event.fileId, $event.folderId)"
         @delete-file="deleteFile($event)"
         @preview-file="previewFile($event)"
         @batch-delete-files="batchDeleteFiles($event)"

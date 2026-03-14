@@ -1,0 +1,48 @@
+# =========================
+# Worker 基础配置
+# =========================
+APP_NAME: worker-service # 服务名称
+APP_ENV: development # 运行环境：development/test/production
+
+# =========================
+# HTTP 服务配置
+# =========================
+SERVER:
+  HOST: 0.0.0.0 # 监听地址
+  PORT: 8000 # 监听端口
+  RELOAD: true # 开发环境热重载（生产建议 false）
+
+# =========================
+# 日志配置
+# =========================
+LOG:
+  LEVEL: info # 日志级别：debug/info/warn/error
+
+# =========================
+# 基础依赖配置
+# =========================
+INTERNAL_TOKEN: "" # Worker 内部鉴权令牌
+DATABASE_DSN: "" # 数据库连接串，例如 postgresql+psycopg://user:pass@host:5432/db
+REDIS_URL: "" # Redis 连接串，例如 redis://localhost:6379/0
+
+# =========================
+# 回调网关配置
+# =========================
+GATEWAY:
+  CALLBACK_URL: "" # 回调地址，例如 http://localhost:8080/internal/worker/task-events
+  CALLBACK_TOKEN: "" # 回调鉴权令牌
+
+# =========================
+# 并发配额配置
+# =========================
+QUOTA:
+  MAX_WORKSPACE_CONCURRENCY: 8 # 单工作区最大并发
+  MAX_USER_CONCURRENCY: 3 # 单用户最大并发
+
+# =========================
+# Celery 配置
+# =========================
+CELERY:
+  BROKER_URL: redis://localhost:6379/1 # Celery broker 地址
+  RESULT_BACKEND: redis://localhost:6379/2 # Celery 结果存储地址
+  DEFAULT_QUEUE: worker.default # 默认队列名称

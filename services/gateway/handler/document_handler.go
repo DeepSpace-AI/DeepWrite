@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/deepwrite/serivces/gateway/models/document"
+	"github.com/deepwrite/serivces/gateway/models/workspace"
 	"github.com/deepwrite/serivces/gateway/pkg/request"
 	"github.com/deepwrite/serivces/gateway/pkg/response"
 	"github.com/gin-gonic/gin"
@@ -57,6 +58,9 @@ func (h *DocumentHandler) Create(c *gin.Context) {
 
 	folderID := strings.TrimSpace(req.FolderID)
 	if folderID != "" {
+		if err := ensureDocumentFolderBelongsToWorkspace(c, req.WorkspaceID, folderID); err != nil {
+			return
+		}
 		newDoc.FolderID = &folderID
 	}
 
@@ -73,6 +77,84 @@ func (h *DocumentHandler) Create(c *gin.Context) {
 	}
 
 	response.Success(c, response.SuccessCreatedCode, newDoc)
+}
+
+// @Summary      更新文档元数据
+// @Description  更新文档标题或所在文件夹，不会创建新版本
+// @Tags         Document
+// @Accept       json
+// @Produce      json
+// @Param        id path string true "文档ID"
+// @Param        request body request.UpdateDocumentMetaRequest true "文档元数据更新参数"
+// @Success      200 {object} response.Response "更新成功"
+// @Failure      400 {object} response.Response "请求参数错误"
+// @Failure      401 {object} response.Response "未授权"
+// @Failure      403 {object} response.Response "无权限编辑文档"
+// @Failure      404 {object} response.Response "文档不存在"
+// @Failure      500 {object} response.Response "服务器错误"
+// @Router       /documents/{id} [patch]
+func (h *DocumentHandler) UpdateMeta(c *gin.Context) {
+	userID := strings.TrimSpace(c.GetString("user_id"))
+	if userID == "" {
+		response.Failed(c, response.ErrorUnauthorizedCode, "unauthorized")
+		return
+	}
+
+	documentID := strings.TrimSpace(c.Param("id"))
+	if documentID == "" {
+		response.Failed(c, response.ErrorBadRequestCode, "document id is required")
+		return
+	}
+
+	var req request.UpdateDocumentMetaRequest
+	if ok := request.ValidateStruct(c, &req); !ok {
+		return
+	}
+
+	doc, err := document.GetByID(c.Request.Context(), documentID)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			response.Failed(c, 404, "文档不存在")
+			return
+		}
+		response.Failed(c, response.ErrorUnknownCode, "获取文档失败")
+		return
+	}
+
+	_, role, err := getWorkspaceRole(c.Request.Context(), doc.WorkspaceID, userID)
+	if err != nil {
+		response.Failed(c, response.ErrorUnknownCode, "获取工作区信息失败")
+		return
+	}
+	if !canEditWorkspace(role) {
+		response.Failed(c, response.ErrorForbiddenCode, "无权限编辑文档")
+		return
+	}
+
+	trimmedFolderID := strings.TrimSpace(req.FolderID)
+	var folderPtr *string
+	if trimmedFolderID != "" {
+		if err := ensureDocumentFolderBelongsToWorkspace(c, doc.WorkspaceID, trimmedFolderID); err != nil {
+			return
+		}
+		folderPtr = &trimmedFolderID
+	}
+
+	updated, err := document.UpdateMeta(c.Request.Context(), documentID, document.UpdateMetaInput{
+		Title:       strings.TrimSpace(req.Title),
+		FolderID:    folderPtr,
+		ClearFolder: req.ClearFolder,
+	})
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			response.Failed(c, 404, "文档不存在")
+			return
+		}
+		response.Failed(c, response.ErrorUnknownCode, "更新文档失败")
+		return
+	}
+
+	response.Success(c, response.SuccessCode, updated)
 }
 
 // @Summary      获取文档详情
@@ -247,6 +329,59 @@ func (h *DocumentHandler) SaveVersion(c *gin.Context) {
 	})
 }
 
+// @Summary      删除文档
+// @Description  删除指定文档及其历史版本
+// @Tags         Document
+// @Accept       json
+// @Produce      json
+// @Param        id path string true "文档ID"
+// @Success      200 {object} response.Response "删除成功"
+// @Failure      401 {object} response.Response "未授权"
+// @Failure      403 {object} response.Response "无权限删除文档"
+// @Failure      404 {object} response.Response "文档不存在"
+// @Failure      500 {object} response.Response "服务器错误"
+// @Router       /documents/{id} [delete]
+func (h *DocumentHandler) Delete(c *gin.Context) {
+	userID := strings.TrimSpace(c.GetString("user_id"))
+	if userID == "" {
+		response.Failed(c, response.ErrorUnauthorizedCode, "unauthorized")
+		return
+	}
+
+	documentID := strings.TrimSpace(c.Param("id"))
+	if documentID == "" {
+		response.Failed(c, response.ErrorBadRequestCode, "document id is required")
+		return
+	}
+
+	doc, err := document.GetByID(c.Request.Context(), documentID)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			response.Failed(c, 404, "文档不存在")
+			return
+		}
+		response.Failed(c, response.ErrorUnknownCode, "获取文档失败")
+		return
+	}
+
+	_, role, err := getWorkspaceRole(c.Request.Context(), doc.WorkspaceID, userID)
+	if err != nil {
+		response.Failed(c, response.ErrorUnknownCode, "获取工作区信息失败")
+		return
+	}
+	if !canEditWorkspace(role) {
+		response.Failed(c, response.ErrorForbiddenCode, "无权限删除文档")
+		return
+	}
+
+	if err := document.Delete(c.Request.Context(), documentID); err != nil {
+		response.Failed(c, response.ErrorUnknownCode, "删除文档失败")
+		return
+	}
+
+	response.Success(c, response.SuccessCode, gin.H{"id": documentID})
+}
+
 // @Summary      获取文档历史版本
 // @Description  获取文档历史版本列表（按版本号倒序）
 // @Tags         Document
@@ -380,4 +515,21 @@ func toDatatypesJSON(value map[string]any) (datatypes.JSON, error) {
 	}
 
 	return datatypes.JSON(b), nil
+}
+
+func ensureDocumentFolderBelongsToWorkspace(c *gin.Context, workspaceID, folderID string) error {
+	folder, err := workspace.GetFolderByID(c.Request.Context(), folderID)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			response.Failed(c, 404, "文件夹不存在")
+			return err
+		}
+		response.Failed(c, response.ErrorUnknownCode, "获取文件夹失败")
+		return err
+	}
+	if folder.WorkspaceID != strings.TrimSpace(workspaceID) {
+		response.Failed(c, response.ErrorBadRequestCode, "folder does not belong to workspace")
+		return errors.New("folder does not belong to workspace")
+	}
+	return nil
 }
