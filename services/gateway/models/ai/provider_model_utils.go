@@ -178,27 +178,6 @@ func DeleteProviderModel(ctx context.Context, model string) (bool, error) {
 	return result.RowsAffected > 0, nil
 }
 
-func BackfillProviderRelations(ctx context.Context) error {
-	return database.DB.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
-		var records []ProviderModel
-		if err := tx.Where("provider_id IS NULL").Find(&records).Error; err != nil {
-			return err
-		}
-		for _, record := range records {
-			provider, err := findOrCreateProvider(tx, record.Provider, toCreateInputFromRecord(record), nil)
-			if err != nil {
-				return err
-			}
-			updates := map[string]any{}
-			applyProviderSnapshot(&updates, provider)
-			if err := tx.Model(&ProviderModel{}).Where("id = ?", record.ID).Updates(updates).Error; err != nil {
-				return err
-			}
-		}
-		return nil
-	})
-}
-
 func normalizeProvider(provider string) string {
 	value := strings.TrimSpace(provider)
 	if value == "" {

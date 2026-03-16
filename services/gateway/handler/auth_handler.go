@@ -68,26 +68,8 @@ func (h *AuthHandler) Register(c *gin.Context) {
 // @Failure      500 {object} response.Response "服务器错误"
 // @Router       /auth/login [post]
 func (h *AuthHandler) Login(c *gin.Context) {
-	var req request.LoginRequest
-	if ok := request.ValidateStruct(c, &req); !ok {
-		return
-	}
-	req.Email = strings.ToLower(strings.TrimSpace(req.Email))
-
-	ctx := context.Background()
-	currentUser, err := user.GetUserByEmail(ctx, req.Email)
-	if err != nil {
-		response.Failed(c, response.ErrorUnauthorizedCode, "email or password is incorrect")
-		return
-	}
-
-	if !hash.VerifyPassword(currentUser.Password, req.Password) {
-		response.Failed(c, response.ErrorUnauthorizedCode, "email or password is incorrect")
-		return
-	}
-
-	if !currentUser.IsActive() {
-		response.Failed(c, response.ErrorForbiddenCode, "user is inactive")
+	currentUser, ok := authenticateLoginUser(c)
+	if !ok {
 		return
 	}
 
@@ -107,6 +89,54 @@ func (h *AuthHandler) Login(c *gin.Context) {
 		"access_token":  token,
 		"refresh_token": refreshToken,
 		"token_type":    "Bearer",
+		"user": gin.H{
+			"id":     currentUser.ID,
+			"email":  currentUser.Email,
+			"role":   currentUser.Role,
+			"status": currentUser.Status,
+		},
+	})
+}
+
+// @Summary      管理员登录
+// @Description  使用管理员邮箱和密码登录，获取管理员专用访问令牌和刷新令牌
+// @Tags         Auth
+// @Accept       json
+// @Produce      json
+// @Param        request body request.LoginRequest true "登录信息"
+// @Success      200 {object} response.Response "登录成功"
+// @Failure      400 {object} response.Response "请求参数错误"
+// @Failure      401 {object} response.Response "认证失败"
+// @Failure      403 {object} response.Response "用户被禁用或非管理员"
+// @Failure      500 {object} response.Response "服务器错误"
+// @Router       /auth/admin/login [post]
+func (h *AuthHandler) AdminLogin(c *gin.Context) {
+	currentUser, ok := authenticateLoginUser(c)
+	if !ok {
+		return
+	}
+	if !currentUser.IsAdmin() {
+		response.Failed(c, response.ErrorForbiddenCode, "admin account required")
+		return
+	}
+
+	token, err := jwt.GenerateAdminAccessToken(currentUser.ID, currentUser.Email, currentUser.Role)
+	if err != nil {
+		response.Failed(c, response.ErrorUnknownCode, "failed to generate token")
+		return
+	}
+
+	refreshToken, err := jwt.GenerateAdminRefreshToken(currentUser.ID, currentUser.Email, currentUser.Role)
+	if err != nil {
+		response.Failed(c, response.ErrorUnknownCode, "failed to generate refresh token")
+		return
+	}
+
+	response.Success(c, response.SuccessCode, gin.H{
+		"access_token":  token,
+		"refresh_token": refreshToken,
+		"token_type":    "Bearer",
+		"scope":         "admin",
 		"user": gin.H{
 			"id":     currentUser.ID,
 			"email":  currentUser.Email,
@@ -152,16 +182,42 @@ func (h *AuthHandler) RefreshToken(c *gin.Context) {
 		return
 	}
 
-	accessToken, err := jwt.GenerateAccessToken(currentUser.ID, currentUser.Email, currentUser.Role)
-	if err != nil {
-		response.Failed(c, response.ErrorUnknownCode, "failed to generate access token")
+	isAdminScope := strings.EqualFold(strings.TrimSpace(claims.Scope), "admin")
+	if isAdminScope {
+		if _, err := jwt.ParseAdminRefreshToken(req.RefreshToken); err != nil {
+			response.Failed(c, response.ErrorUnauthorizedCode, "invalid or expired refresh token")
+			return
+		}
+	}
+	if isAdminScope && !currentUser.IsAdmin() {
+		response.Failed(c, response.ErrorForbiddenCode, "admin account required")
 		return
 	}
 
-	newRefreshToken, err := jwt.GenerateRefreshToken(currentUser.ID, currentUser.Email, currentUser.Role)
-	if err != nil {
-		response.Failed(c, response.ErrorUnknownCode, "failed to generate refresh token")
-		return
+	var accessToken string
+	var newRefreshToken string
+	if isAdminScope {
+		accessToken, err = jwt.GenerateAdminAccessToken(currentUser.ID, currentUser.Email, currentUser.Role)
+		if err != nil {
+			response.Failed(c, response.ErrorUnknownCode, "failed to generate access token")
+			return
+		}
+		newRefreshToken, err = jwt.GenerateAdminRefreshToken(currentUser.ID, currentUser.Email, currentUser.Role)
+		if err != nil {
+			response.Failed(c, response.ErrorUnknownCode, "failed to generate refresh token")
+			return
+		}
+	} else {
+		accessToken, err = jwt.GenerateAccessToken(currentUser.ID, currentUser.Email, currentUser.Role)
+		if err != nil {
+			response.Failed(c, response.ErrorUnknownCode, "failed to generate access token")
+			return
+		}
+		newRefreshToken, err = jwt.GenerateRefreshToken(currentUser.ID, currentUser.Email, currentUser.Role)
+		if err != nil {
+			response.Failed(c, response.ErrorUnknownCode, "failed to generate refresh token")
+			return
+		}
 	}
 
 	if err := jwt.RevokeToken(req.RefreshToken, claims); err != nil {
@@ -169,11 +225,38 @@ func (h *AuthHandler) RefreshToken(c *gin.Context) {
 		return
 	}
 
-	response.Success(c, response.SuccessCode, gin.H{
+	result := gin.H{
 		"access_token":  accessToken,
 		"refresh_token": newRefreshToken,
 		"token_type":    "Bearer",
-	})
+	}
+	if isAdminScope {
+		result["scope"] = "admin"
+	}
+	response.Success(c, response.SuccessCode, result)
+}
+
+func authenticateLoginUser(c *gin.Context) (user.User, bool) {
+	var req request.LoginRequest
+	if ok := request.ValidateStruct(c, &req); !ok {
+		return user.User{}, false
+	}
+
+	req.Email = strings.ToLower(strings.TrimSpace(req.Email))
+	currentUser, err := user.GetUserByEmail(context.Background(), req.Email)
+	if err != nil {
+		response.Failed(c, response.ErrorUnauthorizedCode, "email or password is incorrect")
+		return user.User{}, false
+	}
+	if !hash.VerifyPassword(currentUser.Password, req.Password) {
+		response.Failed(c, response.ErrorUnauthorizedCode, "email or password is incorrect")
+		return user.User{}, false
+	}
+	if !currentUser.IsActive() {
+		response.Failed(c, response.ErrorForbiddenCode, "user is inactive")
+		return user.User{}, false
+	}
+	return currentUser, true
 }
 
 // @Summary      用户登出

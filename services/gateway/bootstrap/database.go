@@ -1,7 +1,6 @@
 package bootstrap
 
 import (
-	"context"
 	"fmt"
 	"time"
 
@@ -62,9 +61,6 @@ func AutoMigrate() {
 	}
 
 	if err := database.DB.Exec(`ALTER TABLE documents ALTER COLUMN folder_id DROP NOT NULL`).Error; err != nil {
-		panic(err)
-	}
-	if err := ai.BackfillProviderRelations(context.Background()); err != nil {
 		panic(err)
 	}
 }

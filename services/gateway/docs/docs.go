@@ -152,6 +152,443 @@ const docTemplate = `{
                 }
             }
         },
+        "/ai/providers/vendors": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "获取 AI Provider 厂商列表，支持按 enabled 过滤",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "AI"
+                ],
+                "summary": "AI Provider 厂商列表",
+                "parameters": [
+                    {
+                        "type": "boolean",
+                        "description": "是否启用",
+                        "name": "enabled",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "分页大小",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "偏移量",
+                        "name": "offset",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "获取成功",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    },
+                    "400": {
+                        "description": "请求参数错误",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    },
+                    "401": {
+                        "description": "未授权",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    },
+                    "403": {
+                        "description": "无权限访问",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "服务器错误",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "新增或更新 AI Provider 厂商基础配置（端点、密钥、路径）",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "AI"
+                ],
+                "summary": "创建 AI Provider 厂商",
+                "parameters": [
+                    {
+                        "description": "厂商配置参数",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/request.CreateAIProviderVendorRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "创建成功",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    },
+                    "400": {
+                        "description": "请求参数错误",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    },
+                    "401": {
+                        "description": "未授权",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    },
+                    "403": {
+                        "description": "无权限访问",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "服务器错误",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/ai/providers/vendors/{providerId}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "根据厂商 UUID 获取厂商详情及其已落库模型列表",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "AI"
+                ],
+                "summary": "AI Provider 厂商详情",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "厂商 UUID",
+                        "name": "providerId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "boolean",
+                        "description": "是否启用",
+                        "name": "enabled",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "分页大小",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "偏移量",
+                        "name": "offset",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "获取成功",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    },
+                    "400": {
+                        "description": "请求参数错误",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    },
+                    "401": {
+                        "description": "未授权",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    },
+                    "403": {
+                        "description": "无权限访问",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    },
+                    "404": {
+                        "description": "厂商不存在",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "服务器错误",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/ai/providers/vendors/{providerId}/discover-models": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "根据厂商 UUID 调用厂商 models 接口发现可用模型",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "AI"
+                ],
+                "summary": "拉取厂商模型列表",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "厂商 UUID",
+                        "name": "providerId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "拉取成功",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    },
+                    "400": {
+                        "description": "请求参数错误",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    },
+                    "401": {
+                        "description": "未授权",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    },
+                    "403": {
+                        "description": "无权限访问",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    },
+                    "404": {
+                        "description": "厂商不存在",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "服务器错误",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/ai/providers/vendors/{providerId}/enabled": {
+            "patch": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "根据厂商 UUID 启用或停用厂商，并同步其下模型启停状态",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "AI"
+                ],
+                "summary": "更新 AI Provider 厂商启停状态",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "厂商 UUID",
+                        "name": "providerId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "启停参数",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/request.UpdateAIProviderVendorEnabledRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "更新成功",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    },
+                    "400": {
+                        "description": "请求参数错误",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    },
+                    "401": {
+                        "description": "未授权",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    },
+                    "403": {
+                        "description": "无权限访问",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    },
+                    "404": {
+                        "description": "厂商不存在",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "服务器错误",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/ai/providers/vendors/{providerId}/models": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "根据厂商 UUID 将选中的模型及能力配置落库",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "AI"
+                ],
+                "summary": "通过厂商创建模型配置",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "厂商 UUID",
+                        "name": "providerId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "模型落库参数",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/request.CreateAIProviderModelByVendorRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "创建成功",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    },
+                    "400": {
+                        "description": "请求参数错误",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    },
+                    "401": {
+                        "description": "未授权",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    },
+                    "403": {
+                        "description": "无权限访问",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    },
+                    "404": {
+                        "description": "厂商不存在",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "服务器错误",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    }
+                }
+            }
+        },
         "/ai/providers/{model}": {
             "get": {
                 "security": [
@@ -345,6 +782,64 @@ const docTemplate = `{
                     },
                     "404": {
                         "description": "模型配置不存在",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "服务器错误",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/admin/login": {
+            "post": {
+                "description": "使用管理员邮箱和密码登录，获取管理员专用访问令牌和刷新令牌",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "管理员登录",
+                "parameters": [
+                    {
+                        "description": "登录信息",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/request.LoginRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "登录成功",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    },
+                    "400": {
+                        "description": "请求参数错误",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    },
+                    "401": {
+                        "description": "认证失败",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    },
+                    "403": {
+                        "description": "用户被禁用或非管理员",
                         "schema": {
                             "$ref": "#/definitions/response.Response"
                         }
@@ -3423,12 +3918,53 @@ const docTemplate = `{
                 }
             }
         },
+        "request.CreateAIProviderModelByVendorRequest": {
+            "type": "object",
+            "required": [
+                "model"
+            ],
+            "properties": {
+                "enabled": {
+                    "type": "boolean"
+                },
+                "model": {
+                    "type": "string",
+                    "maxLength": 120
+                },
+                "request_model": {
+                    "type": "string",
+                    "maxLength": 120
+                },
+                "supports_audio_speech": {
+                    "type": "boolean"
+                },
+                "supports_audio_transcriptions": {
+                    "type": "boolean"
+                },
+                "supports_chat_completions": {
+                    "type": "boolean"
+                },
+                "supports_chat_responses": {
+                    "type": "boolean"
+                },
+                "supports_embeddings": {
+                    "type": "boolean"
+                },
+                "supports_models": {
+                    "type": "boolean"
+                },
+                "supports_rerank": {
+                    "type": "boolean"
+                }
+            }
+        },
         "request.CreateAIProviderModelRequest": {
             "type": "object",
             "required": [
                 "api_key",
                 "base_url",
-                "model"
+                "model",
+                "provider"
             ],
             "properties": {
                 "api_key": {
@@ -3487,6 +4023,90 @@ const docTemplate = `{
                 "request_model": {
                     "type": "string",
                     "maxLength": 120
+                },
+                "rerank_path": {
+                    "type": "string",
+                    "maxLength": 255
+                },
+                "supports_audio_speech": {
+                    "type": "boolean"
+                },
+                "supports_audio_transcriptions": {
+                    "type": "boolean"
+                },
+                "supports_chat_completions": {
+                    "type": "boolean"
+                },
+                "supports_chat_responses": {
+                    "type": "boolean"
+                },
+                "supports_embeddings": {
+                    "type": "boolean"
+                },
+                "supports_models": {
+                    "type": "boolean"
+                },
+                "supports_rerank": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "request.CreateAIProviderVendorRequest": {
+            "type": "object",
+            "required": [
+                "api_key",
+                "base_url",
+                "provider"
+            ],
+            "properties": {
+                "api_key": {
+                    "type": "string",
+                    "maxLength": 8192
+                },
+                "audio_speech_path": {
+                    "type": "string",
+                    "maxLength": 255
+                },
+                "audio_transcriptions_path": {
+                    "type": "string",
+                    "maxLength": 255
+                },
+                "base_url": {
+                    "type": "string",
+                    "maxLength": 1024
+                },
+                "chat_completions_path": {
+                    "type": "string",
+                    "maxLength": 255
+                },
+                "chat_responses_path": {
+                    "type": "string",
+                    "maxLength": 255
+                },
+                "embeddings_path": {
+                    "type": "string",
+                    "maxLength": 255
+                },
+                "enabled": {
+                    "type": "boolean"
+                },
+                "extra_headers": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "string"
+                    }
+                },
+                "models_path": {
+                    "type": "string",
+                    "maxLength": 255
+                },
+                "organization": {
+                    "type": "string",
+                    "maxLength": 255
+                },
+                "provider": {
+                    "type": "string",
+                    "maxLength": 64
                 },
                 "rerank_path": {
                     "type": "string",
@@ -3820,6 +4440,40 @@ const docTemplate = `{
                 "rerank_path": {
                     "type": "string",
                     "maxLength": 255
+                },
+                "supports_audio_speech": {
+                    "type": "boolean"
+                },
+                "supports_audio_transcriptions": {
+                    "type": "boolean"
+                },
+                "supports_chat_completions": {
+                    "type": "boolean"
+                },
+                "supports_chat_responses": {
+                    "type": "boolean"
+                },
+                "supports_embeddings": {
+                    "type": "boolean"
+                },
+                "supports_models": {
+                    "type": "boolean"
+                },
+                "supports_rerank": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "request.UpdateAIProviderVendorEnabledRequest": {
+            "type": "object",
+            "required": [
+                "enabled"
+            ],
+            "properties": {
+                "enabled": {
+                    "description": "Enabled 为 true 时启用厂商，为 false 时停用厂商。",
+                    "type": "boolean",
+                    "example": true
                 }
             }
         },

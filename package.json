@@ -9,6 +9,7 @@
     "lint": "turbo run lint",
     "format": "turbo run format",
     "dev:web": "turbo run dev --filter=@deepwrite/web",
+    "dev:admin": "turbo run dev --filter=@deepwrite/admin",
     "dev:gateway": "pnpm --filter @deepwrite/gateway dev",
     "dev:worker": "cd services/worker && uv run python main.py",
     "dev:ai": "cd services/ai && uv run python main.py",

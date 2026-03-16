@@ -22,6 +22,7 @@ func SetupAPIRoutes(r *gin.Engine) {
 		{
 			authGroup.POST("/register", authHandler.Register)
 			authGroup.POST("/login", authHandler.Login)
+			authGroup.POST("/admin/login", authHandler.AdminLogin)
 			authGroup.POST("/refresh", authHandler.RefreshToken)
 
 			protected := authGroup.Group("")
@@ -102,9 +103,15 @@ func SetupAPIRoutes(r *gin.Engine) {
 		}
 
 		aiProviderGroup := v1.Group("/ai/providers")
-		aiProviderGroup.Use(middleware.AuthMiddleware())
+		aiProviderGroup.Use(middleware.AuthMiddleware(), middleware.AdminMiddleware())
 		{
 			aiProviderGroup.GET("", aiProviderHandler.List)
+			aiProviderGroup.GET("/vendors", aiProviderHandler.ListVendors)
+			aiProviderGroup.POST("/vendors", aiProviderHandler.CreateVendor)
+			aiProviderGroup.PATCH("/vendors/:providerId/enabled", aiProviderHandler.UpdateVendorEnabled)
+			aiProviderGroup.GET("/vendors/:providerId", aiProviderHandler.GetVendorDetail)
+			aiProviderGroup.GET("/vendors/:providerId/discover-models", aiProviderHandler.DiscoverVendorModels)
+			aiProviderGroup.POST("/vendors/:providerId/models", aiProviderHandler.CreateModelByVendor)
 			aiProviderGroup.POST("", aiProviderHandler.Create)
 			aiProviderGroup.GET("/:model", aiProviderHandler.GetByModel)
 			aiProviderGroup.PUT("/:model", aiProviderHandler.Update)

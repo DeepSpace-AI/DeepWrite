@@ -51,6 +51,33 @@ definitions:
     - file_name
     - object_key
     type: object
+  request.CreateAIProviderModelByVendorRequest:
+    properties:
+      enabled:
+        type: boolean
+      model:
+        maxLength: 120
+        type: string
+      request_model:
+        maxLength: 120
+        type: string
+      supports_audio_speech:
+        type: boolean
+      supports_audio_transcriptions:
+        type: boolean
+      supports_chat_completions:
+        type: boolean
+      supports_chat_responses:
+        type: boolean
+      supports_embeddings:
+        type: boolean
+      supports_models:
+        type: boolean
+      supports_rerank:
+        type: boolean
+    required:
+    - model
+    type: object
   request.CreateAIProviderModelRequest:
     properties:
       api_key:
@@ -98,10 +125,71 @@ definitions:
       rerank_path:
         maxLength: 255
         type: string
+      supports_audio_speech:
+        type: boolean
+      supports_audio_transcriptions:
+        type: boolean
+      supports_chat_completions:
+        type: boolean
+      supports_chat_responses:
+        type: boolean
+      supports_embeddings:
+        type: boolean
+      supports_models:
+        type: boolean
+      supports_rerank:
+        type: boolean
     required:
     - api_key
     - base_url
     - model
+    - provider
+    type: object
+  request.CreateAIProviderVendorRequest:
+    properties:
+      api_key:
+        maxLength: 8192
+        type: string
+      audio_speech_path:
+        maxLength: 255
+        type: string
+      audio_transcriptions_path:
+        maxLength: 255
+        type: string
+      base_url:
+        maxLength: 1024
+        type: string
+      chat_completions_path:
+        maxLength: 255
+        type: string
+      chat_responses_path:
+        maxLength: 255
+        type: string
+      embeddings_path:
+        maxLength: 255
+        type: string
+      enabled:
+        type: boolean
+      extra_headers:
+        additionalProperties:
+          type: string
+        type: object
+      models_path:
+        maxLength: 255
+        type: string
+      organization:
+        maxLength: 255
+        type: string
+      provider:
+        maxLength: 64
+        type: string
+      rerank_path:
+        maxLength: 255
+        type: string
+    required:
+    - api_key
+    - base_url
+    - provider
     type: object
   request.CreateDocumentRequest:
     properties:
@@ -331,6 +419,29 @@ definitions:
       rerank_path:
         maxLength: 255
         type: string
+      supports_audio_speech:
+        type: boolean
+      supports_audio_transcriptions:
+        type: boolean
+      supports_chat_completions:
+        type: boolean
+      supports_chat_responses:
+        type: boolean
+      supports_embeddings:
+        type: boolean
+      supports_models:
+        type: boolean
+      supports_rerank:
+        type: boolean
+    type: object
+  request.UpdateAIProviderVendorEnabledRequest:
+    properties:
+      enabled:
+        description: Enabled 为 true 时启用厂商，为 false 时停用厂商。
+        example: true
+        type: boolean
+    required:
+    - enabled
     type: object
   request.UpdateDocumentMetaRequest:
     properties:
@@ -688,6 +799,325 @@ paths:
       summary: 更新 AI 模型配置
       tags:
       - AI
+  /ai/providers/vendors:
+    get:
+      consumes:
+      - application/json
+      description: 获取 AI Provider 厂商列表，支持按 enabled 过滤
+      parameters:
+      - description: 是否启用
+        in: query
+        name: enabled
+        type: boolean
+      - description: 分页大小
+        in: query
+        name: limit
+        type: integer
+      - description: 偏移量
+        in: query
+        name: offset
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 获取成功
+          schema:
+            $ref: '#/definitions/response.Response'
+        "400":
+          description: 请求参数错误
+          schema:
+            $ref: '#/definitions/response.Response'
+        "401":
+          description: 未授权
+          schema:
+            $ref: '#/definitions/response.Response'
+        "403":
+          description: 无权限访问
+          schema:
+            $ref: '#/definitions/response.Response'
+        "500":
+          description: 服务器错误
+          schema:
+            $ref: '#/definitions/response.Response'
+      security:
+      - BearerAuth: []
+      summary: AI Provider 厂商列表
+      tags:
+      - AI
+    post:
+      consumes:
+      - application/json
+      description: 新增或更新 AI Provider 厂商基础配置（端点、密钥、路径）
+      parameters:
+      - description: 厂商配置参数
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/request.CreateAIProviderVendorRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: 创建成功
+          schema:
+            $ref: '#/definitions/response.Response'
+        "400":
+          description: 请求参数错误
+          schema:
+            $ref: '#/definitions/response.Response'
+        "401":
+          description: 未授权
+          schema:
+            $ref: '#/definitions/response.Response'
+        "403":
+          description: 无权限访问
+          schema:
+            $ref: '#/definitions/response.Response'
+        "500":
+          description: 服务器错误
+          schema:
+            $ref: '#/definitions/response.Response'
+      security:
+      - BearerAuth: []
+      summary: 创建 AI Provider 厂商
+      tags:
+      - AI
+  /ai/providers/vendors/{providerId}:
+    get:
+      consumes:
+      - application/json
+      description: 根据厂商 UUID 获取厂商详情及其已落库模型列表
+      parameters:
+      - description: 厂商 UUID
+        in: path
+        name: providerId
+        required: true
+        type: string
+      - description: 是否启用
+        in: query
+        name: enabled
+        type: boolean
+      - description: 分页大小
+        in: query
+        name: limit
+        type: integer
+      - description: 偏移量
+        in: query
+        name: offset
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 获取成功
+          schema:
+            $ref: '#/definitions/response.Response'
+        "400":
+          description: 请求参数错误
+          schema:
+            $ref: '#/definitions/response.Response'
+        "401":
+          description: 未授权
+          schema:
+            $ref: '#/definitions/response.Response'
+        "403":
+          description: 无权限访问
+          schema:
+            $ref: '#/definitions/response.Response'
+        "404":
+          description: 厂商不存在
+          schema:
+            $ref: '#/definitions/response.Response'
+        "500":
+          description: 服务器错误
+          schema:
+            $ref: '#/definitions/response.Response'
+      security:
+      - BearerAuth: []
+      summary: AI Provider 厂商详情
+      tags:
+      - AI
+  /ai/providers/vendors/{providerId}/discover-models:
+    get:
+      consumes:
+      - application/json
+      description: 根据厂商 UUID 调用厂商 models 接口发现可用模型
+      parameters:
+      - description: 厂商 UUID
+        in: path
+        name: providerId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 拉取成功
+          schema:
+            $ref: '#/definitions/response.Response'
+        "400":
+          description: 请求参数错误
+          schema:
+            $ref: '#/definitions/response.Response'
+        "401":
+          description: 未授权
+          schema:
+            $ref: '#/definitions/response.Response'
+        "403":
+          description: 无权限访问
+          schema:
+            $ref: '#/definitions/response.Response'
+        "404":
+          description: 厂商不存在
+          schema:
+            $ref: '#/definitions/response.Response'
+        "500":
+          description: 服务器错误
+          schema:
+            $ref: '#/definitions/response.Response'
+      security:
+      - BearerAuth: []
+      summary: 拉取厂商模型列表
+      tags:
+      - AI
+  /ai/providers/vendors/{providerId}/enabled:
+    patch:
+      consumes:
+      - application/json
+      description: 根据厂商 UUID 启用或停用厂商，并同步其下模型启停状态
+      parameters:
+      - description: 厂商 UUID
+        in: path
+        name: providerId
+        required: true
+        type: string
+      - description: 启停参数
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/request.UpdateAIProviderVendorEnabledRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 更新成功
+          schema:
+            $ref: '#/definitions/response.Response'
+        "400":
+          description: 请求参数错误
+          schema:
+            $ref: '#/definitions/response.Response'
+        "401":
+          description: 未授权
+          schema:
+            $ref: '#/definitions/response.Response'
+        "403":
+          description: 无权限访问
+          schema:
+            $ref: '#/definitions/response.Response'
+        "404":
+          description: 厂商不存在
+          schema:
+            $ref: '#/definitions/response.Response'
+        "500":
+          description: 服务器错误
+          schema:
+            $ref: '#/definitions/response.Response'
+      security:
+      - BearerAuth: []
+      summary: 更新 AI Provider 厂商启停状态
+      tags:
+      - AI
+  /ai/providers/vendors/{providerId}/models:
+    post:
+      consumes:
+      - application/json
+      description: 根据厂商 UUID 将选中的模型及能力配置落库
+      parameters:
+      - description: 厂商 UUID
+        in: path
+        name: providerId
+        required: true
+        type: string
+      - description: 模型落库参数
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/request.CreateAIProviderModelByVendorRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: 创建成功
+          schema:
+            $ref: '#/definitions/response.Response'
+        "400":
+          description: 请求参数错误
+          schema:
+            $ref: '#/definitions/response.Response'
+        "401":
+          description: 未授权
+          schema:
+            $ref: '#/definitions/response.Response'
+        "403":
+          description: 无权限访问
+          schema:
+            $ref: '#/definitions/response.Response'
+        "404":
+          description: 厂商不存在
+          schema:
+            $ref: '#/definitions/response.Response'
+        "500":
+          description: 服务器错误
+          schema:
+            $ref: '#/definitions/response.Response'
+      security:
+      - BearerAuth: []
+      summary: 通过厂商创建模型配置
+      tags:
+      - AI
+  /auth/admin/login:
+    post:
+      consumes:
+      - application/json
+      description: 使用管理员邮箱和密码登录，获取管理员专用访问令牌和刷新令牌
+      parameters:
+      - description: 登录信息
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/request.LoginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 登录成功
+          schema:
+            $ref: '#/definitions/response.Response'
+        "400":
+          description: 请求参数错误
+          schema:
+            $ref: '#/definitions/response.Response'
+        "401":
+          description: 认证失败
+          schema:
+            $ref: '#/definitions/response.Response'
+        "403":
+          description: 用户被禁用或非管理员
+          schema:
+            $ref: '#/definitions/response.Response'
+        "500":
+          description: 服务器错误
+          schema:
+            $ref: '#/definitions/response.Response'
+      summary: 管理员登录
+      tags:
+      - Auth
   /auth/login:
     post:
       consumes:

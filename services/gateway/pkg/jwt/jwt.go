@@ -22,18 +22,27 @@ type Claims struct {
 	Email  string `json:"email"`
 	Role   string `json:"role"`
 	Type   string `json:"type"`
+	Scope  string `json:"scope,omitempty"`
 	gojwt.RegisteredClaims
 }
 
 func GenerateAccessToken(userID, email, role string) (string, error) {
-	return generateToken(userID, email, role, "access", config.GetGlobalConfig().JWT.ExpireHours)
+	return generateToken(userID, email, role, "access", config.GetGlobalConfig().JWT.ExpireHours, "")
 }
 
 func GenerateRefreshToken(userID, email, role string) (string, error) {
-	return generateToken(userID, email, role, "refresh", config.GetGlobalConfig().JWT.RefreshHours)
+	return generateToken(userID, email, role, "refresh", config.GetGlobalConfig().JWT.RefreshHours, "")
 }
 
-func generateToken(userID, email, role, tokenType string, expireHours int) (string, error) {
+func GenerateAdminAccessToken(userID, email, role string) (string, error) {
+	return generateToken(userID, email, role, "access", config.GetGlobalConfig().JWT.ExpireHours, "admin")
+}
+
+func GenerateAdminRefreshToken(userID, email, role string) (string, error) {
+	return generateToken(userID, email, role, "refresh", config.GetGlobalConfig().JWT.RefreshHours, "admin")
+}
+
+func generateToken(userID, email, role, tokenType string, expireHours int, scope string) (string, error) {
 	cfg := config.GetGlobalConfig()
 	now := time.Now()
 	tokenID, err := generateTokenID()
@@ -46,6 +55,7 @@ func generateToken(userID, email, role, tokenType string, expireHours int) (stri
 		Email:  email,
 		Role:   role,
 		Type:   tokenType,
+		Scope:  scope,
 		RegisteredClaims: gojwt.RegisteredClaims{
 			ID:        tokenID,
 			Issuer:    cfg.JWT.Issuer,
@@ -60,14 +70,22 @@ func generateToken(userID, email, role, tokenType string, expireHours int) (stri
 }
 
 func ParseToken(tokenString string) (*Claims, error) {
-	return parseTokenByType(tokenString, "access")
+	return parseTokenByTypeAndScope(tokenString, "access", "")
 }
 
 func ParseRefreshToken(tokenString string) (*Claims, error) {
-	return parseTokenByType(tokenString, "refresh")
+	return parseTokenByTypeAndScope(tokenString, "refresh", "")
 }
 
-func parseTokenByType(tokenString, tokenType string) (*Claims, error) {
+func ParseAdminToken(tokenString string) (*Claims, error) {
+	return parseTokenByTypeAndScope(tokenString, "access", "admin")
+}
+
+func ParseAdminRefreshToken(tokenString string) (*Claims, error) {
+	return parseTokenByTypeAndScope(tokenString, "refresh", "admin")
+}
+
+func parseTokenByTypeAndScope(tokenString, tokenType, scope string) (*Claims, error) {
 	claims, err := parseSignedToken(tokenString)
 	if err != nil {
 		return nil, err
@@ -75,6 +93,9 @@ func parseTokenByType(tokenString, tokenType string) (*Claims, error) {
 
 	if claims.Type != tokenType {
 		return nil, errors.New("invalid token type")
+	}
+	if strings.TrimSpace(scope) != "" && !strings.EqualFold(strings.TrimSpace(claims.Scope), scope) {
+		return nil, errors.New("invalid token scope")
 	}
 
 	revoked, err := IsTokenRevoked(tokenString)
