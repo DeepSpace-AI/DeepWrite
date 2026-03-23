@@ -53,3 +53,33 @@ export interface Collaborator {
   avatarUrl?: string
   color?: string
 }
+
+export type AnnotationType = 'highlight' | 'note' | 'drawing'
+
+export interface PDFAnnotation {
+  id: string
+  file_id: string
+  user_id: string
+  workspace_id: string
+  type: AnnotationType
+  page: number
+  rect_x: number
+  rect_y: number
+  rect_width: number
+  rect_height: number
+  color?: string
+  content?: string
+  paths?: DrawingPath[]
+  created_at: string
+  updated_at: string
+}
+
+export interface DrawingPath {
+  points: Array<{ x: number; y: number }>
+  color: string
+  width: number
+}
+
+export interface PDFPageAnnotation extends PDFAnnotation {
+  absoluteRect: { x: number; y: number; width: number; height: number }
+}

@@ -19,8 +19,12 @@ import {
   presignWorkspaceUpload,
   updateWorkspaceFile,
   updateWorkspaceFolder,
+  listFileAnnotations,
+  createFileAnnotation,
+  updateFileAnnotation,
+  deleteFileAnnotation,
 } from '@/api/workspace'
-import type { VisibleFolderNode, WorkspaceDocument, WorkspaceFile, WorkspaceFolder } from '@/views/workspace/types'
+import type { VisibleFolderNode, WorkspaceDocument, WorkspaceFile, WorkspaceFolder, PDFAnnotation } from '@/views/workspace/types'
 
 const ROOT_KEY = '__root__'
 
@@ -66,6 +70,11 @@ export function useWorkspaceResources(workspaceId: Ref<string>) {
   const isMutating = ref(false)
   const isUploadingFiles = ref(false)
   let uploadStatusTimer: ReturnType<typeof setTimeout> | null = null
+
+  const currentPDFfile = ref<WorkspaceFile | null>(null)
+  const currentPDFPreviewUrl = ref<string>('')
+  const currentFileAnnotations = ref<PDFAnnotation[]>([])
+  const isLoadingAnnotations = ref(false)
 
   function clearUploadStatusTimer() {
     if (!uploadStatusTimer) return
@@ -588,11 +597,97 @@ export function useWorkspaceResources(workspaceId: Ref<string>) {
     clearError()
     try {
       const detail = await getWorkspaceFileDetail(workspaceId.value, fileId)
-      if (detail.preview_url && typeof window !== 'undefined') {
+      if (detail.file.content_type === 'application/pdf') {
+        currentPDFfile.value = detail.file
+        currentPDFPreviewUrl.value = detail.preview_url || ''
+        await loadAnnotations(fileId)
+      } else if (detail.preview_url && typeof window !== 'undefined') {
         window.open(detail.preview_url, '_blank', 'noopener,noreferrer')
       }
     } catch (error) {
       updateError(error, '获取文件预览失败')
+    }
+  }
+
+  function closePDFReader() {
+    currentPDFfile.value = null
+    currentPDFPreviewUrl.value = ''
+    currentFileAnnotations.value = []
+  }
+
+  async function loadAnnotations(fileId: string) {
+    if (!workspaceId.value) return
+    isLoadingAnnotations.value = true
+    try {
+      currentFileAnnotations.value = await listFileAnnotations(workspaceId.value, fileId)
+    } catch (error) {
+      updateError(error, '加载标注失败')
+    } finally {
+      isLoadingAnnotations.value = false
+    }
+  }
+
+  async function addAnnotation(input: {
+    type: 'highlight' | 'note' | 'drawing'
+    page: number
+    rect_x: number
+    rect_y: number
+    rect_width: number
+    rect_height: number
+    color?: string
+    content?: string
+    paths?: string
+  }) {
+    if (!currentPDFfile.value || !workspaceId.value) return null
+    clearError()
+    try {
+      const annotation = await createFileAnnotation(workspaceId.value, currentPDFfile.value.id, input)
+      currentFileAnnotations.value = [...currentFileAnnotations.value, annotation]
+      return annotation
+    } catch (error) {
+      updateError(error, '创建标注失败')
+      return null
+    }
+  }
+
+  async function updateAnnotation(annotationId: string, updates: {
+    rect_x?: number
+    rect_y?: number
+    rect_width?: number
+    rect_height?: number
+    color?: string
+    content?: string
+    paths?: string
+  }) {
+    if (!currentPDFfile.value || !workspaceId.value) return null
+    clearError()
+    try {
+      const updated = await updateFileAnnotation(workspaceId.value, currentPDFfile.value.id, annotationId, updates)
+      const index = currentFileAnnotations.value.findIndex(a => a.id === annotationId)
+      if (index !== -1) {
+        currentFileAnnotations.value = [
+          ...currentFileAnnotations.value.slice(0, index),
+          updated,
+          ...currentFileAnnotations.value.slice(index + 1),
+        ]
+      }
+      return updated
+    } catch (error) {
+      updateError(error, '更新标注失败')
+      return null
+    }
+  }
+
+  async function removeAnnotation(annotationId: string) {
+    if (!currentPDFfile.value || !workspaceId.value) return false
+    clearError()
+    try {
+      await deleteFileAnnotation(workspaceId.value, currentPDFfile.value.id, annotationId)
+      currentFileAnnotations.value = currentFileAnnotations.value.filter(a => a.id !== annotationId)
+      return true
+    } catch (error) {
+      updateError(error, '删除标注失败')
+      return false
     }
   }
 
@@ -641,5 +736,13 @@ export function useWorkspaceResources(workspaceId: Ref<string>) {
     deleteFile,
     batchDeleteFiles,
     previewFile,
+    currentPDFfile,
+    currentPDFPreviewUrl,
+    currentFileAnnotations,
+    isLoadingAnnotations,
+    closePDFReader,
+    addAnnotation,
+    updateAnnotation,
+    removeAnnotation,
   }
 }

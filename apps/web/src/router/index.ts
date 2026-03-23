@@ -51,7 +51,7 @@ const routes: RouteRecordRaw[] = [
       },
       {
         path: 'workspaces/:id',
-        redirect: (to) => ({ name: 'workspace-detail', params: { id: to.params.id } }),
+        redirect: (to) => ({ name: 'workspace-detail', params: { id: to.params.id }, query: to.query }),
       },
       {
         path: 'profile',

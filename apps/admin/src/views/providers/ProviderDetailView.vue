@@ -337,7 +337,8 @@ async function saveSelectedModels() {
         : `已落库 ${successCount} 个模型`
     }
     if (!successCount && failed.length) {
-      const firstReason = failed[0].reason
+      const firstFailed = failed[0]
+      const firstReason = firstFailed?.reason
       errorMessage.value = firstReason instanceof ApiError ? firstReason.message : '模型落库失败'
     }
     await loadVendorDetail()
@@ -475,171 +476,150 @@ onMounted(() => {
 </script>
 
 <template>
-  <section class="space-y-4 rounded-sm border border-base-300 bg-base-100 p-5 shadow-sm">
-    <div class="flex flex-wrap items-center justify-between gap-3">
-      <div>
-        <h2 class="text-xl font-semibold text-base-content">Provider 详情</h2>
-        <p class="mt-1 text-sm text-base-content/65">在详情页拉取厂商模型列表，选择并配置后落库。</p>
+  <section class="space-y-4">
+    <div class="glass-card rounded-2xl p-5">
+      <div class="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h2 class="text-xl font-semibold text-pretty">Provider 详情</h2>
+          <p class="mt-1 text-sm text-pretty-secondary">在详情页拉取厂商模型列表，选择并配置后落库</p>
+        </div>
+        <button class="btn btn-ghost btn-sm rounded-xl" @click="router.push({ name: 'providers' })">返回列表</button>
       </div>
-      <button class="btn btn-ghost btn-sm rounded-sm" @click="router.push({ name: 'providers' })">返回列表</button>
     </div>
 
-    <p v-if="errorMessage" class="rounded-sm border border-error/30 bg-error/10 px-3 py-2 text-sm text-error">{{ errorMessage }}</p>
-    <p v-if="successMessage" class="rounded-sm border border-success/30 bg-success/10 px-3 py-2 text-sm text-success">{{ successMessage }}</p>
+    <div v-if="errorMessage" class="glass-card rounded-xl p-4 text-sm text-error border border-error/20 bg-error/5">{{ errorMessage }}</div>
+    <div v-if="successMessage" class="glass-card rounded-xl p-4 text-sm text-emerald-600 border border-emerald-500/20 bg-emerald-500/5">{{ successMessage }}</div>
 
-    <fieldset class="fieldset rounded-sm border border-base-300 bg-base-200/35 p-4">
-      <legend class="fieldset-legend">厂商详情</legend>
-      <div v-if="isLoading" class="py-6 text-center"><span class="loading loading-spinner loading-md" /></div>
+    <fieldset class="glass-card rounded-2xl p-5">
+      <legend class="px-2 text-pretty-secondary font-medium">厂商详情</legend>
+      <div v-if="isLoading" class="py-8 text-center"><span class="loading loading-spinner loading-md text-pretty-muted" /></div>
       <div v-else-if="detailProvider">
-        <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-          <div class="rounded-sm border border-base-300 bg-base-100 p-3">
-            <p class="text-xs uppercase tracking-wide text-base-content/55">Provider</p>
-            <p class="mt-1 text-sm font-semibold">{{ detailProvider.name }}</p>
+        <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          <div class="glass-card rounded-xl p-3">
+            <p class="text-[10px] uppercase tracking-wider text-pretty-muted">Provider</p>
+            <p class="mt-1 text-sm font-semibold text-pretty">{{ detailProvider.name }}</p>
           </div>
-          <div class="rounded-sm border border-base-300 bg-base-100 p-3">
-            <p class="text-xs uppercase tracking-wide text-base-content/55">已落库模型</p>
-            <p class="mt-1 text-2xl font-semibold">{{ persistedModels.length }}</p>
+          <div class="glass-card rounded-xl p-3">
+            <p class="text-[10px] uppercase tracking-wider text-pretty-muted">已落库模型</p>
+            <p class="mt-1 text-2xl font-semibold text-pretty">{{ persistedModels.length }}</p>
           </div>
-          <div class="rounded-sm border border-success/30 bg-success/10 p-3">
-            <p class="text-xs uppercase tracking-wide text-success/80">启用模型</p>
-            <p class="mt-1 text-2xl font-semibold text-success">{{ persistedEnabledCount }}</p>
+          <div class="glass-card rounded-xl p-3 border border-emerald-500/20">
+            <p class="text-[10px] uppercase tracking-wider text-emerald-600/80">启用模型</p>
+            <p class="mt-1 text-2xl font-semibold text-emerald-600">{{ persistedEnabledCount }}</p>
           </div>
-          <div class="rounded-sm border border-info/30 bg-info/10 p-3">
-            <p class="text-xs uppercase tracking-wide text-info/80">待选择模型</p>
-            <p class="mt-1 text-2xl font-semibold text-info">{{ selectedDiscoverCount }}</p>
+          <div class="glass-card rounded-xl p-3 border border-blue-500/20">
+            <p class="text-[10px] uppercase tracking-wider text-blue-600/80">待选择模型</p>
+            <p class="mt-1 text-2xl font-semibold text-blue-600">{{ selectedDiscoverCount }}</p>
           </div>
         </div>
-        <div class="mt-3 space-y-1">
-          <p class="text-sm"><span class="font-medium">Base URL：</span><span class="font-mono text-xs">{{ detailProvider.base_url }}</span></p>
-          <p class="text-sm"><span class="font-medium">Models Path：</span><span class="font-mono text-xs">{{ detailProvider.models_path }}</span></p>
+        <div class="mt-4 space-y-1">
+          <p class="text-sm text-pretty-secondary"><span class="font-medium text-pretty">Base URL：</span><span class="font-mono text-xs">{{ detailProvider.base_url }}</span></p>
+          <p class="text-sm text-pretty-secondary"><span class="font-medium text-pretty">Models Path：</span><span class="font-mono text-xs">{{ detailProvider.models_path }}</span></p>
         </div>
-        <div class="mt-3 flex gap-2">
-          <button class="btn btn-outline btn-sm rounded-sm" :disabled="isDiscovering" @click="discoverModels">
+        <div class="mt-4 flex gap-2">
+          <button class="btn btn-ghost btn-sm rounded-xl" :disabled="isDiscovering" @click="discoverModels">
             <span v-if="isDiscovering" class="loading loading-spinner loading-xs" />
             <span>{{ isDiscovering ? '拉取中...' : '拉取厂商模型列表' }}</span>
           </button>
         </div>
       </div>
-      <p v-else class="text-sm text-base-content/60">未找到该厂商信息</p>
+      <p v-else class="text-sm text-pretty-muted">未找到该厂商信息</p>
     </fieldset>
 
-    <fieldset class="fieldset rounded-sm border border-base-300 bg-base-100 p-4">
-      <legend class="fieldset-legend">模型选择与配置</legend>
-      <div class="mb-3 flex flex-wrap items-center justify-between gap-2">
-        <p class="text-sm">已拉取 {{ discoveredModels.length }} 个模型，已选择 {{ selectedDiscoverCount }} 个</p>
+    <fieldset class="glass-card rounded-2xl p-5">
+      <legend class="px-2 text-pretty-secondary font-medium">模型选择与配置</legend>
+      <div class="mb-4 flex flex-wrap items-center justify-between gap-2">
+        <p class="text-sm text-pretty-secondary">已拉取 {{ discoveredModels.length }} 个模型，已选择 {{ selectedDiscoverCount }} 个</p>
         <div class="flex flex-wrap items-center gap-2">
-          <button class="btn btn-outline btn-sm rounded-sm" @click="isManualModelModalOpen = true">手动新增模型</button>
-          <button class="btn btn-outline btn-sm rounded-sm" :disabled="!discoveredModels.length" @click="isModelCompareModalOpen = true">打开模型对比弹窗</button>
-          <button class="btn btn-primary btn-sm rounded-sm" :disabled="!canSaveSelected" @click="saveSelectedModels">
+          <button class="btn btn-ghost btn-sm rounded-xl" @click="isManualModelModalOpen = true">手动新增模型</button>
+          <button class="btn btn-ghost btn-sm rounded-xl" :disabled="!discoveredModels.length" @click="isModelCompareModalOpen = true">打开模型对比弹窗</button>
+          <button class="btn rounded-xl bg-[var(--glow-primary)] text-pretty hover:opacity-90 btn-sm" :disabled="!canSaveSelected" @click="saveSelectedModels">
             <span v-if="isSavingModels" class="loading loading-spinner loading-xs" />
             <span>{{ isSavingModels ? '落库中...' : '落库选中模型' }}</span>
           </button>
         </div>
       </div>
-      <div v-if="!discoveredModels.length" class="text-sm text-base-content/60">请先在上方点击“拉取厂商模型列表”</div>
+      <div v-if="!discoveredModels.length" class="text-sm text-pretty-muted py-4">请先在上方点击"拉取厂商模型列表"</div>
     </fieldset>
 
     <dialog :open="isManualModelModalOpen" class="modal">
-      <div class="modal-box w-11/12 max-w-3xl rounded-md shadow-xl">
+      <div class="modal-box w-11/12 max-w-3xl rounded-2xl bg-[var(--bg-elevated)]">
         <form method="dialog">
           <button class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2" @click="closeManualModelModal">✕</button>
         </form>
-        <h3 class="text-xl font-bold">手动新增模型</h3>
+        <h3 class="text-lg font-semibold text-pretty">手动新增模型</h3>
 
         <div class="mt-6 grid gap-5">
-          <!-- Basic Information -->
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div class="form-control w-full">
-              <label class="label">
-                <span class="label-text font-medium">Model ID</span>
-                <span class="label-text-alt text-error">*</span>
-              </label>
-              <input
-                v-model="manualModelForm.model"
-                type="text"
-                placeholder="e.g. gpt-4o-mini"
-                class="input input-bordered w-full"
-                :class="{'input-error': !manualModelForm.model}"
-              />
+              <label class="label"><span class="label-text font-medium text-pretty">Model ID</span><span class="label-text-alt text-error">*</span></label>
+              <input v-model="manualModelForm.model" type="text" placeholder="e.g. gpt-4o-mini" class="glass-input input input-bordered w-full rounded-xl" :class="{'input-error': !manualModelForm.model}" />
             </div>
             <div class="form-control w-full">
-              <label class="label">
-                <span class="label-text font-medium">Request Model</span>
-                <span class="label-text-alt opacity-60">Optional</span>
-              </label>
-              <input
-                v-model="manualModelForm.request_model"
-                type="text"
-                placeholder="Defaults to Model ID if empty"
-                class="input input-bordered w-full"
-              />
+              <label class="label"><span class="label-text font-medium text-pretty">Request Model</span><span class="label-text-alt text-pretty-muted">Optional</span></label>
+              <input v-model="manualModelForm.request_model" type="text" placeholder="Defaults to Model ID if empty" class="glass-input input input-bordered w-full rounded-xl" />
             </div>
           </div>
 
-          <!-- Capabilities & Status -->
-          <div class="card bg-base-200/50 border border-base-200 rounded-md">
-            <div class="card-body p-4">
-              <h4 class="text-sm font-semibold opacity-70 mb-3 uppercase tracking-wider">Capabilities & Status</h4>
-              <div class="grid grid-cols-2 sm:grid-cols-4 gap-x-4 gap-y-3">
-                <div class="form-control">
-                  <label class="label cursor-pointer justify-start gap-3 p-0">
-                    <input v-model="manualModelForm.supports_chat_completions" type="checkbox" class="checkbox checkbox-sm checkbox-primary" />
-                    <span class="label-text text-sm">Chat</span>
-                  </label>
-                </div>
-                <div class="form-control">
-                  <label class="label cursor-pointer justify-start gap-3 p-0">
-                    <input v-model="manualModelForm.supports_chat_responses" type="checkbox" class="checkbox checkbox-sm checkbox-primary" />
-                    <span class="label-text text-sm">Responses</span>
-                  </label>
-                </div>
-                <div class="form-control">
-                  <label class="label cursor-pointer justify-start gap-3 p-0">
-                    <input v-model="manualModelForm.supports_embeddings" type="checkbox" class="checkbox checkbox-sm checkbox-primary" />
-                    <span class="label-text text-sm">Embeddings</span>
-                  </label>
-                </div>
-                <div class="form-control">
-                  <label class="label cursor-pointer justify-start gap-3 p-0">
-                    <input v-model="manualModelForm.supports_rerank" type="checkbox" class="checkbox checkbox-sm checkbox-primary" />
-                    <span class="label-text text-sm">Rerank</span>
-                  </label>
-                </div>
-                <div class="form-control">
-                  <label class="label cursor-pointer justify-start gap-3 p-0">
-                    <input v-model="manualModelForm.supports_audio_speech" type="checkbox" class="checkbox checkbox-sm checkbox-primary" />
-                    <span class="label-text text-sm">Speech</span>
-                  </label>
-                </div>
-                <div class="form-control">
-                  <label class="label cursor-pointer justify-start gap-3 p-0">
-                    <input v-model="manualModelForm.supports_audio_transcriptions" type="checkbox" class="checkbox checkbox-sm checkbox-primary" />
-                    <span class="label-text text-sm">Transcribe</span>
-                  </label>
-                </div>
-                <div class="form-control">
-                  <label class="label cursor-pointer justify-start gap-3 p-0">
-                    <input v-model="manualModelForm.supports_models" type="checkbox" class="checkbox checkbox-sm checkbox-primary" />
-                    <span class="label-text text-sm">Models</span>
-                  </label>
-                </div>
-
-                <div class="divider col-span-full my-0 opacity-10"></div>
-
-                <div class="form-control col-span-full sm:col-span-2">
-                  <label class="label cursor-pointer justify-start gap-3 p-0">
-                    <input v-model="manualModelForm.enabled" type="checkbox" class="toggle toggle-success toggle-sm" />
-                    <span class="label-text font-medium">Enable Model</span>
-                  </label>
-                </div>
+          <div class="glass-card rounded-xl p-4">
+            <h4 class="text-sm font-semibold text-pretty-secondary mb-3 uppercase tracking-wider">Capabilities & Status</h4>
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-x-4 gap-y-3">
+              <div class="form-control">
+                <label class="label cursor-pointer justify-start gap-3 p-0">
+                  <input v-model="manualModelForm.supports_chat_completions" type="checkbox" class="checkbox checkbox-sm checkbox-primary" />
+                  <span class="label-text text-sm text-pretty-secondary">Chat</span>
+                </label>
+              </div>
+              <div class="form-control">
+                <label class="label cursor-pointer justify-start gap-3 p-0">
+                  <input v-model="manualModelForm.supports_chat_responses" type="checkbox" class="checkbox checkbox-sm checkbox-primary" />
+                  <span class="label-text text-sm text-pretty-secondary">Responses</span>
+                </label>
+              </div>
+              <div class="form-control">
+                <label class="label cursor-pointer justify-start gap-3 p-0">
+                  <input v-model="manualModelForm.supports_embeddings" type="checkbox" class="checkbox checkbox-sm checkbox-primary" />
+                  <span class="label-text text-sm text-pretty-secondary">Embeddings</span>
+                </label>
+              </div>
+              <div class="form-control">
+                <label class="label cursor-pointer justify-start gap-3 p-0">
+                  <input v-model="manualModelForm.supports_rerank" type="checkbox" class="checkbox checkbox-sm checkbox-primary" />
+                  <span class="label-text text-sm text-pretty-secondary">Rerank</span>
+                </label>
+              </div>
+              <div class="form-control">
+                <label class="label cursor-pointer justify-start gap-3 p-0">
+                  <input v-model="manualModelForm.supports_audio_speech" type="checkbox" class="checkbox checkbox-sm checkbox-primary" />
+                  <span class="label-text text-sm text-pretty-secondary">Speech</span>
+                </label>
+              </div>
+              <div class="form-control">
+                <label class="label cursor-pointer justify-start gap-3 p-0">
+                  <input v-model="manualModelForm.supports_audio_transcriptions" type="checkbox" class="checkbox checkbox-sm checkbox-primary" />
+                  <span class="label-text text-sm text-pretty-secondary">Transcribe</span>
+                </label>
+              </div>
+              <div class="form-control">
+                <label class="label cursor-pointer justify-start gap-3 p-0">
+                  <input v-model="manualModelForm.supports_models" type="checkbox" class="checkbox checkbox-sm checkbox-primary" />
+                  <span class="label-text text-sm text-pretty-secondary">Models</span>
+                </label>
+              </div>
+              <div class="divider col-span-full my-0 opacity-10"></div>
+              <div class="form-control col-span-full sm:col-span-2">
+                <label class="label cursor-pointer justify-start gap-3 p-0">
+                  <input v-model="manualModelForm.enabled" type="checkbox" class="toggle toggle-success toggle-sm" />
+                  <span class="label-text font-medium text-pretty">Enable Model</span>
+                </label>
               </div>
             </div>
           </div>
         </div>
 
         <div class="modal-action mt-8">
-          <button class="btn btn-ghost" @click="closeManualModelModal">取消</button>
-          <button class="btn btn-primary px-6" :disabled="isSavingManualModel || !manualModelForm.model.trim()" @click="saveManualModel">
+          <button class="btn btn-ghost rounded-xl" @click="closeManualModelModal">取消</button>
+          <button class="btn rounded-xl bg-[var(--glow-primary)] text-pretty hover:opacity-90" :disabled="isSavingManualModel || !manualModelForm.model.trim()" @click="saveManualModel">
             <span v-if="isSavingManualModel" class="loading loading-spinner loading-xs" />
             <span>{{ isSavingManualModel ? '正在保存...' : '确认新增' }}</span>
           </button>
@@ -651,116 +631,115 @@ onMounted(() => {
     </dialog>
 
     <dialog :open="isModelCompareModalOpen" class="modal">
-      <div class="modal-box flex h-[86vh] w-11/12 max-w-384 flex-col rounded-sm p-0">
-        <div class="border-b border-base-300 px-5 pb-3 pt-4">
-        <div class="flex flex-wrap items-center justify-between gap-3">
-          <h3 class="text-lg font-semibold">厂商模型对比与落库</h3>
-          <div class="flex flex-wrap items-center gap-2">
-            <button class="btn btn-outline btn-sm rounded-sm" @click="toggleSelectCurrentPage(true)">选择本页</button>
-            <button class="btn btn-outline btn-sm rounded-sm" @click="toggleSelectCurrentPage(false)">取消本页</button>
-            <button class="btn btn-outline btn-sm rounded-sm" @click="selectOnlyNotPersisted">仅选未落库</button>
-            <button class="btn btn-outline btn-sm rounded-sm" :disabled="!selectedDiscoverCount" @click="applyCapabilityPreset('chat')">预设 Chat</button>
-            <button class="btn btn-outline btn-sm rounded-sm" :disabled="!selectedDiscoverCount" @click="applyCapabilityPreset('embedding')">预设 Embedding</button>
-            <button class="btn btn-outline btn-sm rounded-sm" :disabled="!selectedDiscoverCount" @click="applyCapabilityPreset('all')">预设全功能</button>
-            <button class="btn btn-primary btn-sm rounded-sm" :disabled="!canSaveSelected" @click="saveSelectedModels">
-              <span v-if="isSavingModels" class="loading loading-spinner loading-xs" />
-              <span>{{ isSavingModels ? '落库中...' : '落库选中模型' }}</span>
-            </button>
+      <div class="modal-box flex h-[86vh] w-11/12 max-w-384 flex-col rounded-2xl bg-[var(--bg-elevated)] p-0">
+        <div class="border-b border-[var(--border-subtle)] px-6 pb-4 pt-5">
+          <div class="flex flex-wrap items-center justify-between gap-3">
+            <h3 class="text-lg font-semibold text-pretty">厂商模型对比与落库</h3>
+            <div class="flex flex-wrap items-center gap-2">
+              <button class="btn btn-ghost btn-sm rounded-xl" @click="toggleSelectCurrentPage(true)">选择本页</button>
+              <button class="btn btn-ghost btn-sm rounded-xl" @click="toggleSelectCurrentPage(false)">取消本页</button>
+              <button class="btn btn-ghost btn-sm rounded-xl" @click="selectOnlyNotPersisted">仅选未落库</button>
+              <button class="btn btn-ghost btn-sm rounded-xl" :disabled="!selectedDiscoverCount" @click="applyCapabilityPreset('chat')">预设 Chat</button>
+              <button class="btn btn-ghost btn-sm rounded-xl" :disabled="!selectedDiscoverCount" @click="applyCapabilityPreset('embedding')">预设 Embedding</button>
+              <button class="btn btn-ghost btn-sm rounded-xl" :disabled="!selectedDiscoverCount" @click="applyCapabilityPreset('all')">预设全功能</button>
+              <button class="btn rounded-xl bg-[var(--glow-primary)] text-pretty hover:opacity-90 btn-sm" :disabled="!canSaveSelected" @click="saveSelectedModels">
+                <span v-if="isSavingModels" class="loading loading-spinner loading-xs" />
+                <span>{{ isSavingModels ? '落库中...' : '落库选中模型' }}</span>
+              </button>
+            </div>
           </div>
+          <p class="mt-2 text-sm text-pretty-muted">
+            总计 {{ discoveredModels.length }} 个模型，筛选后 {{ filteredDiscoveredModels.length }} 个，当前页已选 {{ selectedOnPageCount }} 个，合计已选 {{ selectedDiscoverCount }} 个
+          </p>
         </div>
-        <p class="mt-2 text-sm text-base-content/65">
-          总计 {{ discoveredModels.length }} 个模型，筛选后 {{ filteredDiscoveredModels.length }} 个，当前页已选 {{ selectedOnPageCount }} 个，合计已选 {{ selectedDiscoverCount }} 个
-        </p>
-        </div>
-        <div class="px-5 py-3">
-          <fieldset class="fieldset rounded-sm border border-base-300 bg-base-200/35 p-3">
-            <legend class="fieldset-legend">搜索</legend>
+        <div class="px-6 py-4">
+          <fieldset class="glass-card rounded-xl p-3">
+            <legend class="px-2 text-pretty-secondary text-sm">搜索</legend>
             <div class="max-w-md">
-              <label class="label">关键词</label>
               <input
                 v-model="modelSearchKeyword"
-                class="input input-bordered input-sm w-full"
+                class="glass-input input input-bordered input-sm w-full rounded-xl"
                 placeholder="搜索 model/name/owned_by"
                 autocomplete="off"
                 autocapitalize="off"
                 autocorrect="off"
                 spellcheck="false"
               />
-              <p class="label">支持模型标识、名称、归属方检索</p>
+              <p class="label"><span class="label-text-alt text-pretty-muted">支持模型标识、名称、归属方检索</span></p>
             </div>
           </fieldset>
         </div>
-        <div class="min-h-0 flex-1 px-5 pb-3">
-        <div class="h-full overflow-auto rounded-sm border border-base-300">
-          <table class="table table-sm table-pin-rows">
-            <thead>
-              <tr>
-                <th>选择</th>
-                <th>Model 名称</th>
-                <th>功能</th>
-                <th>本地落库</th>
-                <th>落库对比</th>
-                <th>Request Model</th>
-                <th>待落库配置</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-if="!pagedDiscoveredModels.length">
-                <td colspan="7" class="py-10 text-center text-sm text-base-content/60">当前筛选下无模型数据</td>
-              </tr>
-              <tr v-for="item in pagedDiscoveredModels" :key="item.model">
-                <td><input v-model="discoverState[item.model]!.selected" type="checkbox" class="checkbox checkbox-sm" /></td>
-                <td>
-                  <p class="font-mono text-xs">{{ item.model }}</p>
-                  <p class="text-[11px] text-base-content/55">{{ item.name || '-' }} / {{ item.owned_by || '-' }}</p>
-                </td>
-                <td class="text-[11px] text-base-content/70">{{ item.name || 'unknown' }}</td>
-                <td>
-                  <span v-if="persistedModelMap.has(item.model)" class="badge badge-success badge-sm">已落库</span>
-                  <span v-else class="badge badge-ghost badge-sm">未落库</span>
-                </td>
-                <td>
-                  <span
-                    class="badge badge-sm"
-                    :class="compareStatus(item.model) === '配置一致'
-                      ? 'badge-success'
-                      : compareStatus(item.model) === '存在差异'
-                        ? 'badge-warning'
-                        : 'badge-ghost'"
-                  >
-                    {{ compareStatus(item.model) }}
-                  </span>
-                  <p v-if="persistedModelMap.get(item.model)" class="mt-1 text-[11px] text-base-content/60">
-                    本地: {{ capabilityLabelsFromPersisted(persistedModelMap.get(item.model)!).join(', ') || '-' }}
-                  </p>
-                </td>
-                <td><input v-model="discoverState[item.model]!.request_model" class="input input-bordered input-xs w-44" /></td>
-                <td>
-                  <div class="grid grid-cols-2 gap-1 text-xs">
-                    <label class="label cursor-pointer justify-start gap-1 p-0"><input v-model="discoverState[item.model]!.supports_chat_completions" type="checkbox" class="toggle toggle-xs" />chat</label>
-                    <label class="label cursor-pointer justify-start gap-1 p-0"><input v-model="discoverState[item.model]!.supports_chat_responses" type="checkbox" class="toggle toggle-xs" />responses</label>
-                    <label class="label cursor-pointer justify-start gap-1 p-0"><input v-model="discoverState[item.model]!.supports_embeddings" type="checkbox" class="toggle toggle-xs" />embeddings</label>
-                    <label class="label cursor-pointer justify-start gap-1 p-0"><input v-model="discoverState[item.model]!.supports_rerank" type="checkbox" class="toggle toggle-xs" />rerank</label>
-                    <label class="label cursor-pointer justify-start gap-1 p-0"><input v-model="discoverState[item.model]!.supports_audio_speech" type="checkbox" class="toggle toggle-xs" />speech</label>
-                    <label class="label cursor-pointer justify-start gap-1 p-0"><input v-model="discoverState[item.model]!.supports_audio_transcriptions" type="checkbox" class="toggle toggle-xs" />transcribe</label>
-                    <label class="label cursor-pointer justify-start gap-1 p-0"><input v-model="discoverState[item.model]!.supports_models" type="checkbox" class="toggle toggle-xs" />models</label>
-                    <label class="label cursor-pointer justify-start gap-1 p-0"><input v-model="discoverState[item.model]!.enabled" type="checkbox" class="toggle toggle-xs" />enabled</label>
-                  </div>
-                  <p class="mt-1 text-[11px] text-base-content/60">
-                    目标: {{ capabilityLabelsFromSelection(discoverState[item.model]!).join(', ') || '-' }}
-                  </p>
-                </td>
-              </tr>
-            </tbody>
-          </table>
+        <div class="min-h-0 flex-1 px-6 pb-4">
+          <div class="h-full overflow-auto rounded-xl border border-[var(--border-subtle)]">
+            <table class="table table-sm">
+              <thead>
+                <tr class="border-b border-[var(--border-subtle)] bg-[var(--bg-base)]/50">
+                  <th class="text-pretty-secondary font-medium">选择</th>
+                  <th class="text-pretty-secondary font-medium">Model 名称</th>
+                  <th class="text-pretty-secondary font-medium">功能</th>
+                  <th class="text-pretty-secondary font-medium">本地落库</th>
+                  <th class="text-pretty-secondary font-medium">落库对比</th>
+                  <th class="text-pretty-secondary font-medium">Request Model</th>
+                  <th class="text-pretty-secondary font-medium">待落库配置</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-if="!pagedDiscoveredModels.length">
+                  <td colspan="7" class="py-12 text-center text-sm text-pretty-muted">当前筛选下无模型数据</td>
+                </tr>
+                <tr v-for="item in pagedDiscoveredModels" :key="item.model" class="border-b border-[var(--border-subtle)] hover:bg-[var(--bg-elevated)]/30 transition-colors">
+                  <td><input v-model="discoverState[item.model]!.selected" type="checkbox" class="checkbox checkbox-sm" /></td>
+                  <td>
+                    <p class="font-mono text-xs text-pretty">{{ item.model }}</p>
+                    <p class="text-[11px] text-pretty-muted">{{ item.name || '-' }} / {{ item.owned_by || '-' }}</p>
+                  </td>
+                  <td class="text-[11px] text-pretty-secondary">{{ item.name || 'unknown' }}</td>
+                  <td>
+                    <span v-if="persistedModelMap.has(item.model)" class="badge rounded-xl bg-emerald-500/15 text-emerald-600 border-0 text-xs">已落库</span>
+                    <span v-else class="badge rounded-xl bg-[var(--glow-primary)] text-pretty-muted border-0 text-xs">未落库</span>
+                  </td>
+                  <td>
+                    <span
+                      class="badge rounded-xl text-xs"
+                      :class="compareStatus(item.model) === '配置一致'
+                        ? 'bg-emerald-500/15 text-emerald-600 border-0'
+                        : compareStatus(item.model) === '存在差异'
+                          ? 'bg-amber-500/15 text-amber-600 border-0'
+                          : 'bg-[var(--glow-primary)] text-pretty-muted border-0'"
+                    >
+                      {{ compareStatus(item.model) }}
+                    </span>
+                    <p v-if="persistedModelMap.get(item.model)" class="mt-1 text-[11px] text-pretty-muted">
+                      本地: {{ capabilityLabelsFromPersisted(persistedModelMap.get(item.model)!).join(', ') || '-' }}
+                    </p>
+                  </td>
+                  <td><input v-model="discoverState[item.model]!.request_model" class="glass-input input input-bordered input-xs w-44 rounded-xl" /></td>
+                  <td>
+                    <div class="grid grid-cols-2 gap-1 text-xs">
+                      <label class="label cursor-pointer justify-start gap-1 p-0"><input v-model="discoverState[item.model]!.supports_chat_completions" type="checkbox" class="toggle toggle-xs" />chat</label>
+                      <label class="label cursor-pointer justify-start gap-1 p-0"><input v-model="discoverState[item.model]!.supports_chat_responses" type="checkbox" class="toggle toggle-xs" />responses</label>
+                      <label class="label cursor-pointer justify-start gap-1 p-0"><input v-model="discoverState[item.model]!.supports_embeddings" type="checkbox" class="toggle toggle-xs" />embeddings</label>
+                      <label class="label cursor-pointer justify-start gap-1 p-0"><input v-model="discoverState[item.model]!.supports_rerank" type="checkbox" class="toggle toggle-xs" />rerank</label>
+                      <label class="label cursor-pointer justify-start gap-1 p-0"><input v-model="discoverState[item.model]!.supports_audio_speech" type="checkbox" class="toggle toggle-xs" />speech</label>
+                      <label class="label cursor-pointer justify-start gap-1 p-0"><input v-model="discoverState[item.model]!.supports_audio_transcriptions" type="checkbox" class="toggle toggle-xs" />transcribe</label>
+                      <label class="label cursor-pointer justify-start gap-1 p-0"><input v-model="discoverState[item.model]!.supports_models" type="checkbox" class="toggle toggle-xs" />models</label>
+                      <label class="label cursor-pointer justify-start gap-1 p-0"><input v-model="discoverState[item.model]!.enabled" type="checkbox" class="toggle toggle-xs" />enabled</label>
+                    </div>
+                    <p class="mt-1 text-[11px] text-pretty-muted">
+                      目标: {{ capabilityLabelsFromSelection(discoverState[item.model]!).join(', ') || '-' }}
+                    </p>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
         </div>
-        </div>
-        <div class="border-t border-base-300 px-5 py-3">
+        <div class="border-t border-[var(--border-subtle)] px-6 py-4">
           <div class="flex flex-wrap items-end justify-between gap-3">
             <div class="flex items-end gap-2">
               <div class="w-24">
-                <label class="label">每页</label>
-                <select v-model.number="modelPageSize" class="select select-bordered select-sm w-full">
+                <label class="label"><span class="label-text text-pretty-secondary text-xs">每页</span></label>
+                <select v-model.number="modelPageSize" class="glass-input select select-bordered select-sm w-full rounded-xl">
                   <option :value="10">10</option>
                   <option :value="20">20</option>
                   <option :value="50">50</option>
@@ -768,17 +747,17 @@ onMounted(() => {
                 </select>
               </div>
               <div>
-                <label class="label">页码</label>
-                <div class="input input-bordered input-sm flex h-9 items-center px-3 text-xs">
+                <label class="label"><span class="label-text text-pretty-secondary text-xs">页码</span></label>
+                <div class="glass-input input input-bordered input-sm flex h-9 items-center px-3 text-xs rounded-xl text-pretty">
                   {{ modelPage }} / {{ totalModelPages }}
                 </div>
               </div>
-              <button class="btn btn-outline btn-sm rounded-sm" :disabled="modelPage <= 1" @click="modelPage--">上一页</button>
-              <button class="btn btn-outline btn-sm rounded-sm" :disabled="modelPage >= totalModelPages" @click="modelPage++">下一页</button>
+              <button class="btn btn-ghost btn-sm rounded-xl" :disabled="modelPage <= 1" @click="modelPage--">上一页</button>
+              <button class="btn btn-ghost btn-sm rounded-xl" :disabled="modelPage >= totalModelPages" @click="modelPage++">下一页</button>
             </div>
             <div class="modal-action m-0">
-              <button class="btn btn-ghost rounded-sm" @click="closeModelCompareModal">关闭</button>
-              <button class="btn btn-primary rounded-sm" :disabled="!canSaveSelected" @click="saveSelectedModels">
+              <button class="btn btn-ghost rounded-xl" @click="closeModelCompareModal">关闭</button>
+              <button class="btn rounded-xl bg-[var(--glow-primary)] text-pretty hover:opacity-90" :disabled="!canSaveSelected" @click="saveSelectedModels">
                 <span v-if="isSavingModels" class="loading loading-spinner loading-xs" />
                 <span>{{ isSavingModels ? '落库中...' : '落库选中模型' }}</span>
               </button>
@@ -791,12 +770,12 @@ onMounted(() => {
       </form>
     </dialog>
 
-    <fieldset class="fieldset rounded-sm border border-base-300 bg-base-100 p-4">
-      <legend class="fieldset-legend">已落库模型</legend>
-      <div class="mb-3 max-w-sm">
+    <fieldset class="glass-card rounded-2xl p-5">
+      <legend class="px-2 text-pretty-secondary font-medium">已落库模型</legend>
+      <div class="mb-4 max-w-sm">
         <input
           v-model="persistSearchKeyword"
-          class="input input-bordered input-sm w-full"
+          class="glass-input input input-bordered input-sm w-full rounded-xl"
           placeholder="搜索已落库模型 model/request_model"
           autocomplete="off"
           autocapitalize="off"
@@ -804,40 +783,40 @@ onMounted(() => {
           spellcheck="false"
         />
       </div>
-      <div class="overflow-x-auto">
-        <table class="table table-zebra table-sm">
+      <div class="overflow-x-auto rounded-xl border border-[var(--border-subtle)]">
+        <table class="table">
           <thead>
-            <tr>
-              <th>Model</th>
-              <th>Request Model</th>
-              <th>Enabled</th>
-              <th>更新时间</th>
-              <th class="text-right">操作</th>
+            <tr class="border-b border-[var(--border-subtle)] bg-[var(--bg-base)]/50">
+              <th class="text-pretty-secondary font-medium">Model</th>
+              <th class="text-pretty-secondary font-medium">Request Model</th>
+              <th class="text-pretty-secondary font-medium">Enabled</th>
+              <th class="text-pretty-secondary font-medium">更新时间</th>
+              <th class="text-right text-pretty-secondary font-medium">操作</th>
             </tr>
           </thead>
           <tbody>
             <tr v-if="!filteredPersistedModels.length">
-              <td colspan="5" class="py-8 text-center text-sm text-base-content/60">暂无已落库模型</td>
+              <td colspan="5" class="py-10 text-center text-sm text-pretty-muted">暂无已落库模型</td>
             </tr>
-            <tr v-for="row in filteredPersistedModels" :key="row.id">
-              <td class="font-mono text-xs">{{ row.model }}</td>
-              <td class="font-mono text-xs">{{ row.request_model }}</td>
-              <td><span class="badge badge-outline">{{ row.enabled ? '启用' : '停用' }}</span></td>
-              <td class="text-xs">{{ row.updated_at }}</td>
+            <tr v-for="row in filteredPersistedModels" :key="row.id" class="border-b border-[var(--border-subtle)] hover:bg-[var(--bg-elevated)]/30 transition-colors">
+              <td class="font-mono text-xs text-pretty">{{ row.model }}</td>
+              <td class="font-mono text-xs text-pretty-secondary">{{ row.request_model }}</td>
+              <td><span class="badge rounded-xl" :class="row.enabled ? 'bg-emerald-500/15 text-emerald-600 border-0' : 'bg-[var(--glow-primary)] text-pretty-muted border-0'">{{ row.enabled ? '启用' : '停用' }}</span></td>
+              <td class="text-xs text-pretty-muted">{{ row.updated_at }}</td>
               <td>
                 <div class="flex justify-end gap-2">
                   <button
-                    class="btn btn-xs rounded-sm"
-                    :class="row.enabled ? 'btn-warning' : 'btn-success'"
+                    class="btn btn-xs rounded-xl"
+                    :class="row.enabled ? 'bg-amber-500/15 text-amber-600 border-0 hover:bg-amber-500/25' : 'bg-emerald-500/15 text-emerald-600 border-0 hover:bg-emerald-500/25'"
                     :disabled="togglingPersistedModelName === row.model"
                     @click="togglePersistedModelEnabled(row)"
                   >
                     <span v-if="togglingPersistedModelName === row.model" class="loading loading-spinner loading-xs" />
                     <span>{{ row.enabled ? '停用' : '启用' }}</span>
                   </button>
-                  <button class="btn btn-outline btn-xs rounded-sm" @click="openPersistedEditModal(row)">编辑</button>
+                  <button class="btn btn-ghost btn-xs rounded-xl text-pretty-secondary hover:bg-[var(--glow-primary)] hover:text-pretty" @click="openPersistedEditModal(row)">编辑</button>
                   <button
-                    class="btn btn-error btn-xs rounded-sm"
+                    class="btn btn-error btn-xs rounded-xl border-0"
                     :disabled="deletingPersistedModelName === row.model"
                     @click="deletePersistedModel(row)"
                   >
@@ -853,44 +832,42 @@ onMounted(() => {
     </fieldset>
 
     <dialog :open="isPersistedEditModalOpen" class="modal">
-      <div class="modal-box w-11/12 max-w-3xl rounded-md shadow-xl">
+      <div class="modal-box w-11/12 max-w-3xl rounded-2xl bg-[var(--bg-elevated)]">
         <form method="dialog">
           <button class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2" @click="closePersistedEditModal">✕</button>
         </form>
-        <h3 class="text-xl font-bold">编辑已落库模型</h3>
+        <h3 class="text-lg font-semibold text-pretty">编辑已落库模型</h3>
 
         <div class="mt-5 space-y-4">
           <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
             <div>
-              <label class="label"><span class="label-text font-medium">Model</span></label>
-              <input v-model="persistedModelForm.model" type="text" class="input input-bordered w-full" disabled />
+              <label class="label"><span class="label-text font-medium text-pretty">Model</span></label>
+              <input v-model="persistedModelForm.model" type="text" class="glass-input input input-bordered w-full rounded-xl" disabled />
             </div>
             <div>
-              <label class="label"><span class="label-text font-medium">Request Model</span></label>
-              <input v-model="persistedModelForm.request_model" type="text" class="input input-bordered w-full" placeholder="默认同 model" />
+              <label class="label"><span class="label-text font-medium text-pretty">Request Model</span></label>
+              <input v-model="persistedModelForm.request_model" type="text" class="glass-input input input-bordered w-full rounded-xl" placeholder="默认同 model" />
             </div>
           </div>
 
-          <div class="card rounded-md border border-base-200 bg-base-200/50">
-            <div class="card-body p-4">
-              <h4 class="mb-3 text-sm font-semibold uppercase tracking-wider opacity-70">Capabilities & Status</h4>
-              <div class="grid grid-cols-2 gap-x-4 gap-y-3 sm:grid-cols-4">
-                <label class="label cursor-pointer justify-start gap-3 p-0"><input v-model="persistedModelForm.supports_chat_completions" type="checkbox" class="checkbox checkbox-sm checkbox-primary" /> <span class="label-text text-sm">Chat</span></label>
-                <label class="label cursor-pointer justify-start gap-3 p-0"><input v-model="persistedModelForm.supports_chat_responses" type="checkbox" class="checkbox checkbox-sm checkbox-primary" /> <span class="label-text text-sm">Responses</span></label>
-                <label class="label cursor-pointer justify-start gap-3 p-0"><input v-model="persistedModelForm.supports_embeddings" type="checkbox" class="checkbox checkbox-sm checkbox-primary" /> <span class="label-text text-sm">Embeddings</span></label>
-                <label class="label cursor-pointer justify-start gap-3 p-0"><input v-model="persistedModelForm.supports_rerank" type="checkbox" class="checkbox checkbox-sm checkbox-primary" /> <span class="label-text text-sm">Rerank</span></label>
-                <label class="label cursor-pointer justify-start gap-3 p-0"><input v-model="persistedModelForm.supports_audio_speech" type="checkbox" class="checkbox checkbox-sm checkbox-primary" /> <span class="label-text text-sm">Speech</span></label>
-                <label class="label cursor-pointer justify-start gap-3 p-0"><input v-model="persistedModelForm.supports_audio_transcriptions" type="checkbox" class="checkbox checkbox-sm checkbox-primary" /> <span class="label-text text-sm">Transcribe</span></label>
-                <label class="label cursor-pointer justify-start gap-3 p-0"><input v-model="persistedModelForm.supports_models" type="checkbox" class="checkbox checkbox-sm checkbox-primary" /> <span class="label-text text-sm">Models</span></label>
-                <label class="label cursor-pointer justify-start gap-3 p-0"><input v-model="persistedModelForm.enabled" type="checkbox" class="toggle toggle-success toggle-sm" /> <span class="label-text text-sm font-medium">Enable</span></label>
-              </div>
+          <div class="glass-card rounded-xl p-4">
+            <h4 class="mb-3 text-sm font-semibold text-pretty-secondary uppercase tracking-wider">Capabilities & Status</h4>
+            <div class="grid grid-cols-2 gap-x-4 gap-y-3 sm:grid-cols-4">
+              <label class="label cursor-pointer justify-start gap-3 p-0"><input v-model="persistedModelForm.supports_chat_completions" type="checkbox" class="checkbox checkbox-sm checkbox-primary" /> <span class="label-text text-sm text-pretty-secondary">Chat</span></label>
+              <label class="label cursor-pointer justify-start gap-3 p-0"><input v-model="persistedModelForm.supports_chat_responses" type="checkbox" class="checkbox checkbox-sm checkbox-primary" /> <span class="label-text text-sm text-pretty-secondary">Responses</span></label>
+              <label class="label cursor-pointer justify-start gap-3 p-0"><input v-model="persistedModelForm.supports_embeddings" type="checkbox" class="checkbox checkbox-sm checkbox-primary" /> <span class="label-text text-sm text-pretty-secondary">Embeddings</span></label>
+              <label class="label cursor-pointer justify-start gap-3 p-0"><input v-model="persistedModelForm.supports_rerank" type="checkbox" class="checkbox checkbox-sm checkbox-primary" /> <span class="label-text text-sm text-pretty-secondary">Rerank</span></label>
+              <label class="label cursor-pointer justify-start gap-3 p-0"><input v-model="persistedModelForm.supports_audio_speech" type="checkbox" class="checkbox checkbox-sm checkbox-primary" /> <span class="label-text text-sm text-pretty-secondary">Speech</span></label>
+              <label class="label cursor-pointer justify-start gap-3 p-0"><input v-model="persistedModelForm.supports_audio_transcriptions" type="checkbox" class="checkbox checkbox-sm checkbox-primary" /> <span class="label-text text-sm text-pretty-secondary">Transcribe</span></label>
+              <label class="label cursor-pointer justify-start gap-3 p-0"><input v-model="persistedModelForm.supports_models" type="checkbox" class="checkbox checkbox-sm checkbox-primary" /> <span class="label-text text-sm text-pretty-secondary">Models</span></label>
+              <label class="label cursor-pointer justify-start gap-3 p-0"><input v-model="persistedModelForm.enabled" type="checkbox" class="toggle toggle-success toggle-sm" /> <span class="label-text text-sm font-medium text-pretty">Enable</span></label>
             </div>
           </div>
         </div>
 
         <div class="modal-action mt-8">
-          <button class="btn btn-ghost" @click="closePersistedEditModal">取消</button>
-          <button class="btn btn-primary px-6" :disabled="isSavingPersistedModel" @click="savePersistedModelEdit">
+          <button class="btn btn-ghost rounded-xl" @click="closePersistedEditModal">取消</button>
+          <button class="btn rounded-xl bg-[var(--glow-primary)] text-pretty hover:opacity-90" :disabled="isSavingPersistedModel" @click="savePersistedModelEdit">
             <span v-if="isSavingPersistedModel" class="loading loading-spinner loading-xs" />
             <span>{{ isSavingPersistedModel ? '保存中...' : '保存修改' }}</span>
           </button>

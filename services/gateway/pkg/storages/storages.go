@@ -29,6 +29,7 @@ func normalizeConfig(c Config) Config {
 	c.AccessKeyID = strings.TrimSpace(c.AccessKeyID)
 	c.SecretAccessKey = strings.TrimSpace(c.SecretAccessKey)
 	c.SessionToken = strings.TrimSpace(c.SessionToken)
+	c.CustomDomain = strings.TrimSpace(c.CustomDomain)
 	if c.Provider == "" {
 		c.Provider = ProviderAWS
 	}

@@ -67,7 +67,7 @@ function handleSubmit() {
 
 <template>
   <dialog class="modal" :class="{ 'modal-open': visible }" @close="handleClose">
-    <div class="modal-box rounded-sm border border-base-300">
+    <div class="modal-box rounded-sm no-line bg-(--surface-raised) shadow-[0_18px_42px_oklch(0.36_0.008_105/0.12)]">
       <h3 class="text-lg font-semibold text-base-content">重命名工作空间</h3>
       <p class="mt-1 text-sm text-base-content/60">更新工作空间名称，成员会看到新的名称。</p>
 
@@ -100,3 +100,6 @@ function handleSubmit() {
     </form>
   </dialog>
 </template>
+
+
+

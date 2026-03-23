@@ -14,7 +14,6 @@ const { user } = storeToRefs(userStore)
 
 const showWorkbench = computed(() => isAuthenticated.value && !!user.value?.id)
 
-// 刷新/重新进入时兜底初始化，确保导航栏状态正确
 onBeforeMount(() => {
   authStore.initializeFromStorage()
   userStore.initializeFromStorage()
@@ -22,33 +21,64 @@ onBeforeMount(() => {
 </script>
 
 <template>
-  <div class="min-h-screen bg-base-100">
-    <header class="sticky top-0 z-50 bg-base-100/90 backdrop-blur-sm border-b border-base-300/50">
-      <div class="navbar mx-auto max-w-6xl px-5 lg:px-6">
-        <div class="navbar-start">
-          <RouterLink to="/" class="btn btn-ghost text-lg font-bold tracking-tight px-2">
+  <div class="min-h-screen bg-dot-grid px-4 pb-6">
+    <header class="paper-card-static sticky top-4 z-50 mx-auto mt-4 max-w-6xl rounded-lg">
+      <nav class="mx-auto flex max-w-6xl items-center justify-between px-5 py-4 lg:px-6">
+        <div class="flex items-center gap-8">
+          <RouterLink to="/" class="text-editorial text-xl font-semibold tracking-tight">
             DeepWrite
           </RouterLink>
-        </div>
-        <div class="navbar-center hidden md:flex">
-          <ul class="menu menu-horizontal text-sm px-1">
-            <li><RouterLink :to="{ name: 'home', hash: '#demo' }">{{ t('nav.demo') }}</RouterLink></li>
-            <li><RouterLink :to="{ name: 'home', hash: '#integrations' }">{{ t('nav.integrations') }}</RouterLink></li>
-            <li><RouterLink :to="{ name: 'home', hash: '#pricing' }">{{ t('nav.pricing') }}</RouterLink></li>
+          <ul class="hidden md:flex items-center gap-1">
+            <li>
+              <RouterLink
+                :to="{ name: 'home', hash: '#demo' }"
+                class="label-md rounded-md px-4 py-2 hover:bg-[var(--glow-primary)] transition-colors"
+              >
+                {{ t('nav.demo') }}
+              </RouterLink>
+            </li>
+            <li>
+              <RouterLink
+                :to="{ name: 'home', hash: '#integrations' }"
+                class="label-md rounded-md px-4 py-2 hover:bg-[var(--glow-primary)] transition-colors"
+              >
+                {{ t('nav.integrations') }}
+              </RouterLink>
+            </li>
+            <li>
+              <RouterLink
+                :to="{ name: 'home', hash: '#pricing' }"
+                class="label-md rounded-md px-4 py-2 hover:bg-[var(--glow-primary)] transition-colors"
+              >
+                {{ t('nav.pricing') }}
+              </RouterLink>
+            </li>
           </ul>
         </div>
-        <div class="navbar-end gap-2">
-          <RouterLink :to="{ name: 'dashboard' }" class="btn btn-ghost btn-sm" v-if="showWorkbench"
-            >{{ t('nav.workbench') }}</RouterLink
+        <div class="flex items-center gap-3">
+          <RouterLink
+            v-if="showWorkbench"
+            :to="{ name: 'dashboard' }"
+            class="label-md rounded-md px-4 py-2 hover:bg-[var(--glow-primary)] transition-colors"
           >
+            {{ t('nav.workbench') }}
+          </RouterLink>
           <template v-else>
-            <RouterLink :to="{ name: 'login' }" class="btn btn-ghost btn-sm">{{ t('nav.login') }}</RouterLink>
-            <RouterLink :to="{ name: 'register' }" class="btn btn-primary btn-sm"
-              >{{ t('nav.startFree') }}</RouterLink
+            <RouterLink
+              :to="{ name: 'login' }"
+              class="label-md rounded-md px-4 py-2 hover:bg-[var(--glow-primary)] transition-colors"
             >
+              {{ t('nav.login') }}
+            </RouterLink>
+            <RouterLink
+              :to="{ name: 'register' }"
+              class="btn-primary-vellum rounded-md px-5 py-2 text-sm"
+            >
+              {{ t('nav.startFree') }}
+            </RouterLink>
           </template>
         </div>
-      </div>
+      </nav>
     </header>
     <RouterView />
   </div>

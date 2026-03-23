@@ -22,6 +22,12 @@ const { t } = useI18n()
 const userStore = useUserStore()
 
 const workspaceId = computed(() => String(route.params.id || ''))
+const routeDocumentId = computed(() => {
+  const raw = route.query.doc
+  if (typeof raw === 'string') return raw.trim()
+  if (Array.isArray(raw)) return String(raw[0] || '').trim()
+  return ''
+})
 const isEditing = ref(false)
 const selectedDocId = ref('')
 
@@ -57,6 +63,14 @@ const {
   deleteFile,
   batchDeleteFiles,
   previewFile,
+  currentPDFfile,
+  currentPDFPreviewUrl,
+  currentFileAnnotations,
+  isLoadingAnnotations,
+  closePDFReader,
+  addAnnotation,
+  updateAnnotation,
+  removeAnnotation,
 } = useWorkspaceResources(workspaceId)
 
 // Collaboration setup
@@ -121,14 +135,15 @@ const headerCollaborators = computed<Collaborator[]>(() => {
   return collaborators
 })
 const isWritingMode = computed(() => mainPaneType.value === 'writing')
-const showWritingEditor = computed(() => isWritingMode.value && !!selectedDocument.value && isEditing.value)
+const showWritingEditor = computed(() => isWritingMode.value && !!selectedDocument.value && isEditing.value && !currentPDFfile.value)
+const showPDFReader = computed(() => isWritingMode.value && !!currentPDFfile.value)
 const isSubmitting = computed(() => isMutating.value || isSavingDraft.value)
 
 const layoutClass = computed(() => {
   if (!isWritingMode.value) {
     return 'grid-cols-1 xl:grid-cols-[64px_minmax(0,1fr)]'
   }
-  if (!showWritingEditor.value) {
+  if (!showWritingEditor.value && !showPDFReader.value) {
     return 'grid-cols-1 xl:grid-cols-[64px_minmax(0,1fr)_360px]'
   }
   return 'grid-cols-1 xl:grid-cols-[64px_260px_minmax(0,1fr)_300px]'
@@ -300,6 +315,32 @@ function beginEditDocument(doc: WorkspaceDocument) {
   })
 }
 
+function syncDocumentQuery(documentId: string) {
+  const nextDocId = documentId.trim()
+  const currentDocId = routeDocumentId.value
+  if (nextDocId === currentDocId) return
+
+  const nextQuery = { ...route.query } as Record<string, string | string[] | undefined>
+  if (nextDocId) {
+    nextQuery.doc = nextDocId
+  } else {
+    delete nextQuery.doc
+  }
+
+  router.replace({ query: nextQuery })
+}
+
+function openDocumentFromRoute(documentId: string) {
+  const nextDocId = documentId.trim()
+  if (!nextDocId) return
+
+  const matchedDocument = documents.value.find((doc) => doc.id === nextDocId)
+  if (!matchedDocument) return
+  if (selectedDocId.value === matchedDocument.id && isEditing.value) return
+
+  beginEditDocument(matchedDocument)
+}
+
 function handleCollabSelectionChange(selection: { anchor: number, head: number } | null) {
   const prov = currentCollaboration.value?.provider
   if (!prov) {
@@ -327,6 +368,50 @@ function exitEditor() {
 
 function switchMainPane(type: MainPaneType) {
   mainPaneType.value = type
+}
+
+function handleClosePDFReader() {
+  closePDFReader()
+}
+
+async function handleAnnotationCreate(annotation: {
+  type: 'highlight' | 'note' | 'drawing'
+  page: number
+  rect_x: number
+  rect_y: number
+  rect_width: number
+  rect_height: number
+  color?: string
+  content?: string
+  paths?: any[]
+}) {
+  await addAnnotation({
+    type: annotation.type,
+    page: annotation.page,
+    rect_x: annotation.rect_x,
+    rect_y: annotation.rect_y,
+    rect_width: annotation.rect_width,
+    rect_height: annotation.rect_height,
+    color: annotation.color,
+    content: annotation.content,
+    paths: annotation.paths ? JSON.stringify(annotation.paths) : undefined,
+  })
+}
+
+async function handleAnnotationUpdate(annotationId: string, updates: {
+  rect_x?: number
+  rect_y?: number
+  rect_width?: number
+  rect_height?: number
+  color?: string
+  content?: string
+  paths?: string
+}) {
+  await updateAnnotation(annotationId, updates)
+}
+
+async function handleAnnotationDelete(annotationId: string) {
+  await removeAnnotation(annotationId)
 }
 
 async function saveDraft() {
@@ -487,10 +572,20 @@ watch(
 
 watch(
   () => selectedDocId.value,
-  () => {
+  (documentId) => {
     clearDbAutosaveTimer()
     clearLocalDraftTimer()
+    syncDocumentQuery(documentId)
   },
+)
+
+watch(
+  () => [routeDocumentId.value, documents.value.length] as const,
+  ([documentId]) => {
+    if (!documentId) return
+    openDocumentFromRoute(documentId)
+  },
+  { immediate: true },
 )
 
 onBeforeUnmount(() => {
@@ -509,13 +604,13 @@ onBeforeUnmount(() => {
 <template>
   <section class="h-full min-h-0">
     <section class="grid h-full min-h-0 gap-4" :class="layoutClass">
-      <aside class="h-full min-h-0 rounded-sm border border-base-300 bg-base-100 shadow-sm transition-all duration-300">
+      <aside class="paper-panel h-full min-h-0 transition-all duration-300">
         <div class="flex h-full flex-col items-center px-2 py-3">
           <button type="button" class="btn btn-square btn-sm rounded-sm" :title="t('workspace.backToList')" @click="backToList">
             <IconArrowLeft class="h-4 w-4" />
           </button>
 
-          <div class="my-3 h-px w-8 bg-base-300" />
+          <div class="my-3 h-px w-8 bg-base-content/15" />
 
           <div class="flex flex-col gap-2">
             <button
@@ -594,6 +689,11 @@ onBeforeUnmount(() => {
         :last-local-save-at="lastLocalSaveAt"
         :last-cloud-save-at="lastCloudSaveAt"
         :workspace-id="workspaceId"
+        :show-p-d-f-reader="showPDFReader"
+        :current-p-d-f-file="currentPDFfile"
+        :current-p-d-f-preview-url="currentPDFPreviewUrl"
+        :current-file-annotations="currentFileAnnotations"
+        :is-loading-annotations="isLoadingAnnotations"
         @select-root="selectFolder(null)"
         @select-folder="selectFolder($event)"
         @toggle-folder="toggleFolder($event)"
@@ -617,6 +717,10 @@ onBeforeUnmount(() => {
         @collab-selection-change="handleCollabSelectionChange($event)"
         @save-draft="saveDraft"
         @exit-editor="exitEditor"
+        @close-pdf-reader="handleClosePDFReader"
+        @annotation-create="handleAnnotationCreate"
+        @annotation-update="handleAnnotationUpdate"
+        @annotation-delete="handleAnnotationDelete"
       />
 
       <LiteratureSearchPane v-else-if="mainPaneType === 'literature'" />

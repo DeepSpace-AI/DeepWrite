@@ -3,7 +3,8 @@ import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import DEditor from '@/components/editor/DEditor.vue'
 import WorkspaceResourcePane from '@/views/workspace/components/WorkspaceResourcePane.vue'
-import type { Collaborator, VisibleFolderNode, WorkspaceDocument, WorkspaceFile, WorkspaceFolder } from '@/views/workspace/types'
+import PDFReaderPane from '@/views/workspace/components/PDFReaderPane.vue'
+import type { Collaborator, VisibleFolderNode, WorkspaceDocument, WorkspaceFile, WorkspaceFolder, PDFAnnotation } from '@/views/workspace/types'
 
 const props = defineProps<{
   visibleFolders: VisibleFolderNode[]
@@ -37,6 +38,11 @@ const props = defineProps<{
   lastLocalSaveAt?: number | null
   lastCloudSaveAt?: number | null
   workspaceId: string
+  showPDFReader: boolean
+  currentPDFFile: WorkspaceFile | null
+  currentPDFPreviewUrl: string
+  currentFileAnnotations: PDFAnnotation[]
+  isLoadingAnnotations: boolean
 }>()
 
 const emit = defineEmits<{
@@ -63,6 +69,10 @@ const emit = defineEmits<{
   (e: 'collab-selection-change', value: { anchor: number; head: number } | null): void
   (e: 'save-draft'): void
   (e: 'exit-editor'): void
+  (e: 'close-pdf-reader'): void
+  (e: 'annotation-create', annotation: Partial<PDFAnnotation>): void
+  (e: 'annotation-update', annotationId: string, updates: Partial<PDFAnnotation>): void
+  (e: 'annotation-delete', annotationId: string): void
 }>()
 
 const { t } = useI18n()
@@ -180,8 +190,9 @@ function collaboratorAvatarStyle(color?: string) {
     @update:selected-file-ids="emit('update:selectedFileIds', $event)"
   />
 
-  <main v-if="showWritingEditor" class="h-full min-h-0 rounded-sm border border-base-300 bg-base-100 shadow-sm flex flex-col">
-    <div class="border-b border-base-300 px-4 py-3">
+  <main v-if="showWritingEditor || showPDFReader" class="paper-panel h-full min-h-0 flex flex-col">
+    <template v-if="showWritingEditor">
+    <div class="bg-(--surface-overlay) px-4 py-3">
       <div class="flex flex-wrap items-center justify-between gap-3">
         <div class="min-w-0">
           <div class="flex items-center gap-2 text-sm">
@@ -247,7 +258,7 @@ function collaboratorAvatarStyle(color?: string) {
               :data-tip="`${person.name} (online)`"
             >
               <div
-                class="w-7 border border-base-100 bg-base-300 text-[10px] text-base-content"
+                class="w-7 bg-(--surface-sunken) text-[10px] text-base-content"
                 :style="collaboratorAvatarStyle(person.color)"
               >
                 <img v-if="person.avatarUrl" :src="person.avatarUrl" :alt="person.name" />
@@ -259,7 +270,7 @@ function collaboratorAvatarStyle(color?: string) {
               v-if="onlineCollaboratorCount > 5"
               class="avatar placeholder"
             >
-              <div class="w-7 border border-base-100 bg-neutral text-[10px] text-neutral-content">
+              <div class="w-7 bg-neutral text-[10px] text-neutral-content">
                 +{{ onlineCollaboratorCount - 5 }}
               </div>
             </div>
@@ -273,9 +284,11 @@ function collaboratorAvatarStyle(color?: string) {
         {{ collabError }}
       </div>
     </div>
+    </template>
 
     <div class="min-h-0 flex-1">
       <DEditor
+        v-if="showWritingEditor"
         class="h-full"
         v-model="contentProxy"
         :model-json="editorJson"
@@ -284,11 +297,23 @@ function collaboratorAvatarStyle(color?: string) {
         @update:model-json="emit('update:editorJson', $event)"
         @local-selection-change="emit('collab-selection-change', $event)"
       />
+      <PDFReaderPane
+        v-else-if="showPDFReader && currentPDFFile"
+        class="h-full"
+        :file="currentPDFFile"
+        :preview-url="currentPDFPreviewUrl"
+        :annotations="currentFileAnnotations"
+        :workspace-id="workspaceId"
+        @close="emit('close-pdf-reader')"
+        @annotation-create="emit('annotation-create', $event)"
+        @annotation-update="(id, updates) => emit('annotation-update', id, updates)"
+        @annotation-delete="(id) => emit('annotation-delete', id)"
+      />
     </div>
   </main>
 
-  <aside class="h-full min-h-0 rounded-sm border border-base-300 bg-base-100 shadow-sm transition-all duration-300 flex flex-col">
-    <div class="border-b border-base-300 px-4 py-3">
+  <aside class="paper-panel h-full min-h-0 transition-all duration-300 flex flex-col">
+    <div class="bg-(--surface-overlay) px-4 py-3">
       <h3 class="text-sm font-semibold text-base-content">{{ t('workspace.detail.agentTitle') }}</h3>
     </div>
     <div class="flex min-h-0 flex-1 flex-col">
@@ -301,16 +326,19 @@ function collaboratorAvatarStyle(color?: string) {
           ]"
           :key="msg.id"
           class="rounded-sm px-3 py-2 text-sm"
-          :class="msg.role === 'agent' ? 'bg-base-200/70 text-base-content' : 'bg-primary/10 text-base-content/85'"
+          :class="msg.role === 'agent' ? 'bg-(--surface-overlay) text-base-content' : 'bg-primary/10 text-base-content/85'"
         >
           {{ msg.text }}
         </div>
       </div>
-      <div class="border-t border-base-300 p-3">
-        <div class="rounded-sm border border-base-300 bg-base-200/50 px-3 py-2 text-sm text-base-content/50">
+      <div class="bg-(--surface-overlay) p-3">
+        <div class="rounded-sm bg-(--surface-sunken) px-3 py-2 text-sm text-base-content/50">
           {{ t('workspace.detail.agentInputHint') }}
         </div>
       </div>
     </div>
   </aside>
 </template>
+
+
+

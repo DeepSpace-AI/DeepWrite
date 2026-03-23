@@ -78,7 +78,7 @@ function handleSubmit() {
 
 <template>
   <dialog class="modal" :class="{ 'modal-open': visible }" @close="handleClose">
-    <div class="modal-box rounded-sm border border-base-300">
+    <div class="modal-box rounded-sm no-line bg-(--surface-raised) shadow-[0_18px_42px_oklch(0.36_0.008_105/0.12)]">
       <h3 class="text-lg font-semibold text-base-content">{{ t('workspace.modal.create.title') }}</h3>
       <p class="mt-1 text-sm text-base-content/60">{{ t('workspace.modal.create.subtitle') }}</p>
 
@@ -104,7 +104,7 @@ function handleSubmit() {
           />
         </label>
 
-        <label class="label cursor-pointer justify-start gap-3 rounded-sm border border-base-300/70 bg-base-200/60 px-3 py-2">
+        <label class="label cursor-pointer justify-start gap-3 rounded-sm bg-(--surface-overlay) px-3 py-2">
           <input v-model="form.isPublic" type="checkbox" class="checkbox checkbox-sm rounded-xs" />
           <span class="label-text text-sm text-base-content/70">{{ t('workspace.modal.create.makePublic') }}</span>
         </label>
@@ -126,3 +126,6 @@ function handleSubmit() {
     </form>
   </dialog>
 </template>
+
+
+

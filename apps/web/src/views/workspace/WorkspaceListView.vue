@@ -319,27 +319,27 @@ onBeforeUnmount(() => {
 
 <template>
   <section class="space-y-5">
-    <section class="rounded-sm border border-base-300 bg-base-100 p-5 shadow-sm">
+    <section class="glass-card rounded-sm p-5">
       <div class="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <p class="text-[11px] font-mono uppercase tracking-[0.2em] text-base-content/45">
+          <p class="text-[11px] font-mono uppercase tracking-[0.2em] text-pretty-muted">
             Workspace / Directory
           </p>
-          <h2 class="heading-serif mt-2 text-3xl font-bold text-base-content">
+          <h2 class="heading-serif mt-2 text-3xl font-bold text-pretty">
             {{ t("workspace.title") }}
           </h2>
-          <p class="mt-2 max-w-2xl text-sm leading-7 text-base-content/62">
+          <p class="mt-2 max-w-2xl text-sm leading-7 text-pretty-secondary">
             {{ t("workspace.subtitle") }}
           </p>
         </div>
-        <button type="button" class="btn btn-primary rounded-sm" @click="openCreateModal">
+        <button type="button" class="btn rounded-xl bg-[var(--glow-primary)] text-pretty hover:opacity-90" @click="openCreateModal">
           {{ t("workspace.createBtn") }}
         </button>
       </div>
 
       <div class="mt-5 flex flex-wrap items-center gap-3">
-        <label class="input input-bordered flex w-full max-w-md items-center gap-2 rounded-sm">
-          <IconSearch class="h-4 w-4 text-base-content/50" />
+        <label class="glass-input input input-bordered flex w-full max-w-md items-center gap-2 rounded-xl">
+          <IconSearch class="h-4 w-4 text-pretty-muted" />
           <input
             v-model="searchKeyword"
             type="text"
@@ -349,10 +349,10 @@ onBeforeUnmount(() => {
           />
         </label>
 
-        <div class="tabs tabs-box rounded-sm border border-base-300 bg-base-200 p-1">
+        <div class="tabs tabs-box rounded-md bg-[var(--surface-raised)] p-1">
           <button
             type="button"
-            class="tab rounded-sm"
+            class="tab rounded-xl"
             :class="viewMode === 'card' ? 'tab-active' : ''"
             @click="switchView('card')"
           >
@@ -360,7 +360,7 @@ onBeforeUnmount(() => {
           </button>
           <button
             type="button"
-            class="tab rounded-sm"
+            class="tab rounded-xl"
             :class="viewMode === 'table' ? 'tab-active' : ''"
             @click="switchView('table')"
           >
@@ -369,7 +369,7 @@ onBeforeUnmount(() => {
         </div>
       </div>
 
-      <div class="mt-3 text-xs text-base-content/50">
+      <div class="mt-3 text-xs text-pretty-muted">
         {{
           t("workspace.resultsInfo", {
             total: filteredWorkspaces.length,
@@ -382,14 +382,14 @@ onBeforeUnmount(() => {
 
     <p
       v-if="fetchError"
-      class="rounded-sm border border-error/30 bg-error/10 px-4 py-3 text-sm text-error"
+      class="glass-card rounded-md bg-error/5 p-4 text-sm text-error"
     >
       {{ fetchError }}
     </p>
 
     <p
       v-if="actionError"
-      class="rounded-sm border border-error/30 bg-error/10 px-4 py-3 text-sm text-error"
+      class="glass-card rounded-md bg-error/5 p-4 text-sm text-error"
     >
       {{ actionError }}
     </p>
@@ -398,7 +398,7 @@ onBeforeUnmount(() => {
       <div
         v-for="skeleton in 3"
         :key="`skeleton-${skeleton}`"
-        class="h-36 animate-pulse rounded-sm border border-base-300 bg-base-200/60"
+        class="h-36 animate-pulse rounded-sm glass-card"
       />
     </section>
 
@@ -406,13 +406,13 @@ onBeforeUnmount(() => {
       <article
         v-for="item in pagedWorkspaces"
         :key="item.id"
-        class="rounded-sm border border-base-300 bg-base-100 p-4 shadow-sm"
+        class="glass-card rounded-lg p-4 transition-all duration-300 hover:-translate-y-1"
       >
         <div class="flex items-center justify-between gap-3">
-          <h3 class="truncate text-base font-semibold text-base-content">{{ item.name }}</h3>
+          <h3 class="truncate text-base font-semibold text-pretty">{{ item.name }}</h3>
           <span
-            class="badge rounded-sm"
-            :class="item.status === 'active' ? 'badge-success badge-outline' : 'badge-ghost'"
+            class="badge rounded-xl"
+            :class="item.status === 'active' ? 'bg-emerald-500/15 text-emerald-600 border-0' : 'bg-[var(--surface-overlay)] text-pretty-muted border-0'"
           >
             {{
               item.status === "active" ? t("workspace.statusActive") : t("workspace.statusArchived")
@@ -421,26 +421,26 @@ onBeforeUnmount(() => {
         </div>
 
         <div class="mt-3 grid grid-cols-2 gap-2 text-xs">
-          <div class="rounded-sm bg-base-200/70 px-3 py-2 text-base-content/70">
+          <div class="rounded-xl bg-[var(--bg-base)]/50 px-3 py-2 text-pretty-secondary">
             {{ t("workspace.memberCount", { count: item.members }) }}
           </div>
-          <div class="rounded-sm bg-base-200/70 px-3 py-2 text-base-content/70">
+          <div class="rounded-xl bg-[var(--bg-base)]/50 px-3 py-2 text-pretty-secondary">
             {{ t("workspace.docCount", { count: item.docs }) }}
           </div>
         </div>
 
-        <div class="mt-3 flex items-center justify-between text-xs text-base-content/55">
+        <div class="mt-3 flex items-center justify-between text-xs text-pretty-muted">
           <span>{{ roleLabelMap[item.role] }}</span>
           <span>{{ t("workspace.updatedAt", { date: item.updatedAt }) }}</span>
         </div>
 
         <div class="mt-4 flex items-center justify-end gap-2">
-          <button type="button" class="btn btn-sm rounded-sm" @click="enterWorkspace(item)">
+          <button type="button" class="btn rounded-xl bg-[var(--glow-primary)] text-pretty hover:opacity-90 btn-sm" @click="enterWorkspace(item)">
             {{ t("workspace.enterBtn") }}
           </button>
           <button
             type="button"
-            class="btn btn-sm btn-ghost rounded-sm"
+            class="btn btn-ghost btn-sm rounded-xl text-pretty-secondary hover:text-pretty hover:bg-[var(--glow-primary)]"
             :data-more-trigger-id="item.id"
             @click="toggleMoreMenu($event, item.id)"
           >
@@ -451,39 +451,39 @@ onBeforeUnmount(() => {
 
       <p
         v-if="!pagedWorkspaces.length"
-        class="col-span-full rounded-sm border border-base-300 bg-base-100 px-4 py-10 text-center text-sm text-base-content/60"
+        class="col-span-full glass-card rounded-sm px-4 py-10 text-center text-sm text-pretty-muted"
       >
         {{ t("workspace.noResults") }}
       </p>
     </section>
 
-    <section v-else-if="!isLoading" class="rounded-sm border border-base-300 bg-base-100 shadow-sm">
-      <div class="border-b border-base-300 px-4 py-3">
-        <h3 class="text-sm font-semibold text-base-content">{{ t("workspace.tableTitle") }}</h3>
+    <section v-else-if="!isLoading" class="glass-card overflow-hidden rounded-lg">
+      <div class="bg-[var(--surface-overlay)] px-4 py-3">
+        <h3 class="text-sm font-semibold text-pretty">{{ t("workspace.tableTitle") }}</h3>
       </div>
       <div class="overflow-x-auto">
-        <table class="table table-zebra">
+        <table class="table">
           <thead>
-            <tr>
-              <th>{{ t("workspace.colName") }}</th>
-              <th>{{ t("workspace.colRole") }}</th>
-              <th>{{ t("workspace.colMembers") }}</th>
-              <th>{{ t("workspace.colDocs") }}</th>
-              <th>{{ t("workspace.colStatus") }}</th>
-              <th>{{ t("workspace.colUpdatedAt") }}</th>
-              <th class="text-right">{{ t("workspace.colActions") }}</th>
+            <tr class="bg-[var(--surface-overlay)]/80">
+              <th class="text-pretty-secondary font-medium">{{ t("workspace.colName") }}</th>
+              <th class="text-pretty-secondary font-medium">{{ t("workspace.colRole") }}</th>
+              <th class="text-pretty-secondary font-medium">{{ t("workspace.colMembers") }}</th>
+              <th class="text-pretty-secondary font-medium">{{ t("workspace.colDocs") }}</th>
+              <th class="text-pretty-secondary font-medium">{{ t("workspace.colStatus") }}</th>
+              <th class="text-pretty-secondary font-medium">{{ t("workspace.colUpdatedAt") }}</th>
+              <th class="text-right text-pretty-secondary font-medium">{{ t("workspace.colActions") }}</th>
             </tr>
           </thead>
           <tbody>
-            <tr v-for="item in pagedWorkspaces" :key="`${item.id}-row`">
-              <td class="font-medium text-base-content">{{ item.name }}</td>
-              <td>{{ roleLabelMap[item.role] }}</td>
-              <td>{{ item.members }}</td>
-              <td>{{ item.docs }}</td>
+            <tr v-for="item in pagedWorkspaces" :key="`${item.id}-row`" class="transition-colors hover:bg-[var(--surface-sunken)]/40">
+              <td class="font-medium text-pretty">{{ item.name }}</td>
+              <td class="text-pretty-secondary">{{ roleLabelMap[item.role] }}</td>
+              <td class="text-pretty-secondary">{{ item.members }}</td>
+              <td class="text-pretty-secondary">{{ item.docs }}</td>
               <td>
                 <span
-                  class="badge rounded-sm"
-                  :class="item.status === 'active' ? 'badge-success badge-outline' : 'badge-ghost'"
+                  class="badge rounded-xl"
+                  :class="item.status === 'active' ? 'bg-emerald-500/15 text-emerald-600 border-0' : 'bg-[var(--surface-overlay)] text-pretty-muted border-0'"
                 >
                   {{
                     item.status === "active"
@@ -492,15 +492,15 @@ onBeforeUnmount(() => {
                   }}
                 </span>
               </td>
-              <td>{{ item.updatedAt }}</td>
+              <td class="text-pretty-muted">{{ item.updatedAt }}</td>
               <td class="relative">
                 <div class="flex items-center justify-end gap-2">
-                  <button type="button" class="btn btn-xs rounded-sm" @click="enterWorkspace(item)">
+                  <button type="button" class="btn rounded-xl bg-[var(--glow-primary)] text-pretty hover:opacity-90 btn-xs" @click="enterWorkspace(item)">
                     {{ t("workspace.enterBtn") }}
                   </button>
                   <button
                     type="button"
-                    class="btn btn-xs btn-ghost rounded-sm"
+                    class="btn btn-ghost btn-xs rounded-xl text-pretty-secondary hover:text-pretty hover:bg-[var(--glow-primary)]"
                     :data-more-trigger-id="item.id"
                     @click="toggleMoreMenu($event, item.id)"
                   >
@@ -510,7 +510,7 @@ onBeforeUnmount(() => {
               </td>
             </tr>
             <tr v-if="!pagedWorkspaces.length">
-              <td colspan="7" class="py-10 text-center text-sm text-base-content/60">
+              <td colspan="7" class="py-10 text-center text-sm text-pretty-muted">
                 {{ t("workspace.noResults") }}
               </td>
             </tr>
@@ -522,7 +522,7 @@ onBeforeUnmount(() => {
     <section class="flex flex-wrap items-center justify-end gap-2">
       <button
         type="button"
-        class="btn btn-sm rounded-sm"
+        class="btn btn-ghost btn-sm rounded-xl text-pretty-secondary hover:text-pretty hover:bg-[var(--glow-primary)]"
         :disabled="currentPage <= 1"
         @click="prevPage"
       >
@@ -533,8 +533,8 @@ onBeforeUnmount(() => {
         v-for="page in pageNumbers"
         :key="`page-${page}`"
         type="button"
-        class="btn btn-sm rounded-sm"
-        :class="page === currentPage ? 'btn-primary' : 'btn-ghost'"
+        class="btn btn-sm rounded-xl"
+        :class="page === currentPage ? 'bg-[var(--glow-primary)] text-pretty' : 'btn-ghost text-pretty-secondary hover:text-pretty hover:bg-[var(--glow-primary)]'"
         @click="goToPage(page)"
       >
         {{ page }}
@@ -542,7 +542,7 @@ onBeforeUnmount(() => {
 
       <button
         type="button"
-        class="btn btn-sm rounded-sm"
+        class="btn btn-ghost btn-sm rounded-xl text-pretty-secondary hover:text-pretty hover:bg-[var(--glow-primary)]"
         :disabled="currentPage >= totalPages"
         @click="nextPage"
       >
@@ -569,12 +569,12 @@ onBeforeUnmount(() => {
       <div
         v-if="openedWorkspaceItem && openedMoreMenuId"
         ref="moreMenuPanelRef"
-        class="menu rounded-sm border border-base-300 bg-base-100 p-1 shadow-lg"
+        class="glass-card menu rounded-md p-2 shadow-lg"
         :style="moreMenuStyle"
       >
         <button
           type="button"
-          class="btn btn-ghost btn-sm w-full justify-start rounded-sm"
+          class="btn btn-ghost btn-sm w-full justify-start rounded-xl text-pretty-secondary hover:text-pretty hover:bg-[var(--glow-primary)]"
           :disabled="actionLoadingId === openedWorkspaceItem.id"
           @click="openRenameModal(openedWorkspaceItem)"
         >
@@ -582,7 +582,7 @@ onBeforeUnmount(() => {
         </button>
         <button
           type="button"
-          class="btn btn-ghost btn-sm w-full justify-start rounded-sm text-error"
+          class="btn btn-ghost btn-sm w-full justify-start rounded-xl text-error hover:bg-error/10"
           :disabled="actionLoadingId === openedWorkspaceItem.id"
           @click="removeWorkspace(openedWorkspaceItem)"
         >

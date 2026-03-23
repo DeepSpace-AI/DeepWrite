@@ -19,6 +19,12 @@ import { TableHeader } from '@tiptap/extension-table-header'
 import '@/assets/editor.css'
 import DEditorToolbar from './DEditorToolbar.vue'
 import DEditorSlashMenu from './DEditorSlashMenu.vue'
+import DEditorFloatingToolbar from './DEditorFloatingToolbar.vue'
+import DEditorOutline from './DEditorOutline.vue'
+import DEditorFooter from './DEditorFooter.vue'
+import DEditorFindReplace from './DEditorFindReplace.vue'
+import DEditorVersionHistory from './DEditorVersionHistory.vue'
+import { buildKeyboardShortcuts } from './useKeyboardShortcuts'
 import type { EditorTool } from './types'
 
 interface Props {
@@ -82,6 +88,15 @@ const slashMenuY = ref(0)
 const slashQuery = ref('')
 const editorBodyRef = ref<HTMLElement | null>(null)
 
+const floatingToolbarVisible = ref(false)
+const floatingToolbarX = ref(0)
+const floatingToolbarY = ref(0)
+let hideFloatingToolbarTimer: number | null = null
+
+const outlineVisible = ref(false)
+const findReplaceVisible = ref(false)
+const versionHistoryVisible = ref(false)
+
 interface RemoteCursorMarker {
   clientId: number
   name: string
@@ -94,6 +109,7 @@ interface RemoteCursorMarker {
 const remoteCursorMarkers = ref<RemoteCursorMarker[]>([])
 let cursorUpdateTimer: number | null = null
 let scrollContainer: HTMLElement | null = null
+let editorContainerRef: HTMLElement | null = null
 
 function clampSelectionPos(pos: number, size: number) {
   return Math.max(1, Math.min(pos, size + 1))
@@ -169,6 +185,72 @@ function attachScrollListener() {
   scrollContainer?.addEventListener('scroll', queueRemoteCursorUpdate, { passive: true })
 }
 
+function handleKeyDown(event: KeyboardEvent) {
+  const currentEditor = editor.value
+  if (!currentEditor) return
+
+  const isMac = /Mac|iPod|iPhone|iPad/.test(navigator.platform)
+  const mod = isMac ? event.metaKey : event.ctrlKey
+
+  if (mod && event.key === '\\') {
+    event.preventDefault()
+    outlineVisible.value = !outlineVisible.value
+    return
+  }
+
+  if (mod && event.key.toLowerCase() === 'f') {
+    event.preventDefault()
+    findReplaceVisible.value = !findReplaceVisible.value
+    if (findReplaceVisible.value) {
+      outlineVisible.value = false
+    }
+    return
+  }
+
+  if (mod && event.shiftKey && event.key.toLowerCase() === 's') {
+    event.preventDefault()
+    versionHistoryVisible.value = !versionHistoryVisible.value
+    if (versionHistoryVisible.value) {
+      outlineVisible.value = false
+      findReplaceVisible.value = false
+    }
+    return
+  }
+
+  const shortcuts = buildKeyboardShortcuts(currentEditor)
+
+  for (const shortcut of shortcuts) {
+    const modifiers = shortcut.modifiers || []
+    const needsMod = modifiers.includes('ctrl') || modifiers.includes('meta')
+    const needsAlt = modifiers.includes('alt')
+    const needsShift = modifiers.includes('shift')
+
+    if (shortcut.key.toLowerCase() === event.key.toLowerCase() || shortcut.key === event.key) {
+      const modMatch = !needsMod || mod
+      const altMatch = !needsAlt || event.altKey
+      const shiftMatch = !needsShift || event.shiftKey
+
+      if (modMatch && altMatch && shiftMatch) {
+        event.preventDefault()
+        shortcut.action(currentEditor)
+        return
+      }
+    }
+  }
+}
+
+function attachKeyboardListener() {
+  if (editorContainerRef) {
+    editorContainerRef.addEventListener('keydown', handleKeyDown)
+  }
+}
+
+function detachKeyboardListener() {
+  if (editorContainerRef) {
+    editorContainerRef.removeEventListener('keydown', handleKeyDown)
+  }
+}
+
 const editor = useEditor({
   extensions: [
     StarterKit,
@@ -223,9 +305,40 @@ const editor = useEditor({
   onSelectionUpdate: () => {
     emitLocalSelection()
     queueRemoteCursorUpdate()
+
+    const currentEditor = editor.value
+    if (!currentEditor) return
+
+    const { anchor, head } = currentEditor.state.selection
+    const hasSelection = anchor !== head
+
+    if (hasSelection) {
+      try {
+        const coords = currentEditor.view.coordsAtPos(head)
+        floatingToolbarX.value = coords.left
+        floatingToolbarY.value = coords.top - 48
+        floatingToolbarVisible.value = true
+        slashMenuVisible.value = false
+      } catch {
+        floatingToolbarVisible.value = false
+      }
+    } else {
+      if (hideFloatingToolbarTimer) {
+        clearTimeout(hideFloatingToolbarTimer)
+      }
+      hideFloatingToolbarTimer = window.setTimeout(() => {
+        floatingToolbarVisible.value = false
+      }, 200)
+    }
   },
   onBlur: () => {
     emit('local-selection-change', null)
+    if (hideFloatingToolbarTimer) {
+      clearTimeout(hideFloatingToolbarTimer)
+    }
+    hideFloatingToolbarTimer = window.setTimeout(() => {
+      floatingToolbarVisible.value = false
+    }, 200)
   },
 })
 
@@ -274,6 +387,7 @@ watch(
     if (!currentEditor) return
     await nextTick()
     attachScrollListener()
+    attachKeyboardListener()
     emitLocalSelection()
     queueRemoteCursorUpdate()
   },
@@ -291,15 +405,23 @@ onBeforeUnmount(() => {
     cursorUpdateTimer = null
   }
   detachScrollListener()
+  detachKeyboardListener()
   window.removeEventListener('resize', queueRemoteCursorUpdate)
 })
 </script>
 
 <template>
-  <div class="d-editor flex h-full min-h-0 flex-col bg-base-100">
+  <div ref="editorContainerRef" class="d-editor flex h-full min-h-0 flex-col bg-[var(--surface-base)]">
     <DEditorToolbar :editor="editor ?? null" :tools="props.tools" />
 
     <div ref="editorBodyRef" class="d-editor-body relative min-h-0 flex-1 overflow-hidden">
+      <DEditorOutline
+        :editor="editor ?? null"
+        :visible="outlineVisible"
+        class="absolute left-4 top-4 z-20"
+        @close="outlineVisible = false"
+      />
+
       <div class="d-editor-remote-cursor-layer" aria-hidden="true">
         <div
           v-for="marker in remoteCursorMarkers"
@@ -324,13 +446,13 @@ onBeforeUnmount(() => {
         v-if="editor"
         :editor="editor"
         class="d-editor-content prose prose-sm md:prose-base h-full max-w-none
-        prose-headings:font-title prose-headings:text-base-content
-        prose-p:text-base-content prose-strong:text-base-content prose-em:text-base-content
+        prose-headings:font-title prose-headings:text-[var(--text-primary)]
+        prose-p:text-[var(--text-primary)] prose-strong:text-[var(--text-primary)] prose-em:text-[var(--text-primary)]
         prose-a:text-primary prose-a:no-underline hover:prose-a:underline
         prose-code:text-secondary prose-code:before:content-none prose-code:after:content-none
-        prose-pre:bg-base-200 prose-pre:text-base-content
-        prose-blockquote:border-l-primary prose-blockquote:text-base-content/80
-        prose-hr:border-base-300 prose-li:marker:text-primary"
+        prose-pre:bg-[var(--surface-overlay)] prose-pre:text-[var(--text-primary)]
+        prose-blockquote:border-l-primary prose-blockquote:text-[color:color-mix(in_oklab,var(--text-primary)_80%,transparent)]
+        prose-hr:border-[var(--surface-sunken)] prose-li:marker:text-primary"
       />
     </div>
 
@@ -342,5 +464,27 @@ onBeforeUnmount(() => {
       :query="slashQuery"
       @close="slashMenuVisible = false"
     />
+
+    <DEditorFloatingToolbar
+      :editor="editor ?? null"
+      :visible="floatingToolbarVisible"
+      :x="floatingToolbarX"
+      :y="floatingToolbarY"
+      @close="floatingToolbarVisible = false"
+    />
+
+    <DEditorFindReplace
+      :editor="editor ?? null"
+      :visible="findReplaceVisible"
+      @close="findReplaceVisible = false"
+    />
+
+    <DEditorVersionHistory
+      :editor="editor ?? null"
+      :visible="versionHistoryVisible"
+      @close="versionHistoryVisible = false"
+    />
+
+    <DEditorFooter :editor="editor ?? null" />
   </div>
 </template>

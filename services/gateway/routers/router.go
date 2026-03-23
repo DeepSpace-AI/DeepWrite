@@ -32,6 +32,7 @@ func SetupAPIRoutes(r *gin.Engine) {
 		}
 
 		userGroup := v1.Group("/user")
+		workspaceHandler := new(handler.WorkspaceHandler)
 		{
 			userGroup.POST("/forgot-password", userHandler.ForgotPassword)
 			userGroup.POST("/reset-password", userHandler.ResetPassword)
@@ -45,9 +46,14 @@ func SetupAPIRoutes(r *gin.Engine) {
 			protected.POST("/change-email", userHandler.ChangeEmail)
 		}
 
+		dashboardGroup := v1.Group("/dashboard")
+		dashboardGroup.Use(middleware.AuthMiddleware())
+		{
+			dashboardGroup.GET("/overview", workspaceHandler.DashboardOverview)
+		}
+
 		workspaceGroup := v1.Group("/workspaces")
 		workspaceGroup.Use(middleware.AuthMiddleware())
-		workspaceHandler := new(handler.WorkspaceHandler)
 		{
 			workspaceGroup.GET("", workspaceHandler.List)
 			workspaceGroup.POST("", workspaceHandler.Create)
@@ -67,6 +73,11 @@ func SetupAPIRoutes(r *gin.Engine) {
 			workspaceGroup.POST("/:id/files/batch-delete", workspaceHandler.BatchDeleteFiles)
 			workspaceGroup.PUT(":id/files/:file_id", workspaceHandler.UpdateFile)
 			workspaceGroup.DELETE("/:id/files/:file_id", workspaceHandler.DeleteFile)
+
+			workspaceGroup.GET("/:id/files/:file_id/annotations", workspaceHandler.ListAnnotations)
+			workspaceGroup.POST("/:id/files/:file_id/annotations", workspaceHandler.CreateAnnotation)
+			workspaceGroup.PUT("/:id/files/:file_id/annotations/:annotation_id", workspaceHandler.UpdateAnnotation)
+			workspaceGroup.DELETE("/:id/files/:file_id/annotations/:annotation_id", workspaceHandler.DeleteAnnotation)
 
 			workspaceGroup.GET("/:id/invitations", workspaceHandler.ListInvitations)
 			workspaceGroup.POST("/:id/invitations", workspaceHandler.CreateInvitation)
@@ -116,6 +127,18 @@ func SetupAPIRoutes(r *gin.Engine) {
 			aiProviderGroup.GET("/:model", aiProviderHandler.GetByModel)
 			aiProviderGroup.PUT("/:model", aiProviderHandler.Update)
 			aiProviderGroup.DELETE("/:model", aiProviderHandler.Delete)
+		}
+
+		adminUserGroup := v1.Group("/admin")
+		adminUserGroup.Use(middleware.AuthMiddleware(), middleware.AdminMiddleware())
+		adminUserHandler := new(handler.AdminUserHandler)
+		{
+			adminUserGroup.GET("/stats", adminUserHandler.GetStats)
+			adminUserGroup.GET("/users", adminUserHandler.ListUsers)
+			adminUserGroup.GET("/users/:userId", adminUserHandler.GetUser)
+			adminUserGroup.PATCH("/users/:userId", adminUserHandler.UpdateUser)
+			adminUserGroup.DELETE("/users/:userId", adminUserHandler.DeleteUser)
+			adminUserGroup.POST("/users/:userId/reset-password", adminUserHandler.ResetPassword)
 		}
 
 		// 协作文档 WebSocket 使用短期 token 鉴权，不复用 AuthMiddleware。

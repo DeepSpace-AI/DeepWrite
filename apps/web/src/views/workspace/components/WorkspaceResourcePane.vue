@@ -465,8 +465,8 @@ watch(
 </script>
 
 <template>
-  <aside class="relative h-full min-h-0 rounded-sm border border-base-300 bg-base-100 shadow-sm transition-all duration-300 flex flex-col" @click="closeContextMenu">
-    <div class="border-b border-base-300 px-4 py-3">
+  <aside class="paper-panel relative h-full min-h-0 transition-all duration-300 flex flex-col" @click="closeContextMenu">
+    <div class="bg-(--surface-overlay) px-4 py-3">
       <div class="flex items-start justify-between gap-3">
         <div>
           <h3 class="text-sm font-semibold text-base-content">{{ t('workspace.detail.resources.title') }}</h3>
@@ -513,13 +513,13 @@ watch(
       </div>
     </div>
 
-    <div v-if="errorMessage" class="border-b border-base-300 bg-error/8 px-4 py-2 text-xs text-error">
+    <div v-if="errorMessage" class="bg-error/8 px-4 py-2 text-xs text-error">
       {{ errorMessage }}
     </div>
 
     <div
       v-if="uploadStatusMessage"
-      class="border-b border-base-300 px-4 py-2 text-xs"
+      class="px-4 py-2 text-xs"
       :class="uploadingFiles ? 'bg-info/10 text-info' : 'bg-success/10 text-success'
       "
     >
@@ -530,7 +530,7 @@ watch(
     </div>
 
     <div class="min-h-0 flex-1 overflow-hidden">
-      <section class="border-b border-base-300 px-2 py-2" @contextmenu="openContextMenu($event, selectedFolderId)">
+      <section class="bg-(--surface-overlay)/45 px-2 py-2" @contextmenu="openContextMenu($event, selectedFolderId)">
         <div class="max-h-52 overflow-y-auto pr-1">
           <div v-if="loadingFolders && !visibleFolders.length" class="flex items-center gap-2 px-2 py-6 text-xs text-base-content/50">
             <span class="loading loading-spinner loading-xs" />
@@ -546,7 +546,7 @@ watch(
               v-for="node in visibleFolders"
               :key="node.folder.id"
               class="flex items-center gap-1 rounded-sm pr-1"
-              :class="selectedFolderId === node.folder.id ? 'bg-primary/8' : 'hover:bg-base-200/60'"
+                :class="selectedFolderId === node.folder.id ? 'bg-primary/8' : 'hover:bg-(--surface-overlay)'"
               @contextmenu.stop="openFolderContextMenu($event, node.folder)"
             >
               <button
@@ -572,8 +572,8 @@ watch(
       </section>
 
       <section class="flex min-h-0 flex-1 flex-col">
-        <div class="border-b border-base-300 px-3 py-2">
-          <div class="tabs tabs-box rounded-sm bg-base-200 p-1">
+        <div class="bg-(--surface-overlay) px-3 py-2">
+          <div class="tabs tabs-box rounded-sm bg-(--surface-sunken) p-1">
             <button type="button" class="tab rounded-sm" :class="activeTab === 'documents' ? 'tab-active' : ''" @click="activeTab = 'documents'">
               {{ t('workspace.detail.resources.documentsTab') }}
             </button>
@@ -589,7 +589,7 @@ watch(
             {{ t('workspace.detail.resources.loadingDocuments') }}
           </div>
 
-          <div v-else-if="!currentFolderDocuments.length" class="rounded-sm border border-dashed border-base-300 px-3 py-5 text-xs text-base-content/50">
+          <div v-else-if="!currentFolderDocuments.length" class="paper-panel-embedded rounded-sm px-3 py-5 text-xs text-base-content/50">
             {{ t('workspace.detail.resources.emptyDocuments') }}
           </div>
 
@@ -597,8 +597,8 @@ watch(
             <div
               v-for="document in currentFolderDocuments"
               :key="document.id"
-              class="cursor-pointer rounded-sm border border-base-300 px-3 py-2"
-              :class="activeDocumentId === document.id ? 'border-primary bg-primary/6' : 'bg-base-100 hover:bg-base-200/50'"
+              class="cursor-pointer rounded-sm no-line px-3 py-2"
+              :class="activeDocumentId === document.id ? 'bg-primary/10 text-base-content' : 'bg-(--surface-raised) hover:bg-(--surface-overlay)'"
               @click="emit('open-document', document)"
               @contextmenu.stop="openDocumentContextMenu($event, document)"
             >
@@ -618,7 +618,7 @@ watch(
             <p class="text-xs text-base-content/55">{{ t('workspace.detail.resources.fileSelectionHint') }}</p>
             <button
               type="button"
-              class="btn btn-xs btn-outline rounded-sm"
+              class="btn btn-xs btn-ghost rounded-sm"
               :disabled="!selectedFileIds.length || submitting"
               @click="confirmBatchDeleteFiles"
             >
@@ -631,12 +631,12 @@ watch(
             {{ t('workspace.detail.resources.loadingFiles') }}
           </div>
 
-          <div v-else-if="!currentFolderFiles.length" class="rounded-sm border border-dashed border-base-300 px-3 py-5 text-xs text-base-content/50">
+          <div v-else-if="!currentFolderFiles.length" class="paper-panel-embedded rounded-sm px-3 py-5 text-xs text-base-content/50">
             {{ t('workspace.detail.resources.emptyFiles') }}
           </div>
 
           <div v-else class="space-y-2">
-            <div v-for="file in currentFolderFiles" :key="file.id" class="rounded-sm border border-base-300 bg-base-100 px-3 py-2" @contextmenu.stop="openFileContextMenu($event, file)">
+            <div v-for="file in currentFolderFiles" :key="file.id" class="rounded-sm no-line bg-(--surface-raised) px-3 py-2 cursor-pointer hover:bg-(--surface-overlay)" @contextmenu.stop="openFileContextMenu($event, file)" @dblclick="emit('preview-file', file.id)">
               <div class="flex items-start gap-2">
                 <input
                   type="checkbox"
@@ -664,82 +664,82 @@ watch(
     <Teleport to="body">
       <div
         v-if="contextMenuVisible"
-        class="fixed z-50 min-w-44 overflow-hidden rounded-sm border border-base-300 bg-base-100 py-1 text-sm shadow-lg"
+        class="paper-panel fixed z-50 min-w-44 overflow-hidden py-1 text-sm"
         :style="{ left: `${contextMenuX}px`, top: `${contextMenuY}px` }"
         @click.stop
       >
-        <!-- 空白区域右键：新建操作 -->
+        <!-- Area context menu -->
         <template v-if="contextMenuType === 'area'">
-          <button type="button" class="flex w-full items-center gap-2 px-3 py-1.5 hover:bg-base-200 disabled:opacity-50" :disabled="submitting" @click="openCreateFolderFromContext">
+          <button type="button" class="flex w-full items-center gap-2 px-3 py-1.5 hover:bg-(--surface-overlay) disabled:opacity-50" :disabled="submitting" @click="openCreateFolderFromContext">
             <IconFolderPlusOutline class="size-4 text-base-content/65" />
             {{ t('workspace.detail.resources.createFolder') }}
           </button>
-          <button type="button" class="flex w-full items-center gap-2 px-3 py-1.5 hover:bg-base-200 disabled:opacity-50" :disabled="submitting" @click="openCreateDocumentFromContext">
+          <button type="button" class="flex w-full items-center gap-2 px-3 py-1.5 hover:bg-(--surface-overlay) disabled:opacity-50" :disabled="submitting" @click="openCreateDocumentFromContext">
             <IconFilePlusOutline class="size-4 text-base-content/65" />
             {{ t('workspace.detail.resources.createDocument') }}
           </button>
         </template>
 
-        <!-- 文件夹右键菜单 -->
+        <!-- Folder context menu -->
         <template v-else-if="contextMenuType === 'folder'">
-          <button type="button" class="flex w-full items-center gap-2 px-3 py-1.5 hover:bg-base-200 disabled:opacity-50" :disabled="submitting" @click="handleContextCreateSubfolder">
+          <button type="button" class="flex w-full items-center gap-2 px-3 py-1.5 hover:bg-(--surface-overlay) disabled:opacity-50" :disabled="submitting" @click="handleContextCreateSubfolder">
             <IconFolderPlusOutline class="size-4 text-base-content/65" />
             {{ t('workspace.detail.resources.actionCreateSubfolder') }}
           </button>
-          <button type="button" class="flex w-full items-center gap-2 px-3 py-1.5 hover:bg-base-200 disabled:opacity-50" :disabled="submitting" @click="handleContextNewDocumentInFolder">
+          <button type="button" class="flex w-full items-center gap-2 px-3 py-1.5 hover:bg-(--surface-overlay) disabled:opacity-50" :disabled="submitting" @click="handleContextNewDocumentInFolder">
             <IconFilePlusOutline class="size-4 text-base-content/65" />
             {{ t('workspace.detail.resources.actionNewDocumentHere') }}
           </button>
-          <div class="my-1 border-t border-base-200" />
-          <button type="button" class="flex w-full items-center gap-2 px-3 py-1.5 hover:bg-base-200 disabled:opacity-50" :disabled="submitting" @click="handleContextRenameFolder">
+          <div class="my-1 h-px bg-base-content/10" />
+          <button type="button" class="flex w-full items-center gap-2 px-3 py-1.5 hover:bg-(--surface-overlay) disabled:opacity-50" :disabled="submitting" @click="handleContextRenameFolder">
             <IconPencilOutline class="size-4 text-base-content/65" />
             {{ t('workspace.detail.resources.actionRename') }}
           </button>
-          <div class="my-1 border-t border-base-200" />
+          <div class="my-1 h-px bg-base-content/10" />
           <button type="button" class="flex w-full items-center gap-2 px-3 py-1.5 text-error hover:bg-error/8 disabled:opacity-50" :disabled="submitting" @click="handleContextDeleteFolder">
             <IconDeleteOutline class="size-4" />
             {{ t('workspace.detail.resources.actionDelete') }}
           </button>
         </template>
 
-        <!-- 文档右键菜单 -->
+        <!-- Document context menu -->
         <template v-else-if="contextMenuType === 'document'">
-          <button type="button" class="flex w-full items-center gap-2 px-3 py-1.5 hover:bg-base-200" @click="handleContextOpenDocument">
+          <button type="button" class="flex w-full items-center gap-2 px-3 py-1.5 hover:bg-(--surface-overlay)" @click="handleContextOpenDocument">
             <IconFileDocumentOutline class="size-4 text-base-content/65" />
             {{ t('workspace.detail.resources.actionOpen') }}
           </button>
-          <div class="my-1 border-t border-base-200" />
-          <button type="button" class="flex w-full items-center gap-2 px-3 py-1.5 hover:bg-base-200 disabled:opacity-50" :disabled="submitting" @click="handleContextRenameDocument">
+          <div class="my-1 h-px bg-base-content/10" />
+          <button type="button" class="flex w-full items-center gap-2 px-3 py-1.5 hover:bg-(--surface-overlay) disabled:opacity-50" :disabled="submitting" @click="handleContextRenameDocument">
             <IconPencilOutline class="size-4 text-base-content/65" />
             {{ t('workspace.detail.resources.actionRename') }}
           </button>
-          <button type="button" class="flex w-full items-center gap-2 px-3 py-1.5 hover:bg-base-200 disabled:opacity-50" :disabled="submitting" @click="handleContextMoveDocument">
+          <button type="button" class="flex w-full items-center gap-2 px-3 py-1.5 hover:bg-(--surface-overlay) disabled:opacity-50" :disabled="submitting" @click="handleContextMoveDocument">
             <IconFileMoveOutline class="size-4 text-base-content/65" />
             {{ t('workspace.detail.resources.actionMove') }}
           </button>
-          <div class="my-1 border-t border-base-200" />
+          <div class="my-1 h-px bg-base-content/10" />
           <button type="button" class="flex w-full items-center gap-2 px-3 py-1.5 text-error hover:bg-error/8 disabled:opacity-50" :disabled="submitting" @click="handleContextDeleteDocument">
             <IconDeleteOutline class="size-4" />
             {{ t('workspace.detail.resources.actionDelete') }}
           </button>
         </template>
 
-        <!-- 文件右键菜单 -->
+        <!-- File context menu -->
         <template v-else-if="contextMenuType === 'file'">
-          <button type="button" class="flex w-full items-center gap-2 px-3 py-1.5 hover:bg-base-200" @click="handleContextPreviewFile">
+          <button type="button" class="flex w-full items-center gap-2 px-3 py-1.5 hover:bg-(--surface-overlay)" @click="handleContextPreviewFile">
             <IconEyeOutline class="size-4 text-base-content/65" />
             {{ t('workspace.detail.resources.actionPreview') }}
           </button>
-          <div class="my-1 border-t border-base-200" />
-          <button type="button" class="flex w-full items-center gap-2 px-3 py-1.5 hover:bg-base-200 disabled:opacity-50" :disabled="submitting" @click="handleContextRenameFile">
+          <div class="my-1 h-px bg-base-content/10" />
+          <button type="button" class="flex w-full items-center gap-2 px-3 py-1.5 hover:bg-(--surface-overlay) disabled:opacity-50" :disabled="submitting" @click="handleContextRenameFile">
             <IconPencilOutline class="size-4 text-base-content/65" />
             {{ t('workspace.detail.resources.actionRename') }}
           </button>
-          <button type="button" class="flex w-full items-center gap-2 px-3 py-1.5 hover:bg-base-200 disabled:opacity-50" :disabled="submitting" @click="handleContextMoveFile">
+          <button type="button" class="flex w-full items-center gap-2 px-3 py-1.5 hover:bg-(--surface-overlay) disabled:opacity-50" :disabled="submitting" @click="handleContextMoveFile">
             <IconFileMoveOutline class="size-4 text-base-content/65" />
             {{ t('workspace.detail.resources.actionMove') }}
           </button>
-          <div class="my-1 border-t border-base-200" />
+          <div class="my-1 h-px bg-base-content/10" />
           <button type="button" class="flex w-full items-center gap-2 px-3 py-1.5 text-error hover:bg-error/8 disabled:opacity-50" :disabled="submitting" @click="handleContextDeleteFile">
             <IconDeleteOutline class="size-4" />
             {{ t('workspace.detail.resources.actionDelete') }}
@@ -849,3 +849,6 @@ watch(
     />
   </aside>
 </template>
+
+
+

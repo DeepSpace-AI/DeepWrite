@@ -83,16 +83,16 @@ onBeforeMount(async () => {
 
 <template>
   <section class="space-y-5">
-    <section class="rounded-sm border border-base-300 bg-base-100 p-5 shadow-sm">
+    <section class="paper-card rounded-lg p-5">
       <div class="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <p class="text-[11px] font-mono uppercase tracking-[0.2em] text-base-content/45">Workbench / Notifications</p>
-          <h2 class="heading-serif mt-2 text-3xl font-bold text-base-content">{{ t('notifications.title') }}</h2>
-          <p class="mt-2 max-w-3xl text-sm leading-7 text-base-content/62">{{ t('notifications.subtitle') }}</p>
+          <p class="text-[11px] font-mono uppercase tracking-[0.2em] text-pretty-muted">Workbench / Notifications</p>
+          <h2 class="heading-serif mt-2 text-3xl font-bold text-pretty">{{ t('notifications.title') }}</h2>
+          <p class="mt-2 max-w-3xl text-sm leading-7 text-pretty-secondary">{{ t('notifications.subtitle') }}</p>
         </div>
         <div class="flex items-center gap-2">
-          <span class="badge badge-warning rounded-sm text-xs">{{ t('notifications.pendingCount', { count: pendingCount }) }}</span>
-          <button type="button" class="btn btn-ghost btn-sm rounded-sm" :disabled="isLoading" @click="fetchInvitations">
+          <span class="badge rounded-md bg-amber-500/15 text-amber-600 text-xs">{{ t('notifications.pendingCount', { count: pendingCount }) }}</span>
+          <button type="button" class="btn-tertiary rounded-md px-3 py-1.5 text-sm" :disabled="isLoading" @click="fetchInvitations">
             <IconRefresh class="h-4 w-4" />
             {{ t('notifications.refresh') }}
           </button>
@@ -102,16 +102,16 @@ onBeforeMount(async () => {
       <div class="mt-4 flex items-center gap-2">
         <button
           type="button"
-          class="btn btn-sm rounded-sm"
-          :class="isPendingMode ? 'btn-primary' : 'btn-ghost'"
+          class="rounded-md px-3 py-1.5 text-sm"
+          :class="isPendingMode ? 'btn-primary-vellum' : 'btn-tertiary text-pretty-secondary hover:text-pretty'"
           @click="setFilter('pending')"
         >
           {{ t('notifications.pendingTab') }}
         </button>
         <button
           type="button"
-          class="btn btn-sm rounded-sm"
-          :class="!isPendingMode ? 'btn-primary' : 'btn-ghost'"
+          class="rounded-md px-3 py-1.5 text-sm"
+          :class="!isPendingMode ? 'btn-primary-vellum' : 'btn-tertiary text-pretty-secondary hover:text-pretty'"
           @click="setFilter('all')"
         >
           {{ t('notifications.allTab') }}
@@ -119,45 +119,44 @@ onBeforeMount(async () => {
       </div>
     </section>
 
-    <section class="rounded-sm border border-base-300 bg-base-100 p-5 shadow-sm">
-      <div v-if="pageError" class="alert alert-error rounded-sm mb-4 text-sm">{{ pageError }}</div>
+    <section class="paper-card rounded-lg p-5">
+      <div v-if="pageError" class="mb-4 rounded-md bg-error/8 p-4 text-sm text-error">{{ pageError }}</div>
 
       <div v-if="isLoading" class="space-y-3">
-        <div class="skeleton h-20 w-full rounded-sm" />
-        <div class="skeleton h-20 w-full rounded-sm" />
+        <div class="skeleton h-20 w-full rounded-lg" />
+        <div class="skeleton h-20 w-full rounded-lg" />
       </div>
 
-      <div v-else-if="!invitations.length" class="rounded-sm border border-dashed border-base-300 bg-base-200/40 px-4 py-10 text-center">
-        <IconBellOutline class="mx-auto h-6 w-6 text-base-content/45" />
-        <p class="mt-3 text-sm text-base-content/62">{{ t('notifications.empty') }}</p>
+      <div v-else-if="!invitations.length" class="rounded-md bg-[var(--surface-overlay)] px-4 py-10 text-center">
+        <IconBellOutline class="mx-auto h-6 w-6 text-pretty-muted" />
+        <p class="mt-3 text-sm text-pretty-secondary">{{ t('notifications.empty') }}</p>
       </div>
 
       <ul v-else class="space-y-3">
-        <li v-for="item in invitations" :key="item.id" class="rounded-sm border border-base-300 bg-base-100 p-4">
+        <li v-for="item in invitations" :key="item.id" class="surface-card rounded-md p-4">
           <div class="flex flex-wrap items-center justify-between gap-3">
             <div>
-              <p class="text-sm font-semibold text-base-content">{{ t('notifications.workspaceInvite') }}</p>
-              <p class="mt-1 text-xs text-base-content/60">
+              <p class="text-sm font-semibold text-pretty">{{ t('notifications.workspaceInvite') }}</p>
+              <p class="mt-1 text-xs text-pretty-secondary">
                 {{ t('notifications.workspaceLabel', { id: workspaceShortId(item) }) }}
               </p>
             </div>
-            <span class="badge rounded-sm" :class="statusBadgeClass(item.status)">
+            <span class="badge rounded-md text-xs" :class="statusBadgeClass(item.status)">
               {{ t(`notifications.status.${item.status}`, item.status) }}
             </span>
           </div>
 
-          <div class="mt-3 grid gap-2 text-xs text-base-content/68 md:grid-cols-3">
+          <div class="mt-3 grid gap-2 text-xs text-pretty-secondary md:grid-cols-3">
             <p>{{ t('notifications.inviteeEmail', { email: item.invitee_email || '--' }) }}</p>
             <p>{{ t('notifications.roleLabel', { role: item.role }) }}</p>
             <p>{{ t('notifications.expireAt', { time: formatDate(item.expires_at) }) }}</p>
           </div>
 
-          <div v-if="item.status === 'pending'" class="mt-4 rounded-sm bg-base-200/55 p-3">
-
+          <div v-if="item.status === 'pending'" class="mt-4 rounded-md bg-[var(--surface-overlay)] p-3">
             <div class="flex items-center gap-2">
               <button
                 type="button"
-                class="btn btn-success btn-sm rounded-sm"
+                class="rounded-md bg-emerald-500/85 px-3 py-1.5 text-sm text-white hover:bg-emerald-500"
                 :disabled="actionLoadingMap[item.id]"
                 @click="resolveInvitation(item, 'accept')"
               >
@@ -165,7 +164,7 @@ onBeforeMount(async () => {
               </button>
               <button
                 type="button"
-                class="btn btn-error btn-sm rounded-sm"
+                class="rounded-md bg-red-500/85 px-3 py-1.5 text-sm text-white hover:bg-red-500"
                 :disabled="actionLoadingMap[item.id]"
                 @click="resolveInvitation(item, 'reject')"
               >

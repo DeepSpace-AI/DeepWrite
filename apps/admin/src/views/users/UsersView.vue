@@ -80,48 +80,52 @@ onMounted(() => {
 </script>
 
 <template>
-  <section class="space-y-4 rounded-sm border border-base-300 bg-base-100 p-5 shadow-sm">
-    <div class="flex flex-wrap items-center justify-between gap-3">
-      <div>
-        <h2 class="text-xl font-semibold text-base-content">用户管理</h2>
-        <p class="mt-1 text-sm text-base-content/65">仅展示用户列表信息。</p>
+  <section class="space-y-4">
+    <div class="glass-card rounded-2xl p-5">
+      <div class="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h2 class="text-xl font-semibold text-pretty">用户管理</h2>
+          <p class="mt-1 text-sm text-pretty-secondary">平台所有成员检索与状态治理</p>
+        </div>
+        <button class="btn btn-ghost btn-sm rounded-xl" :disabled="isLoading" @click="loadUsers">刷新</button>
       </div>
-      <button class="btn btn-outline btn-sm rounded-sm" :disabled="isLoading" @click="loadUsers">刷新</button>
+
+      <div class="mt-4 flex flex-wrap gap-2">
+        <input v-model="keyword" class="glass-input input input-bordered input-sm rounded-xl w-full max-w-xs" placeholder="按邮箱/姓名搜索" />
+        <select v-model="statusFilter" class="glass-input select select-bordered select-sm rounded-xl">
+          <option value="all">全部状态</option>
+          <option value="active">active</option>
+          <option value="inactive">非 active</option>
+        </select>
+      </div>
     </div>
 
-    <div class="flex flex-wrap gap-2">
-      <input v-model="keyword" class="input input-bordered input-sm rounded-sm" placeholder="按邮箱/姓名搜索" />
-      <select v-model="statusFilter" class="select select-bordered select-sm rounded-sm">
-        <option value="all">全部状态</option>
-        <option value="active">active</option>
-        <option value="inactive">非 active</option>
-      </select>
+    <div v-if="errorMessage" class="glass-card rounded-xl p-4 text-sm text-error border border-error/20 bg-error/5">{{ errorMessage }}</div>
+    <div v-if="isLoading" class="glass-card rounded-xl p-8 text-center">
+      <span class="loading loading-spinner loading-md text-pretty-muted" />
     </div>
 
-    <p v-if="errorMessage" class="rounded-sm border border-error/30 bg-error/10 px-3 py-2 text-sm text-error">{{ errorMessage }}</p>
-    <div v-if="isLoading" class="py-8 text-center text-base-content/70">
-      <span class="loading loading-spinner loading-md" />
-    </div>
-
-    <div v-else class="overflow-x-auto">
-      <table class="table table-zebra">
-        <thead>
-          <tr>
-            <th>用户</th>
-            <th>邮箱</th>
-            <th>状态</th>
-            <th>用户ID</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="user in filteredUsers" :key="user.userId">
-            <td class="font-medium">{{ user.displayName }}</td>
-            <td class="text-sm text-base-content/70">{{ user.email || '-' }}</td>
-            <td><span class="badge badge-outline">{{ user.status }}</span></td>
-            <td class="font-mono text-xs">{{ user.userId }}</td>
-          </tr>
-        </tbody>
-      </table>
+    <div v-else class="glass-card rounded-2xl overflow-hidden">
+      <div class="overflow-x-auto">
+        <table class="table">
+          <thead>
+            <tr class="border-b border-[var(--border-subtle)]">
+              <th class="text-pretty-secondary font-medium">用户</th>
+              <th class="text-pretty-secondary font-medium">邮箱</th>
+              <th class="text-pretty-secondary font-medium">状态</th>
+              <th class="text-pretty-secondary font-medium">用户ID</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="user in filteredUsers" :key="user.userId" class="border-b border-[var(--border-subtle)] hover:bg-[var(--bg-elevated)]/50 transition-colors">
+              <td class="font-medium text-pretty">{{ user.displayName }}</td>
+              <td class="text-sm text-pretty-secondary">{{ user.email || '-' }}</td>
+              <td><span class="badge rounded-xl bg-[var(--glow-primary)] text-pretty border-0 text-xs px-3 py-2">{{ user.status }}</span></td>
+              <td class="font-mono text-xs text-pretty-muted">{{ user.userId }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
     </div>
   </section>
 </template>

@@ -61,3 +61,25 @@ type ResolveWorkspaceInvitationRequest struct {
 type UpdateWorkspaceMemberRoleRequest struct {
 	Role string `json:"role" binding:"required,oneof=admin editor viewer"`
 }
+
+type CreateAnnotationRequest struct {
+	Type       string  `json:"type" binding:"required,oneof=highlight note drawing"`
+	Page       int     `json:"page" binding:"required,min=1"`
+	RectX      float64 `json:"rect_x"`
+	RectY      float64 `json:"rect_y"`
+	RectWidth  float64 `json:"rect_width"`
+	RectHeight float64 `json:"rect_height"`
+	Color      string  `json:"color"`
+	Content    string  `json:"content"`
+	Paths      string  `json:"paths"`
+}
+
+type UpdateAnnotationRequest struct {
+	RectX      *float64 `json:"rect_x,omitempty"`
+	RectY      *float64 `json:"rect_y,omitempty"`
+	RectWidth  *float64 `json:"rect_width,omitempty"`
+	RectHeight *float64 `json:"rect_height,omitempty"`
+	Color      *string  `json:"color,omitempty"`
+	Content    *string  `json:"content,omitempty"`
+	Paths      *string  `json:"paths,omitempty"`
+}

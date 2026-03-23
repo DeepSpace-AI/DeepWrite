@@ -12,7 +12,10 @@
     "lint": "run-s lint:*",
     "lint:oxlint": "oxlint . --fix",
     "lint:eslint": "eslint . --fix --cache",
-    "format": "oxfmt src/"
+    "format": "oxfmt src/",
+    "test": "vitest",
+    "test:run": "vitest run",
+    "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
     "@tiptap/core": "^3.20.1",
@@ -37,6 +40,7 @@
     "@tiptap/y-tiptap": "^3.0.2",
     "axios": "^1.13.6",
     "crypto-js": "^4.2.0",
+    "pdfjs-dist": "3.11.174",
     "pinia": "^3.0.4",
     "vue": "^3.5.28",
     "vue-i18n": "^11.3.0",
@@ -55,6 +59,7 @@
     "@vitejs/plugin-vue": "^6.0.4",
     "@vitejs/plugin-vue-jsx": "^5.1.4",
     "@vue/eslint-config-typescript": "^14.6.0",
+    "@vue/test-utils": "^2.4.6",
     "@vue/tsconfig": "^0.8.1",
     "daisyui": "^5.5.19",
     "eslint": "^9.39.2",
@@ -62,6 +67,7 @@
     "eslint-plugin-oxlint": "~1.46.0",
     "eslint-plugin-vue": "~10.8.0",
     "jiti": "^2.6.1",
+    "jsdom": "^29.0.0",
     "npm-run-all2": "^8.0.4",
     "oxfmt": "^0.32.0",
     "oxlint": "~1.47.0",
@@ -70,6 +76,7 @@
     "unplugin-icons": "^23.0.1",
     "vite": "^7.3.1",
     "vite-plugin-vue-devtools": "^8.0.6",
+    "vitest": "^4.1.0",
     "vue-tsc": "^3.2.4"
   },
   "engines": {

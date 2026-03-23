@@ -50,6 +50,7 @@ STORAGE:
   SESSION_TOKEN: "" # 临时凭证 Token(长期密钥可留空)
   USE_PATH_STYLE: false # 是否使用 path style 地址
   DISABLE_SSL: false # 是否禁用 SSL
+  CUSTOM_DOMAIN: "" # 自定义域名(配置后文件 URL 使用此域名)
 
 # =========================
 # 邮件服务配置

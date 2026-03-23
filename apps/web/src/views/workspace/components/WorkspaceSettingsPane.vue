@@ -223,13 +223,13 @@ watch(
 </script>
 
 <template>
-  <section class="h-full min-h-0 rounded-sm border border-base-300 bg-base-100 shadow-sm flex flex-col">
-    <div class="border-b border-base-300 px-4 py-3">
+  <section class="paper-panel h-full min-h-0 flex flex-col">
+    <div class="bg-(--surface-overlay) px-4 py-3">
       <h3 class="text-base font-semibold text-base-content">{{ t('workspace.detail.navSettings') }}</h3>
     </div>
 
     <div class="min-h-0 flex-1 space-y-4 overflow-y-auto p-4">
-      <section class="rounded-sm border border-base-300 bg-base-100 p-4">
+      <section class="paper-panel-embedded rounded-sm p-4">
         <div class="flex items-center justify-between gap-3">
           <div>
             <h4 class="text-sm font-semibold text-base-content">成员管理</h4>
@@ -246,7 +246,7 @@ watch(
 
         <div v-if="isLoadingMembers" class="mt-3 text-xs text-base-content/60">加载成员中...</div>
 
-        <div v-else-if="!members.length" class="mt-3 rounded-sm border border-dashed border-base-300 bg-base-200/30 px-3 py-8 text-center text-sm text-base-content/60">
+        <div v-else-if="!members.length" class="mt-3 paper-panel rounded-sm px-3 py-8 text-center text-sm text-base-content/60">
           暂无成员
         </div>
 
@@ -254,12 +254,12 @@ watch(
           <article
             v-for="member in members"
             :key="member.user_id"
-            class="rounded-sm border border-base-300 bg-base-100 px-3 py-2"
+            class="rounded-sm no-line bg-(--surface-raised) px-3 py-2"
           >
             <div class="flex flex-wrap items-center justify-between gap-2">
               <div class="flex min-w-0 items-center gap-2">
                 <div class="avatar">
-                  <div class="h-8 w-8 rounded-full border border-base-300 bg-base-200 text-[11px]">
+                  <div class="h-8 w-8 rounded-full bg-(--surface-sunken) text-[11px]">
                     <img v-if="member.avatar_url" :src="member.avatar_url" :alt="memberDisplayName(member)" />
                     <span v-else class="inline-flex h-full w-full items-center justify-center">{{ memberAvatarInitial(member) }}</span>
                   </div>
@@ -294,7 +294,7 @@ watch(
         </div>
       </section>
 
-      <section class="rounded-sm border border-base-300 bg-base-100 p-4">
+      <section class="paper-panel-embedded rounded-sm p-4">
         <h4 class="text-sm font-semibold text-base-content">{{ t('workspace.detail.settingsInvitations.title') }}</h4>
         <p class="mt-1 text-xs text-base-content/65">{{ t('workspace.detail.settingsInvitations.subtitle') }}</p>
 
@@ -329,7 +329,7 @@ watch(
           {{ errorMessage }}
         </div>
 
-        <div v-if="createdInviteToken" class="mt-3 rounded-sm border border-base-300 bg-base-200/40 p-3">
+        <div v-if="createdInviteToken" class="mt-3 rounded-sm bg-(--surface-sunken) p-3">
           <p class="text-xs font-medium text-base-content">{{ t('workspace.detail.settingsInvitations.tokenLabel') }}</p>
           <div class="mt-2 flex flex-col gap-2 md:flex-row md:items-center">
             <input type="text" class="input input-sm input-bordered w-full rounded-sm" :value="createdInviteToken" readonly />
@@ -340,7 +340,7 @@ watch(
         </div>
       </section>
 
-      <section class="rounded-sm border border-base-300 bg-base-100 p-4">
+      <section class="paper-panel-embedded rounded-sm p-4">
         <div class="flex items-center justify-between gap-3">
           <h4 class="text-sm font-semibold text-base-content">{{ t('workspace.detail.settingsInvitations.listTitle') }}</h4>
           <button type="button" class="btn btn-ghost btn-xs rounded-sm" :disabled="isLoading" @click="loadInvitations">
@@ -352,7 +352,7 @@ watch(
           {{ t('workspace.detail.settingsInvitations.loading') }}
         </div>
 
-        <div v-else-if="!invitations.length" class="mt-3 rounded-sm border border-dashed border-base-300 bg-base-200/30 px-3 py-8 text-center text-sm text-base-content/60">
+        <div v-else-if="!invitations.length" class="mt-3 paper-panel rounded-sm px-3 py-8 text-center text-sm text-base-content/60">
           {{ t('workspace.detail.settingsInvitations.empty') }}
         </div>
 
@@ -360,7 +360,7 @@ watch(
           <article
             v-for="invitation in invitations"
             :key="invitation.id"
-            class="rounded-sm border border-base-300 bg-base-100 px-3 py-2"
+            class="rounded-sm no-line bg-(--surface-raised) px-3 py-2"
           >
             <div class="flex flex-wrap items-center justify-between gap-2">
               <p class="text-sm font-medium text-base-content">{{ invitation.invitee_email }}</p>
@@ -390,3 +390,6 @@ watch(
     </div>
   </section>
 </template>
+
+
+

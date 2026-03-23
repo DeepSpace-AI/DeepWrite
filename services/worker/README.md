@@ -1,6 +1,28 @@
 # DeepWrite Worker（FastAPI + Celery）
 
-本文档说明当前 Worker 中 Celery 的接入方式、任务是如何被注册和执行的，以及后续扩展任务的推荐流程。
+> **当前状态**: 核心任务链路已实现 (完成度 60%)
+
+本模块提供异步任务执行能力，支持文档处理、AI 推理、通知推送等后台任务。
+
+## 已实现任务
+
+### 文档处理 (document_tasks.py)
+- `worker.document.parse` - 解析文档内容
+- `worker.document.index` - 文档索引
+- `worker.document.export` - 文档格式导出
+
+### AI 推理 (ai_tasks.py)
+- `worker.ai.chat_completion` - 聊天完成
+- `worker.ai.batch_completion` - 批量生成
+- `worker.ai.embedding` - 向量嵌入
+
+### 通知推送 (notify_tasks.py)
+- `worker.notify.email` - 发送邮件
+- `worker.notify.welcome` - 欢迎邮件
+- `worker.notify.document_shared` - 文档分享通知
+- `worker.notify.task_reminder` - 任务提醒
+
+本模块提供异步任务执行能力，支持文档处理、AI 推理、通知推送等后台任务。
 
 ## 1. 当前目录结构
 

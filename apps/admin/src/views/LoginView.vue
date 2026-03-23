@@ -32,25 +32,46 @@ async function onSubmit() {
 </script>
 
 <template>
-  <main class="dot-grid min-h-screen bg-base-100 px-4 py-10">
-    <section class="mx-auto max-w-md rounded-sm border border-base-300 bg-base-100 p-6 shadow-sm">
-      <div class="mb-6">
-        <p class="text-xs font-mono uppercase tracking-[0.2em] text-base-content/50">DeepWrite Admin</p>
-        <h1 class="mt-3 text-2xl font-semibold text-base-content">管理员登录</h1>
-        <p class="mt-2 text-sm text-base-content/70">仅 role=admin 账号可访问后台管理系统</p>
+  <main class="relative min-h-screen overflow-hidden bg-dot-grid px-4 py-10" data-theme="forest">
+    <div class="glow-blob -left-32 top-0 h-[32rem] w-[32rem] bg-[var(--glow-primary)] opacity-50" />
+    <div class="glow-blob -right-24 bottom-0 h-[28rem] w-[28rem] bg-[var(--glow-secondary)] opacity-40" />
+    <div class="glow-blob left-1/2 top-1/2 h-80 w-80 -translate-x-1/2 -translate-y-1/2 rounded-full bg-[var(--glow-primary)] opacity-20" />
+
+    <section class="glass-card relative mx-auto max-w-md rounded-2xl p-8">
+      <div class="mb-8">
+        <p class="text-xs font-medium uppercase tracking-[0.2em] text-pretty-muted">DeepWrite Admin</p>
+        <h1 class="mt-3 text-2xl font-semibold text-pretty">管理员登录</h1>
+        <p class="mt-2 text-sm text-pretty-secondary">仅限管理员账号访问后台管理系统</p>
       </div>
 
-      <form class="space-y-4" @submit.prevent="onSubmit">
+      <form class="space-y-5" @submit.prevent="onSubmit">
         <label class="form-control">
-          <span class="label-text text-sm">邮箱</span>
-          <input v-model="email" type="email" required class="input input-bordered rounded-sm" placeholder="admin@deepwrite.io" />
+          <span class="label-text text-sm text-pretty-secondary">邮箱</span>
+          <input 
+            v-model="email" 
+            type="email" 
+            required 
+            class="glass-input input input-bordered mt-1.5 w-full rounded-xl" 
+            placeholder="admin@deepwrite.io" 
+          />
         </label>
         <label class="form-control">
-          <span class="label-text text-sm">密码</span>
-          <input v-model="password" type="password" required class="input input-bordered rounded-sm" />
+          <span class="label-text text-sm text-pretty-secondary">密码</span>
+          <input 
+            v-model="password" 
+            type="password" 
+            required 
+            class="glass-input input input-bordered mt-1.5 w-full rounded-xl" 
+          />
         </label>
-        <p v-if="errorMessage" class="rounded-sm border border-error/30 bg-error/10 px-3 py-2 text-sm text-error">{{ errorMessage }}</p>
-        <button type="submit" class="btn btn-primary w-full rounded-sm" :disabled="isSubmitting">
+        <p v-if="errorMessage" class="rounded-xl border border-error/20 bg-error/10 px-4 py-3 text-sm text-error">
+          {{ errorMessage }}
+        </p>
+        <button 
+          type="submit" 
+          class="btn w-full rounded-xl bg-[var(--glow-primary)] text-pretty transition-all hover:bg-[var(--glow-primary)] hover:opacity-90" 
+          :disabled="isSubmitting"
+        >
           <span v-if="isSubmitting" class="loading loading-spinner loading-xs" />
           <span>{{ isSubmitting ? '登录中...' : '登录后台' }}</span>
         </button>

@@ -1,8 +1,10 @@
 <script setup lang="ts">
 import { computed, onBeforeMount, ref } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
+import IconHomeOutline from '~icons/mdi/home-outline'
 import IconRobotOutline from '~icons/mdi/robot-outline'
 import IconAccountGroupOutline from '~icons/mdi/account-group-outline'
+import IconFolderOutline from '~icons/mdi/folder-outline'
 import IconCogOutline from '~icons/mdi/cog-outline'
 import IconLogout from '~icons/mdi/logout'
 import { logout } from '@/api/auth'
@@ -20,14 +22,26 @@ const userInitial = computed(() => {
 })
 
 function isNavActive(name: string) {
+  if (name === 'dashboard') {
+    return route.path === '/' || route.name === 'dashboard'
+  }
   if (name === 'providers') {
     return route.path.startsWith('/providers')
+  }
+  if (name === 'users') {
+    return route.name === 'users'
+  }
+  if (name === 'workspaces') {
+    return route.name === 'workspaces'
+  }
+  if (name === 'system') {
+    return route.name === 'system'
   }
   return route.name === name
 }
 
 function applyTheme(darkMode: boolean) {
-  const theme = darkMode ? 'forest' : 'bumblebee'
+  const theme = darkMode ? 'forest' : 'vellum-light'
   document.documentElement.setAttribute('data-theme', theme)
   localStorage.setItem(THEME_KEY, theme)
   isDark.value = darkMode
@@ -44,7 +58,7 @@ onBeforeMount(() => {
     applyTheme(true)
     return
   }
-  if (theme === 'bumblebee') {
+  if (theme === 'vellum-light') {
     applyTheme(false)
     return
   }
@@ -54,75 +68,130 @@ onBeforeMount(() => {
 </script>
 
 <template>
-  <section class="dot-grid relative min-h-screen overflow-hidden bg-base-100">
-    <div class="pointer-events-none absolute -left-28 top-0 h-72 w-72 rounded-full bg-secondary/10 blur-3xl" />
-    <div class="pointer-events-none absolute -right-24 bottom-0 h-80 w-80 rounded-full bg-primary/10 blur-3xl" />
-    <div class="relative mx-auto px-4 py-4 lg:px-5">
-      <aside class="rounded-sm border border-base-300 bg-base-100/95 shadow-sm backdrop-blur lg:fixed lg:left-5 lg:top-4 lg:z-20 lg:flex lg:h-[calc(100vh-2rem)] lg:w-72 lg:flex-col">
-        <div class="border-b border-base-300 px-5 py-4">
-          <h1 class="text-xl font-bold text-base-content">DeepWrite Admin</h1>
-          <p class="mt-1 text-xs text-base-content/60">系统治理台</p>
+  <section class="relative min-h-screen overflow-hidden bg-dot-grid" :data-theme="isDark ? 'forest' : 'vellum-light'">
+    <div class="glow-blob -left-32 top-0 h-[28rem] w-[28rem] bg-[var(--glow-primary)] opacity-60" />
+    <div class="glow-blob -right-32 bottom-0 h-[32rem] w-[32rem] bg-[var(--glow-secondary)] opacity-50" />
+    <div class="glow-blob left-1/3 top-1/2 h-64 w-64 rounded-full bg-[var(--glow-primary)] opacity-30" />
+
+    <div class="relative mx-auto px-4 py-4 lg:px-6">
+      <aside class="glass-card fixed left-4 top-4 z-20 flex h-[calc(100vh-2rem)] w-72 flex-col rounded-2xl">
+        <div class="border-b border-[var(--border-subtle)] px-5 py-5">
+          <h1 class="text-xl font-bold text-pretty">DeepWrite</h1>
+          <p class="mt-1 text-xs text-pretty-muted">系统治理台</p>
         </div>
 
-        <nav class="px-3 py-3 lg:flex-1 lg:overflow-y-auto">
+        <nav class="flex-1 space-y-1 overflow-y-auto px-3 py-3">
           <RouterLink
-            :to="{ name: 'providers' }"
-            class="group mb-1 flex items-center gap-3 rounded-sm px-3 py-2 text-sm transition"
-            :class="isNavActive('providers') ? 'border border-base-300/70 bg-base-200 text-base-content' : 'border border-transparent text-base-content/78 hover:bg-base-200'"
+            :to="{ name: 'dashboard' }"
+            class="group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition-all duration-200"
+            :class="isNavActive('dashboard') 
+              ? 'bg-[var(--glow-primary)] text-pretty border border-[var(--border-subtle)]' 
+              : 'text-pretty-secondary hover:bg-[var(--glow-primary)] hover:text-pretty border border-transparent'"
           >
-            <span class="inline-flex h-8 w-8 items-center justify-center rounded-sm" :class="isNavActive('providers') ? 'bg-primary/10 text-primary' : 'bg-base-200/70 text-base-content/65'">
-              <IconRobotOutline class="h-4 w-4" />
+            <span class="inline-flex h-9 w-9 items-center justify-center rounded-xl transition-colors"
+              :class="isNavActive('dashboard') 
+                ? 'bg-[var(--glow-primary)] text-pretty' 
+                : 'text-pretty-muted group-hover:text-pretty'">
+              <IconHomeOutline class="h-4 w-4" />
             </span>
             <div>
-              <p class="font-medium">AI Provider 管理</p>
-              <p class="text-xs text-base-content/55">模型配置、密钥与启停控制</p>
+              <p class="font-medium">仪表盘</p>
+              <p class="text-xs text-pretty-muted">系统概览与统计</p>
             </div>
           </RouterLink>
 
           <RouterLink
             :to="{ name: 'users' }"
-            class="group mb-1 flex items-center gap-3 rounded-sm px-3 py-2 text-sm transition"
-            :class="isNavActive('users') ? 'border border-base-300/70 bg-base-200 text-base-content' : 'border border-transparent text-base-content/78 hover:bg-base-200'"
+            class="group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition-all duration-200"
+            :class="isNavActive('users') 
+              ? 'bg-[var(--glow-primary)] text-pretty border border-[var(--border-subtle)]' 
+              : 'text-pretty-secondary hover:bg-[var(--glow-primary)] hover:text-pretty border border-transparent'"
           >
-            <span class="inline-flex h-8 w-8 items-center justify-center rounded-sm" :class="isNavActive('users') ? 'bg-primary/10 text-primary' : 'bg-base-200/70 text-base-content/65'">
+            <span class="inline-flex h-9 w-9 items-center justify-center rounded-xl transition-colors"
+              :class="isNavActive('users') 
+                ? 'bg-[var(--glow-primary)] text-pretty' 
+                : 'text-pretty-muted group-hover:text-pretty'">
               <IconAccountGroupOutline class="h-4 w-4" />
             </span>
             <div>
               <p class="font-medium">用户管理</p>
-              <p class="text-xs text-base-content/55">成员检索、角色与状态治理</p>
+              <p class="text-xs text-pretty-muted">成员检索与状态</p>
+            </div>
+          </RouterLink>
+
+          <RouterLink
+            :to="{ name: 'workspaces' }"
+            class="group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition-all duration-200"
+            :class="isNavActive('workspaces') 
+              ? 'bg-[var(--glow-primary)] text-pretty border border-[var(--border-subtle)]' 
+              : 'text-pretty-secondary hover:bg-[var(--glow-primary)] hover:text-pretty border border-transparent'"
+          >
+            <span class="inline-flex h-9 w-9 items-center justify-center rounded-xl transition-colors"
+              :class="isNavActive('workspaces') 
+                ? 'bg-[var(--glow-primary)] text-pretty' 
+                : 'text-pretty-muted group-hover:text-pretty'">
+              <IconFolderOutline class="h-4 w-4" />
+            </span>
+            <div>
+              <p class="font-medium">工作区</p>
+              <p class="text-xs text-pretty-muted">平台工作区列表</p>
+            </div>
+          </RouterLink>
+
+          <RouterLink
+            :to="{ name: 'providers' }"
+            class="group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition-all duration-200"
+            :class="isNavActive('providers') 
+              ? 'bg-[var(--glow-primary)] text-pretty border border-[var(--border-subtle)]' 
+              : 'text-pretty-secondary hover:bg-[var(--glow-primary)] hover:text-pretty border border-transparent'"
+          >
+            <span class="inline-flex h-9 w-9 items-center justify-center rounded-xl transition-colors"
+              :class="isNavActive('providers') 
+                ? 'bg-[var(--glow-primary)] text-pretty' 
+                : 'text-pretty-muted group-hover:text-pretty'">
+              <IconRobotOutline class="h-4 w-4" />
+            </span>
+            <div>
+              <p class="font-medium">AI Provider</p>
+              <p class="text-xs text-pretty-muted">模型配置与密钥</p>
             </div>
           </RouterLink>
 
           <RouterLink
             :to="{ name: 'system' }"
-            class="group flex items-center gap-3 rounded-sm px-3 py-2 text-sm transition"
-            :class="isNavActive('system') ? 'border border-base-300/70 bg-base-200 text-base-content' : 'border border-transparent text-base-content/78 hover:bg-base-200'"
+            class="group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition-all duration-200"
+            :class="isNavActive('system') 
+              ? 'bg-[var(--glow-primary)] text-pretty border border-[var(--border-subtle)]' 
+              : 'text-pretty-secondary hover:bg-[var(--glow-primary)] hover:text-pretty border border-transparent'"
           >
-            <span class="inline-flex h-8 w-8 items-center justify-center rounded-sm" :class="isNavActive('system') ? 'bg-primary/10 text-primary' : 'bg-base-200/70 text-base-content/65'">
+            <span class="inline-flex h-9 w-9 items-center justify-center rounded-xl transition-colors"
+              :class="isNavActive('system') 
+                ? 'bg-[var(--glow-primary)] text-pretty' 
+                : 'text-pretty-muted group-hover:text-pretty'">
               <IconCogOutline class="h-4 w-4" />
             </span>
             <div>
               <p class="font-medium">系统配置</p>
-              <p class="text-xs text-base-content/55">平台设置与运行状态</p>
+              <p class="text-xs text-pretty-muted">平台设置与状态</p>
             </div>
           </RouterLink>
         </nav>
 
-        <div class="mx-3 mb-3 mt-auto rounded-sm border border-base-300 bg-base-200/70 p-3">
+        <div class="mx-3 mb-3 mt-auto rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-elevated)] p-3">
           <div class="flex items-center gap-3">
-            <div class="inline-flex h-10 w-10 items-center justify-center rounded-sm bg-primary text-primary-content font-semibold">
+            <div class="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-[var(--glow-primary)] font-semibold text-pretty">
               {{ userInitial }}
             </div>
             <div class="min-w-0">
-              <p class="truncate text-sm font-medium text-base-content">{{ userStore.user?.displayName || 'admin' }}</p>
-              <p class="truncate text-xs text-base-content/55">{{ userStore.user?.email || '' }}</p>
+              <p class="truncate text-sm font-medium text-pretty">{{ userStore.user?.displayName || 'admin' }}</p>
+              <p class="truncate text-xs text-pretty-muted">{{ userStore.user?.email || '' }}</p>
             </div>
-            <button type="button" class="btn btn-ghost btn-sm rounded-sm" @click="handleLogout">
+            <button type="button" class="btn btn-ghost btn-sm rounded-xl" @click="handleLogout">
               <IconLogout class="h-4 w-4" />
             </button>
           </div>
-          <label class="mt-3 flex items-center justify-between rounded-sm border border-base-300 bg-base-100 px-2 py-1.5">
-            <span class="text-xs text-base-content/70">暗色模式</span>
+          <label class="mt-3 flex items-center justify-between rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-base)] px-3 py-2">
+            <span class="text-xs text-pretty-muted">暗色模式</span>
             <input
               type="checkbox"
               class="toggle toggle-sm"
@@ -133,7 +202,7 @@ onBeforeMount(() => {
         </div>
       </aside>
 
-      <main class="lg:pl-[19rem]">
+      <main class="lg:pl-[20rem]">
         <RouterView />
       </main>
     </div>

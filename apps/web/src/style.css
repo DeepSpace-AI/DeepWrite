@@ -1,5 +1,761 @@
+/* ============================================
+  THE SUN-DRENCHED LIBRARY — Design System CSS
+  Strict Vellum System / No-Line Architecture
+  Enhanced Contrast & Dark Mode Support
+  ============================================ */
+
 @import "tailwindcss";
 @plugin "@tailwindcss/typography";
 @plugin "daisyui" {
-  themes: bumblebee --default, forest --prefersdark;
+  themes:
+    vellum-light --default,
+    vellum-dark --prefersdark;
+}
+
+/* ── DaisyUI Custom Theme: Vellum Light (Enhanced Contrast) ── */
+[data-theme="vellum-light"] {
+  color-scheme: light;
+  /* Primary — Deepened Muted Terracotta #7a3f33 (was #8b4d3f) */
+  --p: 16 45% 38%;
+  --pf: 16 45% 33%;
+  --pc: 33 8% 98%;
+  /* Secondary — Deepened Moss Green #4a5a40 (was #5a694f) */
+  --s: 125 22% 35%;
+  --sf: 125 22% 30%;
+  --sc: 33 8% 98%;
+  /* Accent — Warm amber for highlights */
+  --a: 35 45% 52%;
+  --af: 35 45% 47%;
+  --ac: 33 8% 98%;
+  /* Neutral — Deepened for better contrast */
+  --n: 55 6% 28%;
+  --nf: 55 6% 23%;
+  --nc: 33 8% 98%;
+  /* Base / Surface — Enhanced contrast layers */
+  --b1: 92 4% 99%;
+  --b2: 90 6% 97%;
+  --b3: 84 8% 92%;
+  --bc: 55 8% 18%;
+  /* Semantic colors — Deepened for contrast */
+  --in: 125 22% 35%;
+  --inc: 33 8% 98%;
+  --su: 125 22% 35%;
+  --suc: 33 8% 98%;
+  --wa: 16 45% 38%;
+  --wac: 33 8% 98%;
+  --er: 8 55% 45%;
+  --erc: 33 8% 98%;
+  /* Sharper corners, strict order */
+  --rounded-box: 0.5rem;
+  --rounded-btn: 0.375rem;
+  --rounded-badge: 0.375rem;
+  --tab-radius: 0.375rem;
+  --animation-btn: 0.3s ease-out;
+  --animation-input: 0.3s ease-out;
+  --btn-focus-scale: 0.98;
+}
+
+/* ── DaisyUI Custom Theme: Vellum Dark (Digital Vellum at Dusk) ── */
+[data-theme="vellum-dark"] {
+  color-scheme: dark;
+  /* Primary — Warm terracotta, muted for dark mode #b86b5a */
+  --p: 16 45% 52%;
+  --pf: 16 45% 47%;
+  --pc: 35 10% 12%;
+  /* Secondary — Soft moss green for dark mode #7a8b6e */
+  --s: 125 20% 50%;
+  --sf: 125 20% 45%;
+  --sc: 35 10% 12%;
+  /* Accent — Warm amber */
+  --a: 35 50% 58%;
+  --af: 35 50% 53%;
+  --ac: 35 10% 12%;
+  /* Neutral — Warm gray for dark mode */
+  --n: 45 8% 65%;
+  --nf: 45 8% 60%;
+  --nc: 35 10% 12%;
+  /* Base / Surface — Warm dark parchment tones */
+  --b1: 35 10% 14%;
+  --b2: 35 10% 18%;
+  --b3: 35 10% 22%;
+  --bc: 40 15% 85%;
+  /* Semantic colors — Adjusted for dark mode */
+  --in: 125 20% 50%;
+  --inc: 35 10% 12%;
+  --su: 125 20% 50%;
+  --suc: 35 10% 12%;
+  --wa: 16 45% 52%;
+  --wac: 35 10% 12%;
+  --er: 8 55% 55%;
+  --erc: 35 10% 12%;
+  /* Sharper corners, strict order */
+  --rounded-box: 0.5rem;
+  --rounded-btn: 0.375rem;
+  --rounded-badge: 0.375rem;
+  --tab-radius: 0.375rem;
+  --animation-btn: 0.3s ease-out;
+  --animation-input: 0.3s ease-out;
+  --btn-focus-scale: 0.98;
+}
+
+@theme {
+  --font-serif: "Newsreader", Georgia, "Times New Roman", serif;
+  --font-sans: "Work Sans", ui-sans-serif, system-ui, sans-serif;
+
+  /* Light Mode — Enhanced Contrast */
+  --color-surface: oklch(0.985 0.004 85);
+  --color-surface-container-low: oklch(0.975 0.006 86);
+  --color-surface-container: oklch(0.955 0.008 84);
+  --color-surface-container-highest: oklch(0.905 0.010 82);
+
+  /* Dark Mode — Warm Parchment at Dusk */
+  --color-surface-dark: oklch(0.18 0.012 75);
+  --color-surface-dark-container-low: oklch(0.22 0.014 76);
+  --color-surface-dark-container: oklch(0.26 0.016 77);
+  --color-surface-dark-container-highest: oklch(0.30 0.018 78);
+
+  /* Input fields — distinct from cards with more contrast */
+  --color-input-bg: oklch(0.99 0.003 90);
+  --color-input-bg-dark: oklch(0.20 0.015 75);
+
+  --color-bg-base: var(--color-surface);
+  --color-bg-elevated: var(--color-surface-container-low);
+  --color-bg-overlay: var(--color-surface-container);
+  --color-bg-sunken: var(--color-surface-container-highest);
+
+  /* Enhanced text contrast for light mode */
+  --color-on-surface: oklch(0.28 0.008 38);
+  --color-on-surface-variant: oklch(0.42 0.007 40 / 0.85);
+  --color-on-surface-muted: oklch(0.52 0.006 40 / 0.60);
+
+  /* Dark mode text — warm parchment tones */
+  --color-on-surface-dark: oklch(0.88 0.008 78);
+  --color-on-surface-dark-variant: oklch(0.75 0.007 78 / 0.90);
+  --color-on-surface-dark-muted: oklch(0.60 0.006 78 / 0.70);
+
+  /* Deepened primary for better contrast */
+  --color-primary: oklch(0.38 0.10 18);
+  --color-primary-light: oklch(0.45 0.09 18);
+  --color-secondary: oklch(0.40 0.07 130);
+
+  /* Dark mode accent colors — warm tones */
+  --color-primary-dark: oklch(0.62 0.10 25);
+  --color-secondary-dark: oklch(0.55 0.08 135);
+
+  --color-border-ghost: oklch(0.50 0.005 100 / 0.20);
+  --color-border-ghost-dark: oklch(0.50 0.008 80 / 0.25);
+
+  --color-glow-primary: oklch(0.38 0.10 18 / 0.15);
+  --color-glow-secondary: oklch(0.40 0.07 130 / 0.12);
+  --color-glow-primary-dark: oklch(0.62 0.10 25 / 0.20);
+  --color-glow-secondary-dark: oklch(0.55 0.08 135 / 0.15);
+
+  --spacing-4: 1rem;
+  --spacing-6: 1.5rem;
+  --spacing-10: 2.5rem;
+  --spacing-12: 3rem;
+  --spacing-16: 4rem;
+  --spacing-24: 6rem;
+}
+
+@layer base {
+  :root {
+    --surface-base: var(--color-surface);
+    --surface-raised: var(--color-surface-container-low);
+    --surface-overlay: var(--color-surface-container);
+    --surface-sunken: var(--color-surface-container-highest);
+
+    --bg-base: var(--surface-base);
+    --bg-elevated: var(--surface-raised);
+    --bg-overlay: var(--surface-overlay);
+    --bg-sunken: var(--surface-sunken);
+
+    --text-primary:   var(--color-on-surface);
+    --text-secondary: var(--color-on-surface-variant);
+    --text-muted:     var(--color-on-surface-muted);
+
+    --border-subtle: var(--color-border-ghost);
+
+    --glow-primary:   var(--color-glow-primary);
+    --glow-secondary: var(--color-glow-secondary);
+  }
+
+  /* Dark Mode — Vellum at Dusk */
+  [data-theme="vellum-dark"] {
+    --surface-base:     var(--color-surface-dark);
+    --surface-raised:   var(--color-surface-dark-container-low);
+    --surface-overlay:  var(--color-surface-dark-container);
+    --surface-sunken:   var(--color-surface-dark-container-highest);
+
+    --text-primary:   var(--color-on-surface-dark);
+    --text-secondary: var(--color-on-surface-dark-variant);
+    --text-muted:     var(--color-on-surface-dark-muted);
+
+    --border-subtle: var(--color-border-ghost-dark);
+
+    --bg-base: var(--surface-base);
+    --bg-elevated: var(--surface-raised);
+    --bg-overlay: var(--surface-overlay);
+    --bg-sunken: var(--surface-sunken);
+
+    --glow-primary:   var(--color-glow-primary-dark);
+    --glow-secondary: var(--color-glow-secondary-dark);
+  }
+
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--text-muted) transparent;
+  }
+
+  ::selection {
+    background-color: oklch(0.38 0.10 18 / 0.25);
+    color: inherit;
+  }
+
+  [data-theme="vellum-dark"] ::selection {
+    background-color: oklch(0.62 0.10 25 / 0.35);
+    color: inherit;
+  }
+
+  html,
+  body,
+  #app {
+    min-height: 100%;
+  }
+
+  body {
+    margin: 0;
+    background:
+      radial-gradient(circle at 18% 12%, oklch(0.96 0.012 70 / 0.6), transparent 34%),
+      radial-gradient(circle at 82% 88%, oklch(0.95 0.012 120 / 0.45), transparent 28%),
+      var(--surface-base);
+    color: var(--text-primary);
+    font-family: var(--font-sans);
+  }
+
+  /* Dark mode background — warm dusk atmosphere */
+  [data-theme="vellum-dark"] body {
+    background:
+      radial-gradient(circle at 18% 12%, oklch(0.28 0.015 60 / 0.5), transparent 34%),
+      radial-gradient(circle at 82% 88%, oklch(0.24 0.012 100 / 0.4), transparent 28%),
+      var(--surface-base);
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-family: var(--font-serif);
+    letter-spacing: -0.02em;
+    color: var(--text-primary);
+  }
+}
+
+.text-editorial {
+  font-family: var(--font-serif);
+  letter-spacing: -0.02em;
+  color: var(--text-primary);
+}
+
+.display-lg {
+  font-family: var(--font-serif);
+  font-size: 3.5rem;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  font-weight: 600;
+}
+
+.headline-lg {
+  font-family: var(--font-serif);
+  font-size: 2rem;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+  font-weight: 600;
+}
+
+.headline-md {
+  font-family: var(--font-serif);
+  font-size: 1.5rem;
+  line-height: 1.3;
+  letter-spacing: -0.01em;
+  font-weight: 600;
+}
+
+/* Body Copy — Newsreader for long-form text */
+.body-lg {
+  font-family: var(--font-serif);
+  font-size: 1.125rem;
+  line-height: 1.75;
+  color: var(--text-primary);
+}
+
+.body-md {
+  font-family: var(--font-serif);
+  font-size: 1rem;
+  line-height: 1.65;
+  color: var(--text-primary);
+}
+
+/* Functional Labels — Work Sans for UI */
+.label-md {
+  font-family: var(--font-sans);
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+  letter-spacing: 0.01em;
+}
+
+.label-sm {
+  font-family: var(--font-sans);
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.paper-texture {
+  background-color: var(--surface-raised);
+  border-radius: inherit;
+}
+
+.card-section {
+  background-color: var(--surface-raised);
+  border-radius: 0.5rem;
+}
+
+.card-embedded {
+  background-color: var(--surface-overlay);
+  border-radius: 0.5rem;
+}
+
+.card-interactive {
+  background-color: var(--surface-sunken);
+  border-radius: 0.5rem;
+}
+
+.surface-card {
+  background-color: var(--surface-raised);
+  border-radius: 0.5rem;
+  transition: background-color 0.3s ease-out;
+  box-shadow: 0 10px 28px oklch(0.28 0.008 105 / 0.06);
+}
+
+.surface-card:hover {
+  background-color: var(--surface-overlay);
+}
+
+.paper-card {
+  background-color: var(--surface-raised);
+  border-radius: 0.5rem;
+  box-shadow: 0 8px 32px oklch(0.28 0.008 105 / 0.10);
+}
+
+.paper-card-static {
+  background-color: var(--surface-raised);
+  border-radius: 0.5rem;
+  box-shadow: 0 4px 20px oklch(0.28 0.008 105 / 0.07);
+}
+
+/* Dark mode card shadows — warm ambient glow */
+[data-theme="vellum-dark"] .paper-card,
+[data-theme="vellum-dark"] .paper-card-static {
+  box-shadow: 0 8px 32px oklch(0.15 0.02 75 / 0.25);
+}
+
+[data-theme="vellum-dark"] .surface-card {
+  box-shadow: 0 10px 28px oklch(0.15 0.02 75 / 0.20);
+}
+
+.glass-input {
+  background-color: var(--color-input-bg);
+  border: none;
+  border-left: 2px solid transparent;
+  color: var(--text-primary);
+  transition: border-left-color 0.3s ease-out, background-color 0.3s ease-out;
+  outline: none;
+}
+
+.glass-input:focus {
+  background-color: var(--surface-overlay);
+  border-left: 2px solid var(--color-primary);
+  box-shadow: none;
+  outline: none;
+}
+
+[data-theme="vellum-dark"] .glass-input {
+  background-color: var(--color-input-bg-dark);
+}
+
+[data-theme="vellum-dark"] .glass-input:focus {
+  background-color: var(--surface-overlay);
+}
+
+.glass-input::placeholder {
+  color: var(--text-muted);
+}
+
+.input-ghost {
+  background-color: var(--color-input-bg);
+  border: 1px solid transparent;
+  color: var(--text-primary);
+  transition: border-color 0.3s ease-out, background-color 0.3s ease-out;
+  outline: none;
+}
+
+.input-ghost:focus {
+  background-color: var(--surface-overlay);
+  border-color: var(--border-subtle);
+  outline: none;
+}
+
+[data-theme="vellum-dark"] .input-ghost {
+  background-color: var(--color-input-bg-dark);
+}
+
+[data-theme="vellum-dark"] .input-ghost:focus {
+  background-color: var(--surface-overlay);
+}
+
+.input-ghost::placeholder {
+  color: var(--text-muted);
+}
+
+.btn-primary-vellum {
+  background-color: var(--color-primary);
+  color: oklch(0.99 0.01 100);
+  border-radius: 0.375rem;
+  font-family: var(--font-sans);
+  font-weight: 500;
+  transition: opacity 0.3s ease-out;
+}
+
+.btn-primary-vellum:hover {
+  opacity: 0.88;
+}
+
+.btn-secondary-vellum {
+  background-color: var(--color-secondary);
+  color: oklch(0.99 0.01 100);
+  border-radius: 0.375rem;
+  font-family: var(--font-sans);
+  font-weight: 500;
+  transition: opacity 0.3s ease-out;
+}
+
+.btn-secondary-vellum:hover {
+  opacity: 0.88;
+}
+
+.btn-tertiary {
+  background-color: transparent;
+  color: var(--color-primary);
+  border-radius: 0.375rem;
+  font-family: var(--font-sans);
+  font-weight: 500;
+  transition: background-color 0.3s ease-out;
+}
+
+.btn-tertiary:hover {
+  background-color: var(--surface-sunken);
+}
+
+.text-pretty {
+  color: var(--text-primary);
+  font-family: var(--font-serif);
+}
+
+.text-pretty-secondary {
+  color: var(--text-secondary);
+  font-family: var(--font-sans);
+}
+
+.text-pretty-muted {
+  color: var(--text-muted);
+  font-family: var(--font-sans);
+}
+
+.glow-blob {
+  position: absolute;
+  border-radius: 9999px;
+  filter: blur(80px);
+  pointer-events: none;
+}
+
+  .bg-dot-grid {
+    background-color: var(--surface-base);
+    background-image: radial-gradient(
+      oklch(0.75 0.005 100 / 0.40) 1px,
+      transparent 1px
+    );
+    background-size: 24px 24px;
+  }
+
+  [data-theme="vellum-dark"] .bg-dot-grid {
+    background-image: radial-gradient(
+      oklch(0.55 0.008 80 / 0.30) 1px,
+      transparent 1px
+    );
+  }
+
+.vellum-scroll {
+  background-color: var(--surface-base);
+  max-width: 72ch;
+  margin-left: auto;
+  margin-right: auto;
+  padding: var(--spacing-6) min(6vw, var(--spacing-24));
+  border-radius: 0.5rem;
+}
+
+* {
+  transition-property: background-color, border-color, color, fill, stroke, opacity, box-shadow, transform;
+  transition-timing-function: ease-out;
+  transition-duration: 300ms;
+}
+
+input, textarea, select {
+  transition-property: border-color, background-color, color, box-shadow;
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+@layer components {
+  .paper-quote {
+    background-color: var(--surface-overlay);
+    border-radius: 0.375rem;
+    padding: 0.9rem 1rem;
+    font-style: italic;
+    color: var(--text-secondary);
+  }
+
+  .strict-stack {
+    display: grid;
+    gap: var(--spacing-4);
+  }
+
+  .strict-stack-lg {
+    display: grid;
+    gap: var(--spacing-6);
+  }
+
+  .glass-card {
+    background-color: color-mix(in oklab, var(--surface-base) 80%, transparent);
+    backdrop-filter: blur(12px);
+    border-radius: 0.5rem;
+    box-shadow: 0 12px 40px rgba(56, 56, 49, 0.06);
+  }
+
+  .skeleton {
+    background: linear-gradient(
+      90deg,
+      color-mix(in oklab, var(--surface-overlay) 94%, transparent) 0%,
+      color-mix(in oklab, var(--surface-sunken) 90%, transparent) 40%,
+      color-mix(in oklab, var(--surface-overlay) 94%, transparent) 100%
+    );
+    background-size: 220% 100%;
+    animation: vellum-shimmer 2.2s ease-in-out infinite;
+  }
+
+  [data-theme="vellum-dark"] .skeleton {
+    background: linear-gradient(
+      90deg,
+      color-mix(in oklab, var(--surface-overlay) 85%, transparent) 0%,
+      color-mix(in oklab, var(--surface-sunken) 75%, transparent) 40%,
+      color-mix(in oklab, var(--surface-overlay) 85%, transparent) 100%
+    );
+    background-size: 220% 100%;
+    animation: vellum-shimmer 2.2s ease-in-out infinite;
+  }
+
+  .table :where(th, td) {
+    border-bottom: 0 !important;
+  }
+
+  .table tbody tr {
+    background-color: transparent;
+  }
+
+  .table tbody tr:nth-child(odd) {
+    background-color: color-mix(in oklab, var(--surface-overlay) 50%, transparent);
+  }
+
+  .table tbody tr:hover {
+    background-color: color-mix(in oklab, var(--surface-sunken) 65%, transparent) !important;
+  }
+
+  [data-theme="vellum-dark"] .table tbody tr:nth-child(odd) {
+    background-color: color-mix(in oklab, var(--surface-overlay) 40%, transparent);
+  }
+
+  [data-theme="vellum-dark"] .table tbody tr:hover {
+    background-color: color-mix(in oklab, var(--surface-sunken) 55%, transparent) !important;
+  }
+
+  .tabs-box {
+    background-color: var(--surface-raised) !important;
+    border: 0 !important;
+    border-radius: 0.5rem !important;
+    padding: 0.25rem !important;
+  }
+
+  .tab {
+    border-radius: 0.375rem !important;
+    color: var(--text-secondary);
+  }
+
+  .tab.tab-active {
+    background-color: var(--surface-sunken) !important;
+    color: var(--text-primary) !important;
+  }
+
+  .modal-box,
+  .dropdown-content,
+  .menu,
+  .card {
+    border: 0 !important;
+    border-radius: 0.5rem !important;
+  }
+
+  .btn {
+    border: 0 !important;
+    border-radius: 0.375rem !important;
+    box-shadow: none !important;
+  }
+
+  .btn.btn-outline,
+  .btn.btn-ghost {
+    background-color: transparent;
+    color: var(--text-secondary);
+  }
+
+  .btn.btn-outline:hover,
+  .btn.btn-ghost:hover {
+    background-color: var(--surface-overlay);
+    color: var(--text-primary);
+  }
+
+  /* Dark mode button adjustments */
+  [data-theme="vellum-dark"] .btn.btn-outline:hover,
+  [data-theme="vellum-dark"] .btn.btn-ghost:hover {
+    background-color: var(--surface-sunken);
+  }
+
+  .badge {
+    border: 0 !important;
+    border-radius: 0.375rem !important;
+    background-color: var(--surface-sunken);
+    color: var(--text-secondary);
+  }
+
+  [data-theme="vellum-dark"] .badge {
+    background-color: var(--surface-overlay);
+  }
+
+  .input,
+  .textarea,
+  .select {
+    border: 0 !important;
+    background-color: var(--color-input-bg) !important;
+    border-radius: 0.375rem !important;
+    box-shadow: none !important;
+  }
+
+  .input:focus,
+  .textarea:focus,
+  .select:focus {
+    background-color: var(--surface-overlay) !important;
+    outline: none;
+    box-shadow: none !important;
+  }
+
+  [data-theme="vellum-dark"] .input,
+  [data-theme="vellum-dark"] .textarea,
+  [data-theme="vellum-dark"] .select {
+    background-color: var(--color-input-bg-dark) !important;
+  }
+
+  [data-theme="vellum-dark"] .input:focus,
+  [data-theme="vellum-dark"] .textarea:focus,
+  [data-theme="vellum-dark"] .select:focus {
+    background-color: var(--surface-overlay) !important;
+  }
+}
+
+@layer utilities {
+  .no-line {
+    border: 0 !important;
+  }
+
+  .paper-panel {
+    background-color: var(--surface-raised);
+    border-radius: 0.5rem;
+    box-shadow: 0 10px 24px oklch(0.28 0.008 105 / 0.06);
+  }
+
+  [data-theme="vellum-dark"] .paper-panel {
+    box-shadow: 0 10px 24px oklch(0.15 0.02 75 / 0.20);
+  }
+
+  .paper-panel-embedded {
+    background-color: var(--surface-overlay);
+    border-radius: 0.5rem;
+  }
+
+  /* Legacy class harmonization for workspace pages still using old DaisyUI tokens */
+  .rounded-2xl {
+    border-radius: 0.5rem !important;
+  }
+
+  [class*="border-base-300"],
+  [class*="border-base-200"] {
+    border-color: transparent !important;
+  }
+
+  .border-dashed {
+    border-style: solid !important;
+    border-color: transparent !important;
+  }
+
+  [class*="bg-base-100"] {
+    background-color: var(--surface-raised) !important;
+  }
+
+  [class*="bg-base-200"] {
+    background-color: var(--surface-overlay) !important;
+  }
+
+  [class*="text-base-content"] {
+    color: var(--text-primary) !important;
+  }
+
+  [class*="text-neutral"] {
+    color: var(--text-secondary) !important;
+  }
+
+  /* Dark mode legacy class adjustments */
+  [data-theme="vellum-dark"] [class*="bg-base-100"] {
+    background-color: var(--surface-raised) !important;
+  }
+
+  [data-theme="vellum-dark"] [class*="bg-base-200"] {
+    background-color: var(--surface-overlay) !important;
+  }
+
+  [data-theme="vellum-dark"] [class*="bg-base-300"] {
+    background-color: var(--surface-sunken) !important;
+  }
+}
+
+@keyframes vellum-shimmer {
+  0% {
+    background-position: 130% 0;
+  }
+  100% {
+    background-position: -110% 0;
+  }
 }

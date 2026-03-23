@@ -72,61 +72,61 @@ async function onSubmit() {
      :note-body="t('auth.register.noteBody')"
      :quote="t('auth.register.quote')"
   >
-    <div class="mb-6 flex flex-col items-start justify-between gap-4 border-b border-base-300 pb-4 sm:flex-row sm:items-center">
+    <div class="mb-6 flex flex-col items-start justify-between gap-4 pb-4 sm:flex-row sm:items-center">
       <div>
-        <div class="text-xs font-mono uppercase tracking-[0.2em] text-base-content/38">Workspace Enrollment</div>
-        <h2 class="mt-2 text-2xl font-semibold text-base-content">{{ t('auth.register.heading') }}</h2>
+        <p class="label-sm">Workspace Enrollment</p>
+        <h2 class="text-editorial mt-2 text-2xl font-semibold">{{ t('auth.register.heading') }}</h2>
       </div>
-      <div class="tabs tabs-box w-full rounded-sm border border-base-300 bg-base-200 p-1 sm:w-auto">
-        <RouterLink :to="{ name: 'login' }" class="tab rounded-sm">{{ t('auth.tabLogin') }}</RouterLink>
-        <RouterLink :to="{ name: 'register' }" class="tab tab-active rounded-sm">{{ t('auth.tabRegister') }}</RouterLink>
+      <div class="flex rounded-xl bg-[var(--surface-overlay)] p-1">
+        <RouterLink :to="{ name: 'login' }" class="px-4 py-2 rounded-lg text-sm text-pretty-secondary hover:bg-[var(--surface-sunken)]">{{ t('auth.tabLogin') }}</RouterLink>
+        <RouterLink :to="{ name: 'register' }" class="px-4 py-2 rounded-lg text-sm bg-[var(--color-primary)] text-white">{{ t('auth.tabRegister') }}</RouterLink>
       </div>
     </div>
 
     <form class="grid gap-5" @submit.prevent="onSubmit">
-      <label class="fieldset">
-        <legend class="fieldset-legend text-sm">{{ t('auth.register.nameLabel') }}</legend>
-        <input v-model="displayName" type="text" class="input input-bordered w-full rounded-sm" :placeholder="t('auth.register.namePlaceholder')" autocomplete="name" />
-      </label>
-
-      <label class="fieldset">
-        <legend class="fieldset-legend text-sm">{{ t('auth.register.emailLabel') }}</legend>
-        <input v-model="email" type="email" class="input input-bordered w-full rounded-sm" placeholder="name@workspace.com" autocomplete="email" />
-      </label>
-
-      <div class="grid gap-5 md:grid-cols-2">
-        <label class="fieldset">
-         <legend class="fieldset-legend text-sm">{{ t('auth.register.passwordLabel') }}</legend>
-         <input v-model="password" type="password" class="input input-bordered w-full rounded-sm" :placeholder="t('auth.register.passwordPlaceholder')" autocomplete="new-password" />
-        </label>
-        <label class="fieldset">
-         <legend class="fieldset-legend text-sm">{{ t('auth.register.confirmLabel') }}</legend>
-         <input v-model="confirmPassword" type="password" class="input input-bordered w-full rounded-sm" :placeholder="t('auth.register.confirmPlaceholder')" autocomplete="new-password" />
-        </label>
+      <div class="space-y-2">
+        <label class="label-sm text-pretty-secondary">{{ t('auth.register.nameLabel') }}</label>
+        <input v-model="displayName" type="text" class="glass-input input input-bordered w-full rounded-xl" :placeholder="t('auth.register.namePlaceholder')" autocomplete="name" />
       </div>
 
-      <label class="label cursor-pointer items-start justify-start gap-3 rounded-sm border border-base-300 bg-base-200/40 px-4 py-3">
-        <input v-model="agreed" type="checkbox" class="checkbox checkbox-sm rounded-xs" />
-        <span class="label-text whitespace-normal text-sm leading-7 text-base-content/62">
+      <div class="space-y-2">
+        <label class="label-sm text-pretty-secondary">{{ t('auth.register.emailLabel') }}</label>
+        <input v-model="email" type="email" class="glass-input input input-bordered w-full rounded-xl" placeholder="name@workspace.com" autocomplete="email" />
+      </div>
+
+      <div class="grid gap-5 md:grid-cols-2">
+        <div class="space-y-2">
+          <label class="label-sm text-pretty-secondary">{{ t('auth.register.passwordLabel') }}</label>
+          <input v-model="password" type="password" class="glass-input input input-bordered w-full rounded-xl" :placeholder="t('auth.register.passwordPlaceholder')" autocomplete="new-password" />
+        </div>
+        <div class="space-y-2">
+          <label class="label-sm text-pretty-secondary">{{ t('auth.register.confirmLabel') }}</label>
+          <input v-model="confirmPassword" type="password" class="glass-input input input-bordered w-full rounded-xl" :placeholder="t('auth.register.confirmPlaceholder')" autocomplete="new-password" />
+        </div>
+      </div>
+
+      <label class="flex items-start gap-3 rounded-xl bg-[var(--surface-overlay)] px-4 py-3 cursor-pointer">
+        <input v-model="agreed" type="checkbox" class="checkbox checkbox-sm rounded mt-0.5" />
+        <span class="body-md text-pretty-secondary">
          {{ t('auth.register.agreeTerms') }}
         </span>
       </label>
 
-      <p v-if="errorMessage" class="rounded-sm border border-error/30 bg-error/8 px-3 py-2 text-sm text-error">
+      <p v-if="errorMessage" class="rounded-xl bg-red-500/10 px-3 py-2 text-sm text-red-500">
         {{ errorMessage }}
       </p>
-      <p v-if="successMessage" class="rounded-sm border border-success/30 bg-success/8 px-3 py-2 text-sm text-success">
+      <p v-if="successMessage" class="rounded-xl bg-emerald-500/10 px-3 py-2 text-sm text-emerald-600">
         {{ successMessage }}
       </p>
 
-      <button type="submit" class="btn btn-primary w-full rounded-sm" :disabled="isSubmitting">
+      <button type="submit" class="btn-primary-vellum w-full rounded-xl py-3" :disabled="isSubmitting">
         {{ isSubmitting ? t('auth.register.submitting') : t('auth.register.submit') }}
       </button>
     </form>
 
-    <p class="mt-5 text-center text-sm text-base-content/50">
+    <p class="mt-5 text-center text-sm text-pretty-muted">
       {{ t('auth.register.hasAccount') }}
-      <RouterLink :to="{ name: 'login' }" class="link link-hover text-primary">{{ t('auth.register.backToLogin') }}</RouterLink>
+      <RouterLink :to="{ name: 'login' }" class="text-pretty-secondary hover:text-[var(--color-primary)]">{{ t('auth.register.backToLogin') }}</RouterLink>
     </p>
   </AuthShell>
 </template>

@@ -59,7 +59,7 @@ function handleSubmit() {
 
 <template>
   <dialog class="modal" :class="{ 'modal-open': visible }" @close="handleClose">
-    <div class="modal-box rounded-sm border border-base-300">
+    <div class="modal-box rounded-sm no-line bg-(--surface-raised) shadow-[0_18px_42px_oklch(0.36_0.008_105/0.12)]">
       <h3 class="text-lg font-semibold text-base-content">{{ title }}</h3>
       <p v-if="subtitle" class="mt-1 text-sm text-base-content/60">{{ subtitle }}</p>
 
@@ -91,3 +91,6 @@ function handleSubmit() {
     </form>
   </dialog>
 </template>
+
+
+

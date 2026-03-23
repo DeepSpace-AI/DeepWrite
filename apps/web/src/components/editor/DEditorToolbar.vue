@@ -586,24 +586,23 @@ const runTool = (tool: EditorTool) => {
 
 <template>
   <div>
-    <div class="d-editor-toolbar flex flex-wrap items-center gap-3 border-b border-base-300 p-3">
-      <!-- 字体 / 颜色特殊控件 -->
-      <div v-if="hasTool('fontFamily') || hasTool('textColor') || hasTool('textPrimary') || hasTool('textDefault') || hasTool('bgColor')" class="join">
-        <!-- 字体选择 -->
+    <div class="d-editor-toolbar flex flex-wrap items-center gap-2 p-3">
+      <div v-if="hasTool('fontFamily') || hasTool('textColor') || hasTool('textPrimary') || hasTool('textDefault') || hasTool('bgColor')" class="flex rounded-lg bg-[var(--surface-raised)] p-1">
         <div v-if="hasTool('fontFamily')" class="dropdown dropdown-bottom relative">
           <div
             tabindex="0"
             role="button"
-            class="d-editor-btn btn btn-sm btn-ghost join-item min-w-28 justify-between px-2"
+            class="d-editor-btn flex items-center gap-1 px-3 py-1.5 rounded-md min-w-28 justify-between cursor-pointer hover:bg-[var(--surface-overlay)]"
           >
             <span class="truncate text-xs font-normal" :style="currentFontFamily ? { fontFamily: currentFontFamily } : undefined">{{ currentFontFamilyLabel }}</span>
             <IconChevronDown class="size-3.5 opacity-70" />
           </div>
-          <ul tabindex="0" class="dropdown-content menu z-30 mt-2 w-52 rounded-box border border-base-300 bg-base-100 p-1 shadow-lg">
+          <ul tabindex="0" class="dropdown-content menu z-30 mt-2 w-52 rounded-xl p-2 shadow-lg paper-card">
             <li v-for="font in FONT_FAMILIES" :key="font.value">
               <button
                 type="button"
-                :class="currentFontFamily === font.value ? 'active' : ''"
+                :class="currentFontFamily === font.value ? 'bg-[var(--color-primary)] text-white' : ''"
+                class="rounded-lg px-3 py-2 text-sm hover:bg-[var(--surface-overlay)]"
                 @click="setFontFamily(font.value)"
               >
                 <span :style="font.value ? { fontFamily: font.value } : undefined">{{ font.label }}</span>
@@ -611,34 +610,33 @@ const runTool = (tool: EditorTool) => {
             </li>
           </ul>
         </div>
-        <!-- 字体颜色 -->
         <div v-if="hasTool('textColor') || hasTool('textPrimary') || hasTool('textDefault')" class="dropdown dropdown-bottom relative">
-          <div tabindex="0" role="button" class="d-editor-btn btn btn-sm btn-ghost join-item flex flex-col items-center justify-center gap-0 px-2">
+          <div tabindex="0" role="button" class="d-editor-btn flex flex-col items-center justify-center gap-0 px-2 py-1.5 cursor-pointer hover:bg-[var(--surface-overlay)] rounded-md">
             <IconTextColor class="size-4" />
             <span class="h-0.75 w-4 rounded-full" :style="{ background: currentTextColor }" />
           </div>
-          <div tabindex="0" class="dropdown-content absolute left-0 top-full mt-2 w-56 rounded-box border border-base-300 bg-base-100 p-3 shadow-lg">
-            <p class="mb-2 text-xs font-medium text-base-content/70">常用色</p>
+          <div tabindex="0" class="dropdown-content absolute left-0 top-full mt-2 w-56 rounded-xl p-4 shadow-lg paper-card">
+            <p class="mb-3 text-xs font-medium text-pretty-secondary">常用色</p>
             <div class="grid grid-cols-4 gap-2">
               <button
                 v-for="preset in TEXT_COLOR_PRESETS"
                 :key="preset.value"
                 type="button"
-                class="btn btn-xs h-auto min-h-0 flex-col gap-1 px-1 py-1"
-                :class="isTextColorPresetActive(preset.value) ? 'btn-primary' : 'btn-ghost'"
+                class="flex flex-col items-center gap-1 px-1 py-1.5 rounded-lg hover:bg-[var(--surface-overlay)]"
+                :class="isTextColorPresetActive(preset.value) ? 'bg-[var(--color-primary)] text-white' : ''"
                 @click="setTextColorPreset(preset.value)"
               >
                 <span
-                  class="h-3 w-3 rounded-full border border-base-300"
+                  class="h-4 w-4 rounded-full"
                   :style="{ background: preset.value === 'unset' ? 'transparent' : preset.value }"
                 />
                 <span class="text-[10px] leading-none">{{ preset.label }}</span>
               </button>
             </div>
-            <div class="mt-3 border-t border-base-300 pt-3">
-              <label class="btn btn-sm w-full justify-between">
-                <span>自定义颜色</span>
-                <span class="h-3 w-3 rounded-full border border-base-300" :style="{ background: currentTextColor }" />
+            <div class="mt-4 rounded-md bg-[var(--surface-overlay)] p-3">
+              <label class="flex items-center justify-between gap-2 w-full rounded-lg px-3 py-2 hover:bg-[var(--surface-overlay)] cursor-pointer">
+                <span class="text-sm">自定义颜色</span>
+                <span class="h-3 w-3 rounded-full" :style="{ background: currentTextColor }" />
                 <input
                   type="color"
                   class="sr-only"
@@ -646,38 +644,37 @@ const runTool = (tool: EditorTool) => {
                   @input="setTextColor(($event.target as HTMLInputElement).value)"
                 >
               </label>
-              <p v-if="hasCustomTextColor" class="mt-1 text-[10px] text-base-content/55">当前为自定义文字色</p>
+              <p v-if="hasCustomTextColor" class="mt-1 text-[10px] text-pretty-muted">当前为自定义文字色</p>
             </div>
           </div>
         </div>
-        <!-- 背景色 -->
         <div v-if="hasTool('bgColor')" class="dropdown dropdown-bottom relative">
-          <div tabindex="0" role="button" class="d-editor-btn btn btn-sm btn-ghost join-item flex flex-col items-center justify-center gap-0 px-2">
+          <div tabindex="0" role="button" class="d-editor-btn flex flex-col items-center justify-center gap-0 px-2 py-1.5 cursor-pointer hover:bg-[var(--surface-overlay)] rounded-md">
             <IconBgColor class="size-4" />
             <span class="h-0.75 w-4 rounded-full" :style="{ background: currentBgColor }" />
           </div>
-          <div tabindex="0" class="dropdown-content absolute left-0 top-full mt-2 w-56 rounded-box border border-base-300 bg-base-100 p-3 shadow-lg">
-            <p class="mb-2 text-xs font-medium text-base-content/70">常用色</p>
+          <div tabindex="0" class="dropdown-content absolute left-0 top-full mt-2 w-56 rounded-xl p-4 shadow-lg paper-card">
+            <p class="mb-3 text-xs font-medium text-pretty-secondary">常用色</p>
             <div class="grid grid-cols-4 gap-2">
               <button
                 v-for="preset in BG_COLOR_PRESETS"
                 :key="preset.value"
                 type="button"
-                class="btn btn-xs h-auto min-h-0 flex-col gap-1 px-1 py-1"
-                :class="isBgColorPresetActive(preset.value) ? 'btn-primary' : 'btn-ghost'"
+                class="flex flex-col items-center gap-1 px-1 py-1.5 rounded-lg hover:bg-[var(--surface-overlay)]"
+                :class="isBgColorPresetActive(preset.value) ? 'bg-[var(--color-primary)] text-white' : ''"
                 @click="setBgColorPreset(preset.value)"
               >
                 <span
-                  class="h-3 w-3 rounded-full border border-base-300"
+                  class="h-4 w-4 rounded-full"
                   :style="{ background: preset.value === 'unset' ? 'transparent' : preset.value }"
                 />
                 <span class="text-[10px] leading-none">{{ preset.label }}</span>
               </button>
             </div>
-            <div class="mt-3 border-t border-base-300 pt-3">
-              <label class="btn btn-sm w-full justify-between">
-                <span>自定义背景色</span>
-                <span class="h-3 w-3 rounded-full border border-base-300" :style="{ background: currentBgColor }" />
+            <div class="mt-4 rounded-md bg-[var(--surface-overlay)] p-3">
+              <label class="flex items-center justify-between gap-2 w-full rounded-lg px-3 py-2 hover:bg-[var(--surface-overlay)] cursor-pointer">
+                <span class="text-sm">自定义背景色</span>
+                <span class="h-3 w-3 rounded-full" :style="{ background: currentBgColor }" />
                 <input
                   type="color"
                   class="sr-only"
@@ -685,27 +682,28 @@ const runTool = (tool: EditorTool) => {
                   @input="setBgColor(($event.target as HTMLInputElement).value)"
                 >
               </label>
-              <p v-if="hasCustomBgColor" class="mt-1 text-[10px] text-base-content/55">当前为自定义背景色</p>
+              <p v-if="hasCustomBgColor" class="mt-1 text-[10px] text-pretty-muted">当前为自定义背景色</p>
             </div>
           </div>
         </div>
       </div>
 
-      <div v-if="hasHeadingSelect || hasAlignSelect" class="join">
+      <div v-if="hasHeadingSelect || hasAlignSelect" class="flex rounded-lg bg-[var(--surface-raised)] p-1">
         <div v-if="hasHeadingSelect" class="dropdown dropdown-bottom relative">
           <div
             tabindex="0"
             role="button"
-            class="d-editor-btn btn btn-sm btn-ghost join-item min-w-28 justify-between px-2"
+            class="d-editor-btn flex items-center gap-1 px-3 py-1.5 rounded-md min-w-28 justify-between cursor-pointer hover:bg-[var(--surface-overlay)]"
           >
             <span class="text-xs font-normal">{{ currentHeadingLabel }}</span>
             <IconChevronDown class="size-3.5 opacity-70" />
           </div>
-          <ul tabindex="0" class="dropdown-content menu z-30 mt-2 w-44 rounded-box border border-base-300 bg-base-100 p-1 shadow-lg">
+          <ul tabindex="0" class="dropdown-content menu z-30 mt-2 w-44 rounded-xl p-2 shadow-lg paper-card">
             <li v-for="option in headingOptions" :key="option.value">
               <button
                 type="button"
-                :class="currentHeadingTool === option.value ? 'active' : ''"
+                :class="currentHeadingTool === option.value ? 'bg-[var(--color-primary)] text-white' : 'hover:bg-[var(--surface-overlay)]'"
+                class="rounded-lg px-3 py-2 text-sm"
                 :disabled="!canRunTool(option.value)"
                 @click="setHeadingTool(option.value)"
               >
@@ -719,16 +717,17 @@ const runTool = (tool: EditorTool) => {
           <div
             tabindex="0"
             role="button"
-            class="d-editor-btn btn btn-sm btn-ghost join-item min-w-28 justify-between px-2"
+            class="d-editor-btn flex items-center gap-1 px-3 py-1.5 rounded-md min-w-28 justify-between cursor-pointer hover:bg-[var(--surface-overlay)]"
           >
             <span class="text-xs font-normal">{{ currentAlignLabel }}</span>
             <IconChevronDown class="size-3.5 opacity-70" />
           </div>
-          <ul tabindex="0" class="dropdown-content menu z-30 mt-2 w-44 rounded-box border border-base-300 bg-base-100 p-1 shadow-lg">
+          <ul tabindex="0" class="dropdown-content menu z-30 mt-2 w-44 rounded-xl p-2 shadow-lg paper-card">
             <li v-for="option in alignOptions" :key="option.value">
               <button
                 type="button"
-                :class="currentAlignTool === option.value ? 'active' : ''"
+                :class="currentAlignTool === option.value ? 'bg-[var(--color-primary)] text-white' : 'hover:bg-[var(--surface-overlay)]'"
+                class="rounded-lg px-3 py-2 text-sm"
                 :disabled="!canRunTool(option.value)"
                 @click="setAlignTool(option.value)"
               >
@@ -739,12 +738,12 @@ const runTool = (tool: EditorTool) => {
         </div>
       </div>
 
-      <div v-for="group in toolGroups" :key="group" v-show="visibleToolsByGroup[group].length > 0" class="join">
+      <div v-for="group in toolGroups" :key="group" v-show="visibleToolsByGroup[group].length > 0" class="flex rounded-lg bg-[var(--surface-raised)] p-1">
         <div v-for="tool in visibleToolsByGroup[group]" :key="tool.key" class="tooltip tooltip-bottom z-20" :data-tip="tool.tip">
           <button
             type="button"
-            class="d-editor-btn btn btn-sm btn-ghost join-item"
-            :class="isToolActive(tool.key) ? 'btn-primary' : ''"
+            class="d-editor-btn flex items-center justify-center rounded-md px-2 py-1.5"
+            :class="isToolActive(tool.key) ? 'bg-[var(--color-primary)] text-white' : 'hover:bg-[var(--surface-overlay)]'"
             :aria-label="tool.label"
             :disabled="!canRunTool(tool.key)"
             @click="runTool(tool.key)"
@@ -756,24 +755,24 @@ const runTool = (tool: EditorTool) => {
     </div>
 
     <div class="modal px-4" :class="{ 'modal-open': linkModalOpen }" role="dialog" aria-modal="true">
-      <div class="modal-box max-w-xl p-0">
-        <div class="border-b border-base-300 px-6 py-4">
-          <h3 class="text-lg font-semibold text-base-content">编辑链接</h3>
-          <p class="mt-1 text-sm text-base-content/70">输入完整 URL，留空后保存可移除当前链接</p>
+      <div class="modal-box max-w-xl rounded-md p-0 paper-card">
+        <div class="px-6 py-4">
+          <h3 class="text-lg font-semibold text-pretty">编辑链接</h3>
+          <p class="mt-1 text-sm text-pretty-secondary">输入完整 URL，留空后保存可移除当前链接</p>
         </div>
         <form class="space-y-4 px-6 py-5" @submit.prevent="submitLink">
-          <label class="form-control w-full gap-2">
-            <span class="label-text text-sm">链接地址</span>
+          <div class="space-y-2">
+            <label class="text-sm text-pretty-secondary">链接地址</label>
             <input
               v-model="linkUrl"
               type="url"
-              class="input input-bordered w-full"
+              class="glass-input input input-bordered w-full rounded-md"
               placeholder="https://example.com"
             >
-          </label>
-          <div class="modal-action mt-0 border-t border-base-300 pt-4">
-            <button type="button" class="btn btn-ghost" @click="closeLinkModal">取消</button>
-            <button type="submit" class="btn btn-primary">保存</button>
+          </div>
+          <div class="flex justify-end gap-3 pt-4">
+            <button type="button" class="btn-tertiary rounded-md px-4 py-2" @click="closeLinkModal">取消</button>
+            <button type="submit" class="btn-primary-vellum rounded-md px-4 py-2">保存</button>
           </div>
         </form>
       </div>
@@ -781,24 +780,24 @@ const runTool = (tool: EditorTool) => {
     </div>
 
     <div class="modal px-4" :class="{ 'modal-open': imageModalOpen }" role="dialog" aria-modal="true">
-      <div class="modal-box max-w-xl p-0">
-        <div class="border-b border-base-300 px-6 py-4">
-          <h3 class="text-lg font-semibold text-base-content">插入图片</h3>
-          <p class="mt-1 text-sm text-base-content/70">支持远程图片 URL，推荐使用 HTTPS 地址</p>
+      <div class="modal-box max-w-xl rounded-md p-0 paper-card">
+        <div class="px-6 py-4">
+          <h3 class="text-lg font-semibold text-pretty">插入图片</h3>
+          <p class="mt-1 text-sm text-pretty-secondary">支持远程图片 URL，推荐使用 HTTPS 地址</p>
         </div>
         <form class="space-y-4 px-6 py-5" @submit.prevent="submitImage">
-          <label class="form-control w-full gap-2">
-            <span class="label-text text-sm">图片地址</span>
+          <div class="space-y-2">
+            <label class="text-sm text-pretty-secondary">图片地址</label>
             <input
               v-model="imageUrl"
               type="url"
-              class="input input-bordered w-full"
+              class="glass-input input input-bordered w-full rounded-md"
               placeholder="https://example.com/image.png"
             >
-          </label>
-          <div class="modal-action mt-0 border-t border-base-300 pt-4">
-            <button type="button" class="btn btn-ghost" @click="closeImageModal">取消</button>
-            <button type="submit" class="btn btn-primary" :disabled="!imageUrl.trim()">插入</button>
+          </div>
+          <div class="flex justify-end gap-3 pt-4">
+            <button type="button" class="btn-tertiary rounded-md px-4 py-2" @click="closeImageModal">取消</button>
+            <button type="submit" class="btn-primary-vellum rounded-md px-4 py-2" :disabled="!imageUrl.trim()">插入</button>
           </div>
         </form>
       </div>

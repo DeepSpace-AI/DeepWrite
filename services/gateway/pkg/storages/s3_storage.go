@@ -2,6 +2,7 @@ package storages
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"strings"
 	"time"
@@ -136,6 +137,16 @@ func (s *s3Storage) PresignGetURL(ctx context.Context, key string, expiresIn tim
 	}
 	if expiresIn <= 0 {
 		expiresIn = 15 * time.Minute
+	}
+
+	if s.cfg.CustomDomain != "" {
+		protocol := "https"
+		if s.cfg.DisableSSL {
+			protocol = "http"
+		}
+		customDomain := strings.TrimSpace(s.cfg.CustomDomain)
+		customURL := fmt.Sprintf("%s://%s/%s", protocol, customDomain, trimmedKey)
+		return customURL, nil
 	}
 
 	res, err := s.presign.PresignGetObject(ctx, &s3.GetObjectInput{

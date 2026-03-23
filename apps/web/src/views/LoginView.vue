@@ -62,54 +62,56 @@ async function onSubmit() {
      :note-body="t('auth.login.noteBody')"
      :quote="t('auth.login.quote')"
   >
-    <div class="mb-6 flex items-center justify-between gap-4 border-b border-base-300 pb-4">
+    <div class="mb-6 flex items-center justify-between gap-4 pb-4">
       <div>
-        <div class="text-xs font-mono uppercase tracking-[0.2em] text-base-content/38">Member Access</div>
-        <h2 class="mt-2 text-2xl font-semibold text-base-content">{{ t('auth.login.heading') }}</h2>
+        <p class="label-sm">Member Access</p>
+        <h2 class="text-editorial mt-2 text-2xl font-semibold">{{ t('auth.login.heading') }}</h2>
       </div>
-      <div class="tabs tabs-box rounded-sm border border-base-300 bg-base-200 p-1">
-        <RouterLink :to="{ name: 'login' }" class="tab tab-active rounded-sm">{{ t('auth.tabLogin') }}</RouterLink>
-        <RouterLink :to="{ name: 'register' }" class="tab rounded-sm">{{ t('auth.tabRegister') }}</RouterLink>
+      <div class="flex rounded-xl bg-[var(--surface-overlay)] p-1">
+        <RouterLink :to="{ name: 'login' }" class="px-4 py-2 rounded-lg text-sm bg-[var(--color-primary)] text-white">{{ t('auth.tabLogin') }}</RouterLink>
+        <RouterLink :to="{ name: 'register' }" class="px-4 py-2 rounded-lg text-sm text-pretty-secondary hover:bg-[var(--surface-sunken)]">{{ t('auth.tabRegister') }}</RouterLink>
       </div>
     </div>
 
     <form class="space-y-5" @submit.prevent="onSubmit">
-      <label class="fieldset">
-        <legend class="fieldset-legend text-sm">{{ t('auth.login.emailLabel') }}</legend>
-        <input v-model="email" type="email" class="input input-bordered w-full rounded-sm" placeholder="name@workspace.com" autocomplete="email" />
-      </label>
+      <div class="space-y-2">
+        <label class="label-sm text-pretty-secondary">{{ t('auth.login.emailLabel') }}</label>
+        <input v-model="email" type="email" class="glass-input input input-bordered w-full rounded-xl" placeholder="name@workspace.com" autocomplete="email" />
+      </div>
 
-      <label class="fieldset">
-        <legend class="fieldset-legend text-sm">{{ t('auth.login.passwordLabel') }}</legend>
-        <input v-model="password" type="password" class="input input-bordered w-full rounded-sm" :placeholder="t('auth.login.passwordPlaceholder')" autocomplete="current-password" />
-      </label>
+      <div class="space-y-2">
+        <label class="label-sm text-pretty-secondary">{{ t('auth.login.passwordLabel') }}</label>
+        <input v-model="password" type="password" class="glass-input input input-bordered w-full rounded-xl" :placeholder="t('auth.login.passwordPlaceholder')" autocomplete="current-password" />
+      </div>
 
       <div class="flex items-center justify-between gap-4 text-sm">
-        <label class="label cursor-pointer justify-start gap-3 p-0">
-          <input v-model="rememberDevice" type="checkbox" class="checkbox checkbox-sm rounded-xs" />
-         <span class="label-text text-base-content/60">{{ t('auth.login.rememberDevice') }}</span>
+        <label class="flex items-center gap-3 cursor-pointer">
+          <input v-model="rememberDevice" type="checkbox" class="checkbox checkbox-sm rounded" />
+          <span class="text-pretty-secondary">{{ t('auth.login.rememberDevice') }}</span>
         </label>
-        <RouterLink :to="{ name: 'forgot-password' }" class="link link-hover text-primary">
+        <RouterLink :to="{ name: 'forgot-password' }" class="text-pretty-secondary hover:text-[var(--color-primary)]">
          {{ t('auth.login.forgotPassword') }}
         </RouterLink>
       </div>
 
-      <p v-if="errorMessage" class="rounded-sm border border-error/30 bg-error/8 px-3 py-2 text-sm text-error">
+      <p v-if="errorMessage" class="rounded-xl bg-red-500/10 px-3 py-2 text-sm text-red-500">
         {{ errorMessage }}
       </p>
 
-      <button type="submit" class="btn btn-primary w-full rounded-sm" :disabled="isSubmitting">
+      <button type="submit" class="btn-primary-vellum w-full rounded-xl py-3" :disabled="isSubmitting">
         {{ isSubmitting ? t('auth.login.submitting') : t('auth.login.submit') }}
       </button>
     </form>
 
-    <div class="divider my-6 text-xs font-mono uppercase tracking-[0.18em] text-base-content/35">{{ t('auth.login.or') }}</div>
+    <div class="my-6 text-center">
+      <p class="label-sm text-pretty-muted">{{ t('auth.login.or') }}</p>
+    </div>
 
     <div class="space-y-3">
-      <button type="button" class="btn btn-outline w-full rounded-sm">{{ t('auth.login.magicLink') }}</button>
-      <p class="text-center text-sm text-base-content/50">
+      <button type="button" class="btn-tertiary w-full rounded-xl py-3">{{ t('auth.login.magicLink') }}</button>
+      <p class="text-center text-sm text-pretty-muted">
         {{ t('auth.login.noAccount') }}
-        <RouterLink :to="{ name: 'register' }" class="link link-hover text-primary">{{ t('auth.login.createAccount') }}</RouterLink>
+        <RouterLink :to="{ name: 'register' }" class="text-pretty-secondary hover:text-[var(--color-primary)]">{{ t('auth.login.createAccount') }}</RouterLink>
       </p>
     </div>
   </AuthShell>

@@ -15,7 +15,8 @@ const routes: RouteRecordRaw[] = [
     children: [
       {
         path: '',
-        redirect: { name: 'providers' },
+        name: 'dashboard',
+        component: () => import('@/views/DashboardView.vue'),
       },
       {
         path: 'providers',
@@ -31,6 +32,16 @@ const routes: RouteRecordRaw[] = [
         path: 'users',
         name: 'users',
         component: () => import('@/views/users/UsersView.vue'),
+      },
+      {
+        path: 'users-new',
+        name: 'users-new',
+        component: () => import('@/views/admin/UserListView.vue'),
+      },
+      {
+        path: 'workspaces',
+        name: 'workspaces',
+        component: () => import('@/views/workspaces/WorkspacesView.vue'),
       },
       {
         path: 'system',
@@ -73,7 +84,7 @@ router.beforeEach((to) => {
   if (to.name === 'login' && authStore.hasValidAccessToken()) {
     const role = userStore.user?.role?.toLowerCase()
     if (role === 'admin') {
-      return { name: 'providers' }
+      return { name: 'dashboard' }
     }
   }
 

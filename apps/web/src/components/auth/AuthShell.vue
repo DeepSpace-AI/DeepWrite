@@ -15,52 +15,51 @@ defineProps<{
 
 <template>
   <main class="dot-grid relative overflow-hidden py-14 lg:py-20">
-    <div class="pointer-events-none absolute inset-x-0 top-0 h-px bg-linear-to-r from-transparent via-primary/30 to-transparent" />
-    <div class="pointer-events-none absolute -top-32 right-12 size-80 rounded-full bg-primary/6 blur-3xl" />
-    <div class="pointer-events-none absolute bottom-0 left-0 size-72 rounded-full bg-secondary/8 blur-3xl" />
+    <div class="glow-blob -top-32 right-12 size-80 bg-[var(--glow-primary)] opacity-30" />
+    <div class="glow-blob bottom-0 left-0 size-72 bg-[var(--glow-secondary)] opacity-25" />
 
     <div class="relative mx-auto grid max-w-6xl gap-10 px-4 lg:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)] lg:items-start">
       <section class="max-w-xl min-w-0 pt-4 lg:pt-8">
-        <div class="border-y border-base-300/80 py-3 text-[11px] font-mono uppercase tracking-[0.22em] text-base-content/45">
+        <p class="label-sm py-3">
           {{ eyebrow }}
-        </div>
+        </p>
         <div class="mt-8 space-y-5">
-          <div class="text-xs font-mono uppercase tracking-[0.24em] text-primary/70">{{ t('auth.accessLabel') }}</div>
-          <h1 class="heading-serif text-4xl font-bold leading-[1.08] text-base-content lg:text-5xl">
+          <p class="label-sm">{{ t('auth.accessLabel') }}</p>
+          <h1 class="text-editorial text-4xl font-bold leading-[1.08] lg:text-5xl">
             {{ title }}
           </h1>
-          <p class="max-w-lg text-base leading-8 text-base-content/64">
+          <p class="body-lg text-pretty-secondary">
             {{ description }}
           </p>
-          <blockquote class="max-w-md border-l-2 border-secondary/60 pl-4 text-sm italic leading-7 text-base-content/58">
+          <blockquote class="paper-quote body-md">
             {{ quote }}
           </blockquote>
         </div>
 
-        <div class="mt-8 grid gap-3 text-sm text-base-content/58">
-          <div class="publication-note rounded-sm border border-base-300 bg-base-100/80 p-4">
-            <div class="text-[11px] font-mono uppercase tracking-[0.2em] text-base-content/38">{{ noteTitle }}</div>
-            <p class="mt-2 leading-7">{{ noteBody }}</p>
+        <div class="mt-8 grid gap-4 text-sm">
+          <div class="paper-card rounded-md p-5">
+            <p class="label-sm mb-2">{{ noteTitle }}</p>
+            <p class="body-md text-pretty-secondary">{{ noteBody }}</p>
           </div>
-          <div class="grid grid-cols-2 gap-3">
-            <div class="rounded-sm border border-base-300 bg-base-100/80 p-4">
-              <div class="text-[11px] font-mono uppercase tracking-[0.2em] text-base-content/38">Session</div>
-                <p class="mt-2 leading-7">{{ t('auth.sessionText') }}</p>
+          <div class="grid grid-cols-2 gap-4">
+            <div class="paper-card rounded-md p-5">
+              <p class="label-sm mb-2">Session</p>
+              <p class="body-md text-pretty-secondary">{{ t('auth.sessionText') }}</p>
             </div>
-            <div class="rounded-sm border border-base-300 bg-base-100/80 p-4">
-              <div class="text-[11px] font-mono uppercase tracking-[0.2em] text-base-content/38">Recovery</div>
-                <p class="mt-2 leading-7">{{ t('auth.recoveryText') }}</p>
+            <div class="paper-card rounded-md p-5">
+              <p class="label-sm mb-2">Recovery</p>
+              <p class="body-md text-pretty-secondary">{{ t('auth.recoveryText') }}</p>
             </div>
           </div>
         </div>
       </section>
 
-      <section class="auth-paper relative min-w-0 overflow-hidden rounded-sm border border-base-300 bg-base-100 shadow-2xl">
-        <div class="border-b border-base-300 bg-base-200 px-6 py-3 text-[11px] font-mono uppercase tracking-[0.22em] text-base-content/40">
-          Authorization Dossier
+      <section class="paper-card relative min-w-0 overflow-hidden rounded-lg">
+        <div class="bg-[var(--surface-raised)] px-6 py-3">
+          <p class="label-sm">Authorization Dossier</p>
         </div>
-        <div class="border-b border-base-300/70 px-6 py-2 text-[10px] font-mono uppercase tracking-[0.22em] text-base-content/35">
-          Verified access / publication workspace / secure recovery
+        <div class="bg-[var(--surface-base)]/50 px-6 py-2">
+          <p class="label-sm opacity-60">Verified access / publication workspace / secure recovery</p>
         </div>
         <div class="p-6 lg:p-8">
           <slot />
@@ -71,29 +70,12 @@ defineProps<{
 </template>
 
 <style scoped>
-@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;0,700;1,600&display=swap');
-
-.heading-serif {
-  font-family: 'Playfair Display', Georgia, serif;
-}
-
 .dot-grid {
-  background-color: var(--color-base-100);
+  background-color: var(--surface-base);
   background-image: radial-gradient(
-    circle,
-    color-mix(in srgb, var(--color-base-content) 7%, transparent) 1.5px,
-    transparent 1.5px
+    oklch(0.70 0.005 100 / 0.45) 1px,
+    transparent 1px
   );
   background-size: 28px 28px;
-}
-
-.auth-paper {
-  box-shadow:
-    0 30px 70px color-mix(in srgb, var(--color-neutral) 12%, transparent),
-    18px 18px 0 color-mix(in srgb, var(--color-base-300) 50%, transparent);
-}
-
-.publication-note {
-  backdrop-filter: blur(8px);
 }
 </style>

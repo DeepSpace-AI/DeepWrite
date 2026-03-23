@@ -31,6 +31,23 @@ type invitationActionClaims struct {
 	gojwt.RegisteredClaims
 }
 
+func (h *WorkspaceHandler) DashboardOverview(c *gin.Context) {
+	userID := strings.TrimSpace(c.GetString("user_id"))
+	if userID == "" {
+		response.Failed(c, response.ErrorUnauthorizedCode, "unauthorized")
+		return
+	}
+
+	userEmail := strings.TrimSpace(c.GetString("user_email"))
+	overview, err := workspace.GetDashboardOverview(c.Request.Context(), userID, userEmail)
+	if err != nil {
+		response.Failed(c, response.ErrorUnknownCode, "获取工作台总览失败")
+		return
+	}
+
+	response.Success(c, response.SuccessCode, overview)
+}
+
 // @Summary      工作区列表
 // @Description  获取当前登录用户可访问的工作区列表
 // @Tags         Workspace
@@ -1232,6 +1249,353 @@ func (h *WorkspaceHandler) BatchDeleteFiles(c *gin.Context) {
 		"deleted_ids": deletableIDs,
 		"failed":      failed,
 	})
+}
+
+// @Summary      获取文件标注列表
+// @Description  获取指定文件的所有标注（需 viewer 及以上权限）
+// @Tags         Workspace
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        id path string true "工作区ID"
+// @Param        file_id path string true "文件ID"
+// @Success      200 {object} response.Response "获取成功"
+// @Failure      401 {object} response.Response "未授权"
+// @Failure      403 {object} response.Response "无权限访问"
+// @Failure      404 {object} response.Response "工作区或文件不存在"
+// @Failure      500 {object} response.Response "服务器错误"
+// @Router       /workspaces/{id}/files/{file_id}/annotations [get]
+func (h *WorkspaceHandler) ListAnnotations(c *gin.Context) {
+	userID := strings.TrimSpace(c.GetString("user_id"))
+	if userID == "" {
+		response.Failed(c, response.ErrorUnauthorizedCode, "unauthorized")
+		return
+	}
+
+	workspaceID := strings.TrimSpace(c.Param("id"))
+	fileID := strings.TrimSpace(c.Param("file_id"))
+	if workspaceID == "" || fileID == "" {
+		response.Failed(c, response.ErrorBadRequestCode, "workspace id and file id are required")
+		return
+	}
+
+	ws, err := workspace.GetWorkSpaceByID(c.Request.Context(), workspaceID)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			response.Failed(c, 404, "工作区不存在")
+			return
+		}
+		response.Failed(c, response.ErrorUnknownCode, "获取工作区失败")
+		return
+	}
+
+	if !ws.Public && !ws.IsViewer(userID) {
+		response.Failed(c, response.ErrorForbiddenCode, "无权限访问该工作区")
+		return
+	}
+
+	file, err := workspace.GetWorkspaceFileByID(c.Request.Context(), fileID)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			response.Failed(c, 404, "文件不存在")
+			return
+		}
+		response.Failed(c, response.ErrorUnknownCode, "获取文件失败")
+		return
+	}
+
+	if file.WorkspaceID != workspaceID {
+		response.Failed(c, 404, "文件不存在")
+		return
+	}
+
+	annotations, err := workspace.ListAnnotationsByFile(c.Request.Context(), fileID)
+	if err != nil {
+		response.Failed(c, response.ErrorUnknownCode, "获取标注列表失败")
+		return
+	}
+
+	response.Success(c, response.SuccessCode, annotations)
+}
+
+// @Summary      创建文件标注
+// @Description  为指定文件创建标注（需 editor 及以上权限）
+// @Tags         Workspace
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        id path string true "工作区ID"
+// @Param        file_id path string true "文件ID"
+// @Param        request body request.CreateAnnotationRequest true "标注参数"
+// @Success      201 {object} response.Response "创建成功"
+// @Failure      400 {object} response.Response "请求参数错误"
+// @Failure      401 {object} response.Response "未授权"
+// @Failure      403 {object} response.Response "无权限操作"
+// @Failure      404 {object} response.Response "工作区或文件不存在"
+// @Failure      500 {object} response.Response "服务器错误"
+// @Router       /workspaces/{id}/files/{file_id}/annotations [post]
+func (h *WorkspaceHandler) CreateAnnotation(c *gin.Context) {
+	userID := strings.TrimSpace(c.GetString("user_id"))
+	if userID == "" {
+		response.Failed(c, response.ErrorUnauthorizedCode, "unauthorized")
+		return
+	}
+
+	workspaceID := strings.TrimSpace(c.Param("id"))
+	fileID := strings.TrimSpace(c.Param("file_id"))
+	if workspaceID == "" || fileID == "" {
+		response.Failed(c, response.ErrorBadRequestCode, "workspace id and file id are required")
+		return
+	}
+
+	ws, err := workspace.GetWorkSpaceByID(c.Request.Context(), workspaceID)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			response.Failed(c, 404, "工作区不存在")
+			return
+		}
+		response.Failed(c, response.ErrorUnknownCode, "获取工作区失败")
+		return
+	}
+
+	if !ws.IsEditor(userID) {
+		response.Failed(c, response.ErrorForbiddenCode, "无权限创建标注")
+		return
+	}
+
+	file, err := workspace.GetWorkspaceFileByID(c.Request.Context(), fileID)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			response.Failed(c, 404, "文件不存在")
+			return
+		}
+		response.Failed(c, response.ErrorUnknownCode, "获取文件失败")
+		return
+	}
+
+	if file.WorkspaceID != workspaceID {
+		response.Failed(c, 404, "文件不存在")
+		return
+	}
+
+	var req request.CreateAnnotationRequest
+	if ok := request.ValidateStruct(c, &req); !ok {
+		return
+	}
+
+	annotation, err := workspace.CreateAnnotation(c.Request.Context(), workspace.CreateAnnotationInput{
+		FileID:      fileID,
+		UserID:      userID,
+		WorkspaceID: workspaceID,
+		Type:        workspace.AnnotationType(req.Type),
+		Page:        req.Page,
+		RectX:       req.RectX,
+		RectY:       req.RectY,
+		RectWidth:   req.RectWidth,
+		RectHeight:  req.RectHeight,
+		Color:       req.Color,
+		Content:     req.Content,
+		Paths:       req.Paths,
+	})
+	if err != nil {
+		response.Failed(c, response.ErrorUnknownCode, "创建标注失败")
+		return
+	}
+
+	response.Success(c, response.SuccessCreatedCode, annotation)
+}
+
+// @Summary      更新文件标注
+// @Description  更新指定标注的内容和位置（需 editor 及以上权限，仅能修改自己的标注，admin 可修改所有）
+// @Tags         Workspace
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        id path string true "工作区ID"
+// @Param        file_id path string true "文件ID"
+// @Param        annotation_id path string true "标注ID"
+// @Param        request body request.UpdateAnnotationRequest true "标注参数"
+// @Success      200 {object} response.Response "更新成功"
+// @Failure      400 {object} response.Response "请求参数错误"
+// @Failure      401 {object} response.Response "未授权"
+// @Failure      403 {object} response.Response "无权限操作"
+// @Failure      404 {object} response.Response "工作区、文件或标注不存在"
+// @Failure      500 {object} response.Response "服务器错误"
+// @Router       /workspaces/{id}/files/{file_id}/annotations/{annotation_id} [put]
+func (h *WorkspaceHandler) UpdateAnnotation(c *gin.Context) {
+	userID := strings.TrimSpace(c.GetString("user_id"))
+	if userID == "" {
+		response.Failed(c, response.ErrorUnauthorizedCode, "unauthorized")
+		return
+	}
+
+	workspaceID := strings.TrimSpace(c.Param("id"))
+	fileID := strings.TrimSpace(c.Param("file_id"))
+	annotationID := strings.TrimSpace(c.Param("annotation_id"))
+	if workspaceID == "" || fileID == "" || annotationID == "" {
+		response.Failed(c, response.ErrorBadRequestCode, "workspace id, file id and annotation id are required")
+		return
+	}
+
+	ws, err := workspace.GetWorkSpaceByID(c.Request.Context(), workspaceID)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			response.Failed(c, 404, "工作区不存在")
+			return
+		}
+		response.Failed(c, response.ErrorUnknownCode, "获取工作区失败")
+		return
+	}
+
+	if !ws.IsEditor(userID) {
+		response.Failed(c, response.ErrorForbiddenCode, "无权限更新标注")
+		return
+	}
+
+	file, err := workspace.GetWorkspaceFileByID(c.Request.Context(), fileID)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			response.Failed(c, 404, "文件不存在")
+			return
+		}
+		response.Failed(c, response.ErrorUnknownCode, "获取文件失败")
+		return
+	}
+
+	if file.WorkspaceID != workspaceID {
+		response.Failed(c, 404, "文件不存在")
+		return
+	}
+
+	annotation, err := workspace.GetAnnotationByID(c.Request.Context(), annotationID)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			response.Failed(c, 404, "标注不存在")
+			return
+		}
+		response.Failed(c, response.ErrorUnknownCode, "获取标注失败")
+		return
+	}
+
+	if annotation.FileID != fileID || annotation.WorkspaceID != workspaceID {
+		response.Failed(c, 404, "标注不存在")
+		return
+	}
+
+	if annotation.UserID != userID && !ws.IsAdmin(userID) {
+		response.Failed(c, response.ErrorForbiddenCode, "无权限更新他人的标注")
+		return
+	}
+
+	var req request.UpdateAnnotationRequest
+	if ok := request.ValidateStruct(c, &req); !ok {
+		return
+	}
+
+	updated, err := workspace.UpdateAnnotation(c.Request.Context(), annotationID, workspace.UpdateAnnotationInput{
+		RectX:      req.RectX,
+		RectY:      req.RectY,
+		RectWidth:  req.RectWidth,
+		RectHeight: req.RectHeight,
+		Color:      req.Color,
+		Content:    req.Content,
+		Paths:      req.Paths,
+	})
+	if err != nil {
+		response.Failed(c, response.ErrorUnknownCode, "更新标注失败")
+		return
+	}
+
+	response.Success(c, response.SuccessCode, updated)
+}
+
+// @Summary      删除文件标注
+// @Description  删除指定标注（需 editor 及以上权限，仅能删除自己的标注，admin 可删除所有）
+// @Tags         Workspace
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        id path string true "工作区ID"
+// @Param        file_id path string true "文件ID"
+// @Param        annotation_id path string true "标注ID"
+// @Success      200 {object} response.Response "删除成功"
+// @Failure      400 {object} response.Response "请求参数错误"
+// @Failure      401 {object} response.Response "未授权"
+// @Failure      403 {object} response.Response "无权限操作"
+// @Failure      404 {object} response.Response "工作区、文件或标注不存在"
+// @Failure      500 {object} response.Response "服务器错误"
+// @Router       /workspaces/{id}/files/{file_id}/annotations/{annotation_id} [delete]
+func (h *WorkspaceHandler) DeleteAnnotation(c *gin.Context) {
+	userID := strings.TrimSpace(c.GetString("user_id"))
+	if userID == "" {
+		response.Failed(c, response.ErrorUnauthorizedCode, "unauthorized")
+		return
+	}
+
+	workspaceID := strings.TrimSpace(c.Param("id"))
+	fileID := strings.TrimSpace(c.Param("file_id"))
+	annotationID := strings.TrimSpace(c.Param("annotation_id"))
+	if workspaceID == "" || fileID == "" || annotationID == "" {
+		response.Failed(c, response.ErrorBadRequestCode, "workspace id, file id and annotation id are required")
+		return
+	}
+
+	ws, err := workspace.GetWorkSpaceByID(c.Request.Context(), workspaceID)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			response.Failed(c, 404, "工作区不存在")
+			return
+		}
+		response.Failed(c, response.ErrorUnknownCode, "获取工作区失败")
+		return
+	}
+
+	if !ws.IsEditor(userID) {
+		response.Failed(c, response.ErrorForbiddenCode, "无权限删除标注")
+		return
+	}
+
+	file, err := workspace.GetWorkspaceFileByID(c.Request.Context(), fileID)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			response.Failed(c, 404, "文件不存在")
+			return
+		}
+		response.Failed(c, response.ErrorUnknownCode, "获取文件失败")
+		return
+	}
+
+	if file.WorkspaceID != workspaceID {
+		response.Failed(c, 404, "文件不存在")
+		return
+	}
+
+	annotation, err := workspace.GetAnnotationByID(c.Request.Context(), annotationID)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			response.Failed(c, 404, "标注不存在")
+			return
+		}
+		response.Failed(c, response.ErrorUnknownCode, "获取标注失败")
+		return
+	}
+
+	if annotation.FileID != fileID || annotation.WorkspaceID != workspaceID {
+		response.Failed(c, 404, "标注不存在")
+		return
+	}
+
+	if annotation.UserID != userID && !ws.IsAdmin(userID) {
+		response.Failed(c, response.ErrorForbiddenCode, "无权限删除他人的标注")
+		return
+	}
+
+	if err := workspace.DeleteAnnotation(c.Request.Context(), annotationID); err != nil {
+		response.Failed(c, response.ErrorUnknownCode, "删除标注失败")
+		return
+	}
+
+	response.Success(c, response.SuccessCode, gin.H{"id": annotationID})
 }
 
 // @Summary      工作区成员列表

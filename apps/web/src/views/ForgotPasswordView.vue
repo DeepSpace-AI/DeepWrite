@@ -43,29 +43,29 @@ async function onSubmit() {
       :note-body="t('auth.forgotPassword.noteBody')"
       :quote="t('auth.forgotPassword.quote')"
   >
-    <div class="mb-6 border-b border-base-300 pb-4">
-      <div class="text-xs font-mono uppercase tracking-[0.2em] text-base-content/38">Credential Recovery</div>
-        <h2 class="mt-2 text-2xl font-semibold text-base-content">{{ t('auth.forgotPassword.heading') }}</h2>
+    <div class="mb-6 rounded-md bg-[var(--surface-overlay)] p-4">
+      <div class="text-xs font-mono uppercase tracking-[0.2em] text-pretty-muted">Credential Recovery</div>
+        <h2 class="mt-2 text-2xl font-semibold text-pretty">{{ t('auth.forgotPassword.heading') }}</h2>
     </div>
 
     <form class="space-y-5" @submit.prevent="onSubmit">
       <label class="fieldset">
           <legend class="fieldset-legend text-sm">{{ t('auth.forgotPassword.emailLabel') }}</legend>
-        <input v-model="email" type="email" class="input input-bordered w-full rounded-sm" placeholder="name@workspace.com" autocomplete="email" />
+        <input v-model="email" type="email" class="glass-input input input-bordered w-full rounded-md" placeholder="name@workspace.com" autocomplete="email" />
       </label>
 
-      <div class="rounded-sm border border-secondary/25 bg-secondary/8 p-4 text-sm leading-7 text-base-content/58">
+      <div class="rounded-md bg-[var(--glow-secondary)] p-4 text-sm leading-7 text-pretty-secondary">
           {{ t('auth.forgotPassword.infoText') }}
       </div>
 
-      <p v-if="errorMessage" class="rounded-sm border border-error/30 bg-error/8 px-3 py-2 text-sm text-error">
+      <p v-if="errorMessage" class="rounded-md bg-error/8 px-3 py-2 text-sm text-error">
         {{ errorMessage }}
       </p>
-      <p v-if="successMessage" class="rounded-sm border border-success/30 bg-success/8 px-3 py-2 text-sm text-success">
+      <p v-if="successMessage" class="rounded-md bg-success/8 px-3 py-2 text-sm text-success">
         {{ successMessage }}
       </p>
 
-      <button type="submit" class="btn btn-primary w-full rounded-sm" :disabled="isSubmitting">
+      <button type="submit" class="btn-primary-vellum w-full rounded-md px-4 py-2" :disabled="isSubmitting">
         {{ isSubmitting ? t('auth.forgotPassword.submitting') : t('auth.forgotPassword.submit') }}
       </button>
     </form>

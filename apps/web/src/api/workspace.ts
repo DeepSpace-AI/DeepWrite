@@ -1,5 +1,5 @@
 import { http, unwrapResponse } from '@/api/http'
-import type { WorkspaceFile, WorkspaceFolder } from '@/views/workspace/types'
+import type { WorkspaceFile, WorkspaceFolder, PDFAnnotation } from '@/views/workspace/types'
 
 export interface WorkspaceMember {
   workspace_id: string
@@ -324,4 +324,59 @@ export async function rejectWorkspaceInvitation(invitationId: string, input: Res
     action_token: input.actionToken || undefined,
   })
   return unwrapResponse<WorkspaceInvitation>(res)
+}
+
+export interface CreateAnnotationInput {
+  type: 'highlight' | 'note' | 'drawing'
+  page: number
+  rect_x: number
+  rect_y: number
+  rect_width: number
+  rect_height: number
+  color?: string
+  content?: string
+  paths?: string
+}
+
+export interface UpdateAnnotationInput {
+  rect_x?: number
+  rect_y?: number
+  rect_width?: number
+  rect_height?: number
+  color?: string
+  content?: string
+  paths?: string
+}
+
+export async function listFileAnnotations(workspaceId: string, fileId: string): Promise<PDFAnnotation[]> {
+  const res = await http.get(`/workspaces/${workspaceId}/files/${fileId}/annotations`)
+  return unwrapResponse<PDFAnnotation[]>(res)
+}
+
+export async function createFileAnnotation(
+  workspaceId: string,
+  fileId: string,
+  input: CreateAnnotationInput
+): Promise<PDFAnnotation> {
+  const res = await http.post(`/workspaces/${workspaceId}/files/${fileId}/annotations`, input)
+  return unwrapResponse<PDFAnnotation>(res)
+}
+
+export async function updateFileAnnotation(
+  workspaceId: string,
+  fileId: string,
+  annotationId: string,
+  input: UpdateAnnotationInput
+): Promise<PDFAnnotation> {
+  const res = await http.put(`/workspaces/${workspaceId}/files/${fileId}/annotations/${annotationId}`, input)
+  return unwrapResponse<PDFAnnotation>(res)
+}
+
+export async function deleteFileAnnotation(
+  workspaceId: string,
+  fileId: string,
+  annotationId: string
+): Promise<void> {
+  const res = await http.delete(`/workspaces/${workspaceId}/files/${fileId}/annotations/${annotationId}`)
+  unwrapResponse<unknown>(res)
 }

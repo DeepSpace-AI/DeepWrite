@@ -63,6 +63,7 @@ type StorageConfig struct {
 	SessionToken    string `mapstructure:"SESSION_TOKEN"`
 	UsePathStyle    bool   `mapstructure:"USE_PATH_STYLE"`
 	DisableSSL      bool   `mapstructure:"DISABLE_SSL"`
+	CustomDomain    string `mapstructure:"CUSTOM_DOMAIN"`
 }
 
 type MailConfig struct {
@@ -210,6 +211,7 @@ func (vcr *ViperConfigReader) setDefaults() {
 	v.SetDefault("STORAGE.SESSION_TOKEN", "")
 	v.SetDefault("STORAGE.USE_PATH_STYLE", false)
 	v.SetDefault("STORAGE.DISABLE_SSL", false)
+	v.SetDefault("STORAGE.CUSTOM_DOMAIN", "")
 
 	// Mail 默认值
 	v.SetDefault("MAIL.ENABLED", false)
@@ -375,6 +377,9 @@ func (vcr *ViperConfigReader) applyEnvOverrides() {
 	}
 	if env := os.Getenv("STORAGE_SESSION_TOKEN"); env != "" {
 		vcr.cfg.Storage.SessionToken = env
+	}
+	if env := os.Getenv("STORAGE_CUSTOM_DOMAIN"); env != "" {
+		vcr.cfg.Storage.CustomDomain = env
 	}
 
 	// Mail 环境变量覆盖

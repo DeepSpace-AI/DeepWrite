@@ -50,6 +50,7 @@ func AutoMigrate() {
 		&workspace.Folder{},
 		&workspace.WorkspaceFile{},
 		&workspace.WorkspaceInvitation{},
+		&workspace.FileAnnotation{},
 		&document.Document{},
 		&document.Version{},
 		&document.CollabToken{},

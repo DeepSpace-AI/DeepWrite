@@ -53,7 +53,6 @@ async function onAvatarFileChange(event: Event) {
   const file = input.files?.[0]
   if (!file) return
 
-  // reset so the same file can be re-selected after an error
   input.value = ''
 
   if (file.size > 5 * 1024 * 1024) {
@@ -116,46 +115,45 @@ async function onSubmit() {
 
 <template>
   <section class="space-y-5">
-    <section class="rounded-sm border border-base-300 bg-base-100 p-5 shadow-sm">
-      <p class="text-[11px] font-mono uppercase tracking-[0.2em] text-base-content/45">Profile / Account</p>
-      <h2 class="heading-serif mt-2 text-3xl font-bold text-base-content">个人信息</h2>
-      <p class="mt-2 max-w-2xl text-sm leading-7 text-base-content/62">管理你的显示名、头像地址、语言和时区设置。这些设置会同步到后端并在刷新后保持一致。</p>
+    <section class="paper-card rounded-lg p-5">
+      <p class="text-[11px] font-mono uppercase tracking-[0.2em] text-pretty-muted">Profile / Account</p>
+      <h2 class="heading-serif mt-2 text-3xl font-bold text-pretty">个人信息</h2>
+      <p class="mt-2 max-w-2xl text-sm leading-7 text-pretty-secondary">管理你的显示名、头像地址、语言和时区设置。这些设置会同步到后端并在刷新后保持一致。</p>
     </section>
 
-    <section class="rounded-sm border border-base-300 bg-base-100 p-5 shadow-sm">
+    <section class="paper-card rounded-lg p-5 bg-[var(--surface-raised)]">
       <form class="grid gap-5" @submit.prevent="onSubmit">
         <div class="grid gap-5 md:grid-cols-2">
           <label class="fieldset">
-            <legend class="fieldset-legend text-sm">显示名</legend>
-            <input v-model="displayName" type="text" class="input input-bordered w-full rounded-sm" maxlength="30" placeholder="请输入显示名" />
+            <legend class="fieldset-legend text-sm text-pretty-secondary">显示名</legend>
+            <input v-model="displayName" type="text" class="input input-bordered w-full rounded-xl" maxlength="30" placeholder="请输入显示名" />
           </label>
 
           <label class="fieldset">
-            <legend class="fieldset-legend text-sm">邮箱</legend>
-            <input :value="email" type="email" class="input input-bordered w-full rounded-sm" disabled />
+            <legend class="fieldset-legend text-sm text-pretty-secondary">邮箱</legend>
+            <input :value="email" type="email" class="input input-bordered w-full rounded-xl" disabled />
           </label>
         </div>
 
-        <!-- avatar upload -->
         <div class="fieldset">
-          <legend class="fieldset-legend text-sm">头像</legend>
+          <legend class="fieldset-legend text-sm text-pretty-secondary">头像</legend>
           <div class="flex items-center gap-4">
             <div class="relative shrink-0">
               <img
                 v-if="avatarUrl"
                 :src="avatarUrl"
                 alt="avatar"
-                class="h-16 w-16 rounded-full object-cover border border-base-300"
+                class="h-16 w-16 rounded-md object-cover"
               />
               <div
                 v-else
-                class="h-16 w-16 rounded-full bg-base-300 flex items-center justify-center text-base-content/40"
+                class="flex h-16 w-16 items-center justify-center rounded-md bg-[var(--surface-overlay)] text-pretty-muted"
               >
                 <IconAccountCircle class="h-8 w-8" />
               </div>
               <div
                 v-if="isUploadingAvatar"
-                class="absolute inset-0 rounded-full bg-base-100/70 flex items-center justify-center"
+                class="absolute inset-0 flex items-center justify-center rounded-md bg-[var(--bg-base)]/70"
               >
                 <span class="loading loading-spinner loading-sm" />
               </div>
@@ -163,13 +161,13 @@ async function onSubmit() {
             <div class="flex flex-col gap-1">
               <button
                 type="button"
-                class="btn btn-sm btn-outline rounded-sm"
+                class="btn-tertiary rounded-md px-3 py-1.5 text-sm"
                 :disabled="isUploadingAvatar"
                 @click="avatarFileInput?.click()"
               >
                 {{ isUploadingAvatar ? '上传中...' : '上传头像' }}
               </button>
-              <p class="text-xs text-base-content/50">最大 5 MB，支持 JPG / PNG / GIF / WebP</p>
+              <p class="text-xs text-pretty-muted">最大 5 MB，支持 JPG / PNG / GIF / WebP</p>
             </div>
           </div>
           <input
@@ -183,43 +181,43 @@ async function onSubmit() {
         </div>
 
         <label class="fieldset">
-          <legend class="fieldset-legend text-sm">头像地址</legend>
-          <input v-model="avatarUrl" type="url" class="input input-bordered w-full rounded-sm" placeholder="https://example.com/avatar.jpg" />
-          <div class="fieldset-label text-xs text-base-content/50">上传头像后自动填入，也可手动输入 URL</div>
+          <legend class="fieldset-legend text-sm text-pretty-secondary">头像地址</legend>
+          <input v-model="avatarUrl" type="url" class="input input-bordered w-full rounded-md" placeholder="https://example.com/avatar.jpg" />
+          <div class="fieldset-label text-xs text-pretty-muted">上传头像后自动填入，也可手动输入 URL</div>
         </label>
 
         <label class="fieldset">
-          <legend class="fieldset-legend text-sm">个人简介</legend>
-          <textarea v-model="bio" class="textarea textarea-bordered min-h-28 w-full rounded-sm" maxlength="255" placeholder="介绍一下你自己" />
-          <div class="mt-1 text-xs text-base-content/50">{{ bio.trim().length }} / 255</div>
+          <legend class="fieldset-legend text-sm text-pretty-secondary">个人简介</legend>
+          <textarea v-model="bio" class="textarea textarea-bordered min-h-28 w-full rounded-md" maxlength="255" placeholder="介绍一下你自己" />
+          <div class="mt-1 text-xs text-pretty-muted">{{ bio.trim().length }} / 255</div>
         </label>
 
         <div class="grid gap-5 md:grid-cols-2">
           <label class="fieldset">
-            <legend class="fieldset-legend text-sm">语言</legend>
-            <select v-model="language" class="select select-bordered w-full rounded-sm">
+            <legend class="fieldset-legend text-sm text-pretty-secondary">语言</legend>
+            <select v-model="language" class="select select-bordered w-full rounded-md">
               <option v-for="item in languageOptions" :key="item.value" :value="item.value">{{ item.label }}</option>
             </select>
           </label>
 
           <label class="fieldset">
-            <legend class="fieldset-legend text-sm">时区</legend>
-            <select v-model="timezone" class="select select-bordered w-full rounded-sm">
+            <legend class="fieldset-legend text-sm text-pretty-secondary">时区</legend>
+            <select v-model="timezone" class="select select-bordered w-full rounded-md">
               <option v-for="item in timezoneOptions" :key="item.value" :value="item.value">{{ item.label }}</option>
             </select>
           </label>
         </div>
 
-        <p v-if="errorMessage" class="rounded-sm border border-error/30 bg-error/10 px-3 py-2 text-sm text-error">
+        <p v-if="errorMessage" class="rounded-md bg-error/8 px-3 py-2 text-sm text-error">
           {{ errorMessage }}
         </p>
 
-        <p v-if="successMessage" class="rounded-sm border border-success/30 bg-success/10 px-3 py-2 text-sm text-success">
+        <p v-if="successMessage" class="rounded-md bg-emerald-500/8 px-3 py-2 text-sm text-emerald-600">
           {{ successMessage }}
         </p>
 
         <div class="flex justify-end">
-          <button type="submit" class="btn btn-primary rounded-sm" :disabled="isSubmitting">
+          <button type="submit" class="btn-primary-vellum rounded-md px-4 py-2" :disabled="isSubmitting">
             {{ isSubmitting ? '保存中...' : '保存更改' }}
           </button>
         </div>
