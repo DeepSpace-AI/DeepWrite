@@ -100,6 +100,8 @@ func SetupAPIRoutes(r *gin.Engine) {
 		documentHandler := new(handler.DocumentHandler)
 		collabHandler := new(handler.CollabHandler)
 		aiProviderHandler := new(handler.AIProviderHandler)
+		referenceHandler := handler.NewReferenceHandler()
+		collectionHandler := handler.NewCollectionHandler()
 		{
 			documentGroup.POST("", documentHandler.Create)
 			documentGroup.GET("", documentHandler.List)
@@ -113,6 +115,60 @@ func SetupAPIRoutes(r *gin.Engine) {
 			documentGroup.POST("/:id/collab/content", collabHandler.SyncContent)
 		}
 
+		referenceGroup := v1.Group("/references")
+		referenceGroup.Use(middleware.AuthMiddleware())
+		importHandler := handler.NewImportHandler()
+		searchHandler := handler.NewSearchHandler()
+		pdfHandler := handler.NewPDFHandler()
+		{
+			referenceGroup.GET("", referenceHandler.List)
+			referenceGroup.POST("", referenceHandler.Create)
+			referenceGroup.GET("/lookup/doi", referenceHandler.LookupDOI)
+			referenceGroup.GET("/search", referenceHandler.SearchCrossref)
+			referenceGroup.GET("/:id", referenceHandler.GetByID)
+			referenceGroup.PUT("/:id", referenceHandler.Update)
+			referenceGroup.DELETE("/:id", referenceHandler.Delete)
+			referenceGroup.POST("/:id/file", referenceHandler.AttachFile)
+			referenceGroup.DELETE("/:id/file", referenceHandler.DetachFile)
+			referenceGroup.POST("/:id/pdf", pdfHandler.UploadForReference)
+			referenceGroup.POST("/:id/extract-pdf", referenceHandler.ExtractPdfFromReference)
+			referenceGroup.GET("/tasks/:task_id", referenceHandler.GetExtractionTaskStatus)
+
+			// PDF Upload
+			referenceGroup.POST("/pdf/upload", pdfHandler.Upload)
+
+			// Import/Export
+			referenceGroup.POST("/import/bibtex", importHandler.ImportBibtex)
+			referenceGroup.POST("/import/ris", importHandler.ImportRIS)
+			referenceGroup.GET("/export/bibtex", importHandler.ExportBibtex)
+			referenceGroup.GET("/export/ris", importHandler.ExportRIS)
+			referenceGroup.GET("/export/csl", importHandler.ExportCSLJSON)
+
+			// AI Search
+			referenceGroup.GET("/ai-search", searchHandler.Search)
+			referenceGroup.POST("/ai-search/doi", searchHandler.SearchByDOI)
+			referenceGroup.POST("/ai-search/import", searchHandler.BatchImport)
+		}
+
+		// Internal callbacks (no auth, uses internal token)
+		internalGroup := v1.Group("/internal")
+		{
+			internalGroup.POST("/references/extract-callback", pdfHandler.UpdateExtractResult)
+		}
+
+		collectionsGroup := v1.Group("/collections")
+		collectionsGroup.Use(middleware.AuthMiddleware())
+		{
+			collectionsGroup.GET("", collectionHandler.List)
+			collectionsGroup.POST("", collectionHandler.Create)
+			collectionsGroup.GET("/:id", collectionHandler.GetByID)
+			collectionsGroup.PUT("/:id", collectionHandler.Update)
+			collectionsGroup.DELETE("/:id", collectionHandler.Delete)
+			collectionsGroup.PUT("/:id/references", collectionHandler.SetReferences)
+			collectionsGroup.POST("/:id/references/:rid", collectionHandler.AddReference)
+			collectionsGroup.DELETE("/:id/references/:rid", collectionHandler.RemoveReference)
+		}
+
 		aiProviderGroup := v1.Group("/ai/providers")
 		aiProviderGroup.Use(middleware.AuthMiddleware(), middleware.AdminMiddleware())
 		{
@@ -123,10 +179,12 @@ func SetupAPIRoutes(r *gin.Engine) {
 			aiProviderGroup.GET("/vendors/:providerId", aiProviderHandler.GetVendorDetail)
 			aiProviderGroup.GET("/vendors/:providerId/discover-models", aiProviderHandler.DiscoverVendorModels)
 			aiProviderGroup.POST("/vendors/:providerId/models", aiProviderHandler.CreateModelByVendor)
+			aiProviderGroup.POST("/vendors/:providerId/test-connection", aiProviderHandler.TestVendorConnection)
 			aiProviderGroup.POST("", aiProviderHandler.Create)
 			aiProviderGroup.GET("/:model", aiProviderHandler.GetByModel)
 			aiProviderGroup.PUT("/:model", aiProviderHandler.Update)
 			aiProviderGroup.DELETE("/:model", aiProviderHandler.Delete)
+			aiProviderGroup.POST("/:model/test-connection", aiProviderHandler.TestModelConnection)
 		}
 
 		adminUserGroup := v1.Group("/admin")

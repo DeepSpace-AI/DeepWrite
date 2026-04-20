@@ -81,6 +81,7 @@ class AIServiceConfig:
     log_level: str = "info"
     internal_token: str = ""
     database_dsn: str = ""
+    encryption_key: str = ""
     request_timeout_seconds: int = 120
     model_config_table: str = "dw_ai_models"
     default_chat_completions_path: str = "/chat/completions"
@@ -103,6 +104,7 @@ class AIServiceConfig:
         log_level = _to_str(_deep_get(data, "LOG", "LEVEL", default=data.get("LOG_LEVEL")), defaults.log_level)
         internal_token = _to_str(data.get("INTERNAL_TOKEN"), defaults.internal_token)
         database_dsn = _to_str(data.get("DATABASE_DSN"), defaults.database_dsn)
+        encryption_key = _to_str(data.get("ENCRYPTION_KEY"), defaults.encryption_key)
         request_timeout_seconds = _to_int(
             _deep_get(data, "HTTP", "REQUEST_TIMEOUT_SECONDS", default=data.get("REQUEST_TIMEOUT_SECONDS")),
             defaults.request_timeout_seconds,
@@ -158,6 +160,7 @@ class AIServiceConfig:
         log_level = _to_str(env.get("AI_LOG_LEVEL", log_level), log_level)
         internal_token = _to_str(env.get("AI_INTERNAL_TOKEN", internal_token), internal_token)
         database_dsn = _to_str(env.get("DATABASE_DSN", database_dsn), database_dsn)
+        encryption_key = _to_str(env.get("AI_ENCRYPTION_KEY", encryption_key), encryption_key)
         request_timeout_seconds = _to_int(
             env.get("AI_REQUEST_TIMEOUT_SECONDS", request_timeout_seconds),
             request_timeout_seconds,
@@ -198,6 +201,7 @@ class AIServiceConfig:
             log_level=log_level,
             internal_token=internal_token,
             database_dsn=normalize_database_dsn(database_dsn),
+            encryption_key=encryption_key,
             request_timeout_seconds=request_timeout_seconds,
             model_config_table=model_config_table,
             default_chat_completions_path=default_chat_completions_path,

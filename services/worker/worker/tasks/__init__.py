@@ -9,6 +9,7 @@ from worker.tasks.ping_tasks import ping
 from worker.tasks.document_tasks import parse_document, index_document, export_document
 from worker.tasks.ai_tasks import chat_completion, batch_completion, generate_embedding
 from worker.tasks.notify_tasks import send_email, send_welcome_email, send_document_shared_notification, send_task_reminder
+from worker.tasks.pdf_tasks import extract_pdf_metadata, extract_and_lookup_doi
 
 __all__ = [
     "add",
@@ -23,4 +24,6 @@ __all__ = [
     "send_welcome_email",
     "send_document_shared_notification",
     "send_task_reminder",
+    "extract_pdf_metadata",
+    "extract_and_lookup_doi",
 ]

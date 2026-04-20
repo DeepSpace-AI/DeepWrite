@@ -6,6 +6,7 @@ import (
 
 	"github.com/deepwrite/serivces/gateway/models/ai"
 	"github.com/deepwrite/serivces/gateway/models/document"
+	"github.com/deepwrite/serivces/gateway/models/reference"
 	"github.com/deepwrite/serivces/gateway/models/user"
 	"github.com/deepwrite/serivces/gateway/models/workspace"
 	"github.com/deepwrite/serivces/gateway/pkg/config"
@@ -57,6 +58,10 @@ func AutoMigrate() {
 		&document.CollabUpdate{},
 		&document.CollabState{},
 		&document.CollabAudit{},
+		&reference.Reference{},
+		&reference.Collection{},
+		&reference.CollectionReference{},
+		&reference.ReferenceNote{},
 	); err != nil {
 		panic(err)
 	}

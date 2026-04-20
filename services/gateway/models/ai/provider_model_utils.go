@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/deepwrite/serivces/gateway/pkg/crypto"
 	"github.com/deepwrite/serivces/gateway/pkg/database"
 	"gorm.io/datatypes"
 	"gorm.io/gorm"
@@ -403,10 +404,16 @@ func findOrCreateProvider(tx *gorm.DB, providerName string, input CreateProvider
 	if baseURL == "" || apiKey == "" {
 		return Provider{}, fmt.Errorf("base_url and api_key are required for provider %s", name)
 	}
+
+	encryptedAPIKey, err := crypto.EncryptAPIKey(apiKey)
+	if err != nil {
+		return Provider{}, fmt.Errorf("failed to encrypt api_key: %w", err)
+	}
+
 	provider = Provider{
 		Name:                    name,
 		BaseURL:                 baseURL,
-		APIKey:                  apiKey,
+		APIKey:                  encryptedAPIKey,
 		Organization:            organization,
 		ChatCompletionsPath:     chatCompletionsPath,
 		ChatResponsesPath:       chatResponsesPath,
@@ -435,7 +442,11 @@ func buildProviderUpdates(input UpdateProviderModelInput) map[string]any {
 	if input.APIKey != nil {
 		next := strings.TrimSpace(*input.APIKey)
 		if next != "" {
-			updates["api_key"] = next
+			encrypted, err := crypto.EncryptAPIKey(next)
+			if err != nil {
+				return updates
+			}
+			updates["api_key"] = encrypted
 		}
 	}
 	if input.Organization != nil {

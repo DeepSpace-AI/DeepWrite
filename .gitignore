@@ -54,3 +54,19 @@ __screenshots__/
 bin/
 tmp/
 dump.rdb
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyc
+
+# Config files with secrets
+services/ai/config.yaml
+services/worker/config.yaml
+services/gateway/config.yaml
+!*.config.yaml.example
+
+# Test files
+test_*.py
+nul

@@ -10,6 +10,7 @@ from sqlalchemy.engine import RowMapping
 from sqlalchemy.ext.asyncio import AsyncEngine
 
 from config import AIServiceConfig
+from crypto import decrypt_api_key
 from schemas import ModelConfig
 
 
@@ -126,7 +127,8 @@ class ModelConfigRepository:
         model_key = self._read_str(row, profile.model, "")
         request_model = self._read_str(row, profile.request_model, model_key)
         base_url = self._read_str(row, profile.base_url, "")
-        api_key = self._read_str(row, profile.api_key, "")
+        api_key_encrypted = self._read_str(row, profile.api_key, "")
+        api_key = decrypt_api_key(api_key_encrypted)
         organization = self._read_str(row, profile.organization, "") or None
         chat_completions_path = self._normalize_path(
             self._read_str(row, profile.chat_completions_path, self._config.default_chat_completions_path)

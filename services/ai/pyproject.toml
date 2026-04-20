@@ -12,4 +12,5 @@ dependencies = [
     "sqlalchemy>=2.0.41",
     "asyncpg>=0.30.0",
     "uvicorn>=0.35.0",
+    "cryptography>=45.0.0",
 ]

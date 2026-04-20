@@ -1,20 +1,38 @@
 from __future__ import annotations
 
+import logging
+import time
 from typing import Any
 
 from fastapi import FastAPI, Header, HTTPException, Query, Request
 from fastapi.responses import JSONResponse, Response, StreamingResponse
+from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncEngine
 import uvicorn
 
 from config import AIServiceConfig, get_config
+from crypto import init_crypto_service
 from db import build_engine
+from logging_middleware import RequestLoggingMiddleware, setup_logging
 from model_repository import ModelConfigRepository
 from provider_service import UnifiedProviderService
-from schemas import ChatCompletionsRequest, GenericModelRequest, ModelConfigResponse
+from schemas import (
+    ChatCompletionsRequest,
+    GenericModelRequest,
+    ModelConfigResponse,
+    TestConnectionRequest,
+    TestConnectionResponse,
+)
 
 cfg = get_config()
+setup_logging(cfg.log_level)
+logger = logging.getLogger(__name__)
+
 app = FastAPI(title=cfg.app_name)
+app.add_middleware(
+    RequestLoggingMiddleware,
+    exclude_paths=["/", "/health", "/ready"],
+)
 app.state.db_engine = None
 app.state.model_repository = None
 app.state.provider_service = UnifiedProviderService(timeout_seconds=cfg.request_timeout_seconds)
@@ -42,12 +60,15 @@ def _repository() -> ModelConfigRepository:
 @app.on_event("startup")
 async def startup() -> None:
     app.state.config = cfg
+    if cfg.encryption_key:
+        init_crypto_service(cfg.encryption_key)
     app.state.db_engine = build_engine(cfg)
     if app.state.db_engine is None:
         app.state.model_repository = None
     else:
         app.state.model_repository = ModelConfigRepository(app.state.db_engine, cfg)
     app.state.provider_service = UnifiedProviderService(timeout_seconds=cfg.request_timeout_seconds)
+    await app.state.provider_service.start()
 
 
 @app.on_event("shutdown")
@@ -55,11 +76,60 @@ async def shutdown() -> None:
     engine: AsyncEngine | None = app.state.db_engine
     if engine is not None:
         await engine.dispose()
+    provider_service: UnifiedProviderService | None = app.state.provider_service
+    if provider_service is not None:
+        await provider_service.stop()
 
 
 @app.get("/")
 async def root() -> dict[str, str]:
     return {"service": cfg.app_name, "env": cfg.app_env, "status": "ok"}
+
+
+@app.get("/health")
+async def health() -> dict[str, str]:
+    return {"status": "healthy"}
+
+
+@app.get("/ready")
+async def ready() -> dict[str, Any]:
+    checks: dict[str, Any] = {
+        "database": "unknown",
+        "http_client": "unknown",
+    }
+
+    engine: AsyncEngine | None = app.state.db_engine
+    if engine is not None:
+        try:
+            async with engine.connect() as conn:
+                await conn.execute(text("SELECT 1"))
+            checks["database"] = "ok"
+        except Exception as e:
+            checks["database"] = f"error: {e}"
+    else:
+        checks["database"] = "not_configured"
+
+    provider_service: UnifiedProviderService | None = app.state.provider_service
+    if provider_service is not None:
+        try:
+            client = provider_service._get_client()
+            if client is not None:
+                checks["http_client"] = "ok"
+            else:
+                checks["http_client"] = "not_initialized"
+        except Exception as e:
+            checks["http_client"] = f"error: {e}"
+    else:
+        checks["http_client"] = "not_initialized"
+
+    all_healthy = all(
+        v in ("ok", "not_configured", "unknown") for v in checks.values()
+    )
+
+    return {
+        "status": "ready" if all_healthy else "not_ready",
+        "checks": checks,
+    }
 
 
 @app.get("/internal/v1/models/{model}")
@@ -187,6 +257,58 @@ async def internal_models(
         path=model_config.models_path,
     )
     return JSONResponse(content=data)
+
+
+@app.post("/internal/v1/test-connection", response_model=TestConnectionResponse)
+async def test_connection(
+    body: TestConnectionRequest,
+    x_internal_token: str | None = Header(default=None),
+) -> TestConnectionResponse:
+    get_internal_token(cfg, x_internal_token)
+    logger.info(f"[test_connection] Received request: base_url={body.base_url}, models_path={body.models_path}")
+
+    from schemas import ModelConfig
+
+    test_config = ModelConfig(
+        provider="openai-compatible",
+        model_key=body.model or "test-model",
+        request_model=body.request_model or body.model or "test-model",
+        base_url=body.base_url,
+        api_key=body.api_key,
+        organization=body.organization,
+        chat_completions_path=body.chat_completions_path,
+        models_path=body.models_path,
+        extra_headers=body.extra_headers,
+    )
+
+    provider = _provider_service()
+    start_time = time.perf_counter()
+
+    try:
+        await provider.test_connection(model_config=test_config, path=test_config.models_path)
+        latency_ms = (time.perf_counter() - start_time) * 1000
+
+        return TestConnectionResponse(
+            success=True,
+            message="连接成功",
+            latency_ms=round(latency_ms, 2),
+        )
+    except HTTPException as e:
+        latency_ms = (time.perf_counter() - start_time) * 1000
+        return TestConnectionResponse(
+            success=False,
+            message="连接失败",
+            latency_ms=round(latency_ms, 2),
+            error_detail=e.detail,
+        )
+    except Exception as e:
+        latency_ms = (time.perf_counter() - start_time) * 1000
+        return TestConnectionResponse(
+            success=False,
+            message="连接失败",
+            latency_ms=round(latency_ms, 2),
+            error_detail=str(e),
+        )
 
 
 def _build_upstream_payload(body: ChatCompletionsRequest) -> dict[str, Any]:

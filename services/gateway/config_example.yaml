@@ -108,6 +108,13 @@ COLLAB:
   HEARTBEAT_TIMEOUT_SECONDS: 45 # 心跳超时阈值(秒)
 
 # =========================
+# Worker 服务配置
+# =========================
+WORKER:
+  URL: "http://localhost:8000" # Worker 服务地址
+  TOKEN: "<worker-internal-token>" # 内部调用 Token(用于回调认证)
+
+# =========================
 # 工作区业务配置
 # =========================
 WORKSPACE:

@@ -1,4 +1,5 @@
 import argparse
+import platform
 import signal
 import subprocess
 import sys
@@ -9,6 +10,13 @@ import uvicorn
 from config.config import get_config
 
 
+def _get_pool_type() -> str:
+    """根据操作系统选择 Celery 池类型"""
+    if platform.system() == "Windows":
+        return "solo"
+    return "prefork"
+
+
 def _start_api() -> None:
     cfg = get_config()
     uvicorn.run("api.main:app", host=cfg.host, port=cfg.port, reload=cfg.reload)
@@ -16,21 +24,24 @@ def _start_api() -> None:
 
 def _start_celery_subprocess() -> subprocess.Popen[str]:
     cfg = get_config()
-    return subprocess.Popen(
-        [
-            sys.executable,
-            "-m",
-            "celery",
-            "-A",
-            "worker.celery_app:celery_app",
-            "worker",
-            "-Q",
-            cfg.celery_default_queue,
-            "-l",
-            cfg.log_level,
-        ],
-        text=True,
-    )
+    pool_type = _get_pool_type()
+    
+    cmd = [
+        sys.executable,
+        "-m",
+        "celery",
+        "-A",
+        "worker.celery_app:celery_app",
+        "worker",
+        "-Q",
+        cfg.celery_default_queue,
+        "-l",
+        cfg.log_level,
+        "--pool",
+        pool_type,
+    ]
+    
+    return subprocess.Popen(cmd, text=True)
 
 
 def _run_all() -> None:

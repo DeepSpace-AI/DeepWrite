@@ -1,12 +1,19 @@
 package handler
 
 import (
+	"bytes"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
+	"log"
+	"net/http"
 	"strconv"
 	"strings"
 
 	aimodel "github.com/deepwrite/serivces/gateway/models/ai"
+	"github.com/deepwrite/serivces/gateway/pkg/config"
+	"github.com/deepwrite/serivces/gateway/pkg/crypto"
 	"github.com/deepwrite/serivces/gateway/pkg/request"
 	"github.com/deepwrite/serivces/gateway/pkg/response"
 	"github.com/gin-gonic/gin"
@@ -652,4 +659,204 @@ func isInvalidInputErr(err error) bool {
 	}
 	msg := strings.ToLower(err.Error())
 	return strings.Contains(msg, "required")
+}
+
+// @Summary      测试厂商连通性
+// @Description  测试AI厂商API连通性，验证Base URL和API Key是否有效
+// @Tags         AI
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        providerId path string true "厂商 UUID"
+// @Success      200 {object} response.Response "测试成功"
+// @Failure      400 {object} response.Response "请求参数错误"
+// @Failure      401 {object} response.Response "未授权"
+// @Failure      403 {object} response.Response "无权限访问"
+// @Failure      404 {object} response.Response "厂商不存在"
+// @Failure      500 {object} response.Response "服务器错误"
+// @Router       /ai/providers/vendors/{providerId}/test-connection [post]
+func (h *AIProviderHandler) TestVendorConnection(c *gin.Context) {
+	providerID := strings.TrimSpace(c.Param("providerId"))
+	if providerID == "" {
+		response.Failed(c, response.ErrorBadRequestCode, "provider_id is required")
+		return
+	}
+
+	provider, err := aimodel.GetProviderByID(c.Request.Context(), providerID)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			response.Failed(c, 404, "Provider 厂商不存在")
+			return
+		}
+		response.Failed(c, response.ErrorUnknownCode, "获取 Provider 厂商失败")
+		return
+	}
+
+	apiKey, err := crypto.DecryptAPIKey(provider.APIKey)
+	if err != nil {
+		response.Failed(c, response.ErrorUnknownCode, "解密 API Key 失败")
+		return
+	}
+
+	testReq := map[string]interface{}{
+		"base_url":              provider.BaseURL,
+		"api_key":               apiKey,
+		"organization":          provider.Organization,
+		"chat_completions_path": provider.ChatCompletionsPath,
+		"models_path":           provider.ModelsPath,
+		"extra_headers":         provider.ExtraHeaders,
+	}
+
+	reqBody, err := json.Marshal(testReq)
+	if err != nil {
+		response.Failed(c, response.ErrorUnknownCode, "构建请求失败")
+		return
+	}
+
+	cfg := config.GetGlobalConfig()
+	aiBaseURL := getAIBaseURL(cfg)
+	aiInternalToken := getAIInternalToken(cfg)
+
+	targetURL := aiBaseURL + "/internal/v1/test-connection"
+	log.Printf("[TestVendorConnection] AI URL: %s", targetURL)
+	log.Printf("[TestVendorConnection] Request body: %s", string(reqBody))
+
+	req, err := http.NewRequestWithContext(c.Request.Context(), http.MethodPost, aiBaseURL+"/internal/v1/test-connection", bytes.NewReader(reqBody))
+	if err != nil {
+		response.Failed(c, response.ErrorUnknownCode, "构建请求失败")
+		return
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+	if aiInternalToken != "" {
+		req.Header.Set("X-Internal-Token", aiInternalToken)
+	}
+
+	client := &http.Client{Timeout: 30 * 1000000000}
+	resp, err := client.Do(req)
+	if err != nil {
+		response.Failed(c, response.ErrorUnknownCode, "调用 AI 服务失败: "+err.Error())
+		return
+	}
+	defer resp.Body.Close()
+
+	respBody, err := io.ReadAll(resp.Body)
+	if err != nil {
+		response.Failed(c, response.ErrorUnknownCode, "读取响应失败")
+		return
+	}
+
+	log.Printf("[TestVendorConnection] AI Response status: %d", resp.StatusCode)
+	log.Printf("[TestVendorConnection] AI Response body: %s", string(respBody))
+
+	var result map[string]interface{}
+	if err := json.Unmarshal(respBody, &result); err != nil {
+		response.Failed(c, response.ErrorUnknownCode, "解析响应失败")
+		return
+	}
+
+	response.Success(c, response.SuccessCode, result)
+}
+
+// @Summary      测试模型连通性
+// @Description  测试AI模型连通性，验证模型配置是否有效
+// @Tags         AI
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        model path string true "模型标识"
+// @Success      200 {object} response.Response "测试成功"
+// @Failure      400 {object} response.Response "请求参数错误"
+// @Failure      401 {object} response.Response "未授权"
+// @Failure      403 {object} response.Response "无权限访问"
+// @Failure      404 {object} response.Response "模型不存在"
+// @Failure      500 {object} response.Response "服务器错误"
+// @Router       /ai/providers/{model}/test-connection [post]
+func (h *AIProviderHandler) TestModelConnection(c *gin.Context) {
+	model := strings.TrimSpace(c.Param("model"))
+	if model == "" {
+		response.Failed(c, response.ErrorBadRequestCode, "model is required")
+		return
+	}
+
+	record, err := aimodel.GetProviderModelByModel(c.Request.Context(), model)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			response.Failed(c, 404, "模型配置不存在")
+			return
+		}
+		response.Failed(c, response.ErrorUnknownCode, "获取模型配置失败")
+		return
+	}
+
+	apiKey, err := crypto.DecryptAPIKey(record.APIKey)
+	if err != nil {
+		response.Failed(c, response.ErrorUnknownCode, "解密 API Key 失败")
+		return
+	}
+
+	testReq := map[string]interface{}{
+		"base_url":              record.BaseURL,
+		"api_key":               apiKey,
+		"model":                 record.Model,
+		"request_model":         record.RequestModel,
+		"organization":          record.Organization,
+		"chat_completions_path": record.ChatCompletionsPath,
+		"models_path":           record.ModelsPath,
+		"extra_headers":         record.ExtraHeaders,
+	}
+
+	reqBody, err := json.Marshal(testReq)
+	if err != nil {
+		response.Failed(c, response.ErrorUnknownCode, "构建请求失败")
+		return
+	}
+
+	cfg := config.GetGlobalConfig()
+	aiBaseURL := getAIBaseURL(cfg)
+	aiInternalToken := getAIInternalToken(cfg)
+
+	req, err := http.NewRequestWithContext(c.Request.Context(), http.MethodPost, aiBaseURL+"/internal/v1/test-connection", bytes.NewReader(reqBody))
+	if err != nil {
+		response.Failed(c, response.ErrorUnknownCode, "构建请求失败")
+		return
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+	if aiInternalToken != "" {
+		req.Header.Set("X-Internal-Token", aiInternalToken)
+	}
+
+	client := &http.Client{Timeout: 30 * 1000000000}
+	resp, err := client.Do(req)
+	if err != nil {
+		response.Failed(c, response.ErrorUnknownCode, "调用 AI 服务失败: "+err.Error())
+		return
+	}
+	defer resp.Body.Close()
+
+	respBody, err := io.ReadAll(resp.Body)
+	if err != nil {
+		response.Failed(c, response.ErrorUnknownCode, "读取响应失败")
+		return
+	}
+
+	var result map[string]interface{}
+	if err := json.Unmarshal(respBody, &result); err != nil {
+		response.Failed(c, response.ErrorUnknownCode, "解析响应失败")
+		return
+	}
+
+	response.Success(c, response.SuccessCode, result)
+}
+
+func getAIBaseURL(cfg *config.Config) string {
+	if cfg.Worker.URL != "" {
+		return cfg.Worker.URL
+	}
+	return "http://localhost:8010"
+}
+
+func getAIInternalToken(cfg *config.Config) string {
+	return cfg.Worker.Token
 }

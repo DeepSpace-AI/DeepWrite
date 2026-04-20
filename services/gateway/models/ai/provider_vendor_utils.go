@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/deepwrite/serivces/gateway/pkg/crypto"
 	"github.com/deepwrite/serivces/gateway/pkg/database"
 	"gorm.io/gorm"
 )
@@ -277,12 +278,17 @@ func DiscoverProviderModels(ctx context.Context, provider Provider) ([]Discovere
 		return nil, err
 	}
 
+	apiKey, err := crypto.DecryptAPIKey(provider.APIKey)
+	if err != nil {
+		return nil, fmt.Errorf("failed to decrypt api_key: %w", err)
+	}
+
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, targetURL, nil)
 	if err != nil {
 		return nil, err
 	}
 	req.Header.Set("Accept", "application/json")
-	req.Header.Set("Authorization", "Bearer "+strings.TrimSpace(provider.APIKey))
+	req.Header.Set("Authorization", "Bearer "+strings.TrimSpace(apiKey))
 	if strings.TrimSpace(provider.Organization) != "" {
 		req.Header.Set("OpenAI-Organization", strings.TrimSpace(provider.Organization))
 	}

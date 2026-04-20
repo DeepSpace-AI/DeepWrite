@@ -23,6 +23,12 @@ type Config struct {
 	Logger   LoggerConfig   `mapstructure:"LOGGER"`
 	JWT      JWTConfig      `mapstructure:"JWT"`
 	Collab   CollabConfig   `mapstructure:"COLLAB"`
+	Worker   WorkerConfig   `mapstructure:"WORKER"`
+	AI       AIConfig       `mapstructure:"AI"`
+}
+
+type AIConfig struct {
+	EncryptionKey string `mapstructure:"ENCRYPTION_KEY"`
 }
 
 // DatabaseConfig 数据库配置
@@ -112,6 +118,11 @@ type CollabConfig struct {
 	ReconnectWindowSeconds  int    `mapstructure:"RECONNECT_WINDOW_SECONDS"`
 	HeartbeatPingSeconds    int    `mapstructure:"HEARTBEAT_PING_SECONDS"`
 	HeartbeatTimeoutSeconds int    `mapstructure:"HEARTBEAT_TIMEOUT_SECONDS"`
+}
+
+type WorkerConfig struct {
+	URL   string `mapstructure:"URL"`
+	Token string `mapstructure:"TOKEN"`
 }
 
 // ConfigReader 配置读取器接口
@@ -258,6 +269,13 @@ func (vcr *ViperConfigReader) setDefaults() {
 
 	// Workspace 默认值
 	v.SetDefault("WORKSPACE.INVITATION_EXPIRE_HOURS", 168)
+
+	// Worker 默认值
+	v.SetDefault("WORKER.URL", "http://localhost:8000")
+	v.SetDefault("WORKER.TOKEN", "")
+
+	// AI 默认值
+	v.SetDefault("AI.ENCRYPTION_KEY", "")
 }
 
 func (vcr *ViperConfigReader) readConfigByEnv(env string) error {
@@ -455,6 +473,19 @@ func (vcr *ViperConfigReader) applyEnvOverrides() {
 	}
 	if env := os.Getenv("COLLAB_HEARTBEAT_TIMEOUT_SECONDS"); env != "" {
 		vcr.cfg.Collab.HeartbeatTimeoutSeconds = vcr.viper.GetInt("COLLAB_HEARTBEAT_TIMEOUT_SECONDS")
+	}
+
+	// Worker 环境变量覆盖
+	if env := os.Getenv("WORKER_URL"); env != "" {
+		vcr.cfg.Worker.URL = env
+	}
+	if env := os.Getenv("WORKER_TOKEN"); env != "" {
+		vcr.cfg.Worker.Token = env
+	}
+
+	// AI 环境变量覆盖
+	if env := os.Getenv("AI_ENCRYPTION_KEY"); env != "" {
+		vcr.cfg.AI.EncryptionKey = env
 	}
 }
 

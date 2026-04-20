@@ -75,6 +75,8 @@ class WorkerConfig:
     internal_token: str = ""
     database_dsn: str = ""
     redis_url: str = ""
+    gateway_url: str = "http://localhost:8080"
+    gateway_token: str = ""
     gateway_callback_url: str = ""
     gateway_callback_token: str = ""
     max_workspace_concurrency: int = 8
@@ -111,6 +113,14 @@ class WorkerConfig:
         gateway_callback_token = _to_str(
             _deep_get(data, "GATEWAY", "CALLBACK_TOKEN", default=data.get("GATEWAY_CALLBACK_TOKEN")),
             defaults.gateway_callback_token,
+        )
+        gateway_url = _to_str(
+            _deep_get(data, "GATEWAY", "URL", default=data.get("GATEWAY_URL")),
+            defaults.gateway_url,
+        )
+        gateway_token = _to_str(
+            _deep_get(data, "GATEWAY", "TOKEN", default=data.get("GATEWAY_TOKEN")),
+            defaults.gateway_token,
         )
         max_workspace_concurrency = _to_int(
             _deep_get(
@@ -156,6 +166,8 @@ class WorkerConfig:
             env.get("GATEWAY_CALLBACK_TOKEN", gateway_callback_token),
             gateway_callback_token,
         )
+        gateway_url = _to_str(env.get("GATEWAY_URL", gateway_url), gateway_url)
+        gateway_token = _to_str(env.get("GATEWAY_TOKEN", gateway_token), gateway_token)
         max_workspace_concurrency = _to_int(
             env.get("MAX_WORKSPACE_CONCURRENCY", max_workspace_concurrency),
             max_workspace_concurrency,
@@ -184,6 +196,8 @@ class WorkerConfig:
             internal_token=internal_token,
             database_dsn=database_dsn,
             redis_url=redis_url,
+            gateway_url=gateway_url,
+            gateway_token=gateway_token,
             gateway_callback_url=gateway_callback_url,
             gateway_callback_token=gateway_callback_token,
             max_workspace_concurrency=max_workspace_concurrency,

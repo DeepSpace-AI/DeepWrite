@@ -3,6 +3,15 @@ import { computed, onMounted, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { createVendor, listVendors, updateVendorEnabled, type AIProviderVendor, type AIProviderVendorInput } from '@/api/aiProvider'
 import { ApiError } from '@/api/http'
+import IconAdd from '~icons/mdi/plus'
+import IconSearch from '~icons/mdi/magnify'
+import IconRefresh from '~icons/mdi/refresh'
+import IconEye from '~icons/mdi/eye'
+import IconEyeOff from '~icons/mdi/eye-off'
+import IconChevronDown from '~icons/mdi/chevron-down'
+import IconChevronUp from '~icons/mdi/chevron-up'
+import IconCheck from '~icons/mdi/check'
+import IconClose from '~icons/mdi/close'
 
 const router = useRouter()
 const isLoading = ref(false)
@@ -40,31 +49,20 @@ const filteredVendors = computed(() => {
     const passesKeyword = !keyword
       || item.name?.toLowerCase().includes(keyword)
       || item.base_url?.toLowerCase().includes(keyword)
-      || item.organization?.toLowerCase().includes(keyword)
     return passesEnabled && passesKeyword
   })
 })
 
 const sortedFilteredVendors = computed(() => {
-  return [...filteredVendors.value].sort((a, b) => {
-    return new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()
-  })
+  return [...filteredVendors.value].sort((a, b) => 
+    new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()
+  )
 })
 
 const vendorStats = computed(() => {
   const total = vendors.value.length
   const enabled = vendors.value.filter(item => item.enabled).length
-  const disabled = total - enabled
-  return {
-    total,
-    enabled,
-    disabled,
-    filtered: sortedFilteredVendors.value.length,
-  }
-})
-
-const hasActiveFilters = computed(() => {
-  return Boolean(searchKeyword.value.trim()) || enabledFilter.value !== 'all'
+  return { total, enabled, disabled: total - enabled }
 })
 
 const canSubmitVendor = computed(() => {
@@ -104,11 +102,6 @@ function closeVendorModal() {
   resetVendorForm()
 }
 
-function clearFilters() {
-  searchKeyword.value = ''
-  enabledFilter.value = 'all'
-}
-
 async function loadVendors() {
   isLoading.value = true
   errorMessage.value = ''
@@ -124,7 +117,7 @@ async function loadVendors() {
 
 async function submitVendor() {
   if (!canSubmitVendor.value) {
-    errorMessage.value = '请填写 Provider、Base URL、API Key 后再提交'
+    errorMessage.value = '请填写 Provider、Base URL、API Key'
     return
   }
   isSubmitting.value = true
@@ -138,7 +131,7 @@ async function submitVendor() {
       api_key: vendorForm.api_key.trim(),
       organization: vendorForm.organization?.trim(),
     })
-    successMessage.value = '厂商已落库，请在详情页拉取模型列表'
+    successMessage.value = '厂商已创建'
     closeVendorModal()
     await loadVendors()
     await router.push({ name: 'provider-detail', params: { providerId: provider.id } })
@@ -156,12 +149,10 @@ async function toggleVendorStatus(item: AIProviderVendor) {
   try {
     const nextEnabled = !item.enabled
     await updateVendorEnabled(item.id, nextEnabled)
-    successMessage.value = nextEnabled
-      ? `已启用厂商 ${item.name}`
-      : `已停用厂商 ${item.name}`
+    successMessage.value = nextEnabled ? `已启用 ${item.name}` : `已停用 ${item.name}`
     await loadVendors()
   } catch (error) {
-    errorMessage.value = error instanceof ApiError ? error.message : '更新厂商状态失败'
+    errorMessage.value = error instanceof ApiError ? error.message : '更新状态失败'
   } finally {
     togglingVendorId.value = ''
   }
@@ -173,190 +164,212 @@ onMounted(() => {
 </script>
 
 <template>
-  <section class="space-y-4">
-    <div class="glass-card rounded-2xl p-5">
-      <div class="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h2 class="text-xl font-semibold text-pretty">AI Provider 管理</h2>
-          <p class="mt-1 text-sm text-pretty-secondary">统一管理厂商接入配置、状态与模型配置入口</p>
+  <section class="space-y-6">
+    <header class="flex items-center justify-between">
+      <div>
+        <h1 class="text-display text-2xl">AI Provider</h1>
+        <p class="text-secondary mt-1 text-sm">管理厂商接入配置与模型</p>
+      </div>
+      <button class="btn-tech flex items-center gap-2 px-4 py-2 text-sm" @click="openVendorModal">
+        <IconAdd class="h-4 w-4" />
+        新增 Provider
+      </button>
+    </header>
+
+    <div v-if="errorMessage" class="tech-card px-4 py-3 text-sm text-[var(--accent-error)]">
+      {{ errorMessage }}
+    </div>
+    <div v-if="successMessage" class="tech-card border-[var(--accent-success)] px-4 py-3 text-sm text-[var(--accent-success)]">
+      {{ successMessage }}
+    </div>
+
+    <div class="grid gap-3 sm:grid-cols-3">
+      <div class="tech-card p-4">
+        <p class="text-muted text-xs">总厂商</p>
+        <p class="text-display mt-1 text-2xl">{{ vendorStats.total }}</p>
+      </div>
+      <div class="tech-card p-4">
+        <p class="text-muted text-xs">启用中</p>
+        <p class="text-display mt-1 text-2xl text-[var(--accent-success)]">{{ vendorStats.enabled }}</p>
+      </div>
+      <div class="tech-card p-4">
+        <p class="text-muted text-xs">已停用</p>
+        <p class="text-display mt-1 text-2xl text-[var(--text-muted)]">{{ vendorStats.disabled }}</p>
+      </div>
+    </div>
+
+    <div class="tech-card p-4">
+      <div class="flex flex-wrap items-center gap-3">
+        <div class="relative min-w-0 flex-1">
+          <IconSearch class="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--text-muted)]" />
+          <input
+            v-model="searchKeyword"
+            class="tech-input w-full py-2 pl-9 pr-3 text-sm"
+            placeholder="搜索厂商..."
+            autocomplete="off"
+          />
         </div>
-        <button class="btn rounded-xl bg-[var(--glow-primary)] text-pretty hover:opacity-90" @click="openVendorModal">新增 Provider</button>
-      </div>
-    </div>
-
-    <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-      <div class="glass-card rounded-xl p-3">
-        <p class="text-[10px] uppercase tracking-wider text-pretty-muted">总厂商</p>
-        <p class="mt-1 text-2xl font-semibold text-pretty">{{ vendorStats.total }}</p>
-      </div>
-      <div class="glass-card rounded-xl p-3 border border-emerald-500/20">
-        <p class="text-[10px] uppercase tracking-wider text-emerald-600/80">启用中</p>
-        <p class="mt-1 text-2xl font-semibold text-emerald-600">{{ vendorStats.enabled }}</p>
-      </div>
-      <div class="glass-card rounded-xl p-3 border border-amber-500/20">
-        <p class="text-[10px] uppercase tracking-wider text-amber-600/80">停用中</p>
-        <p class="mt-1 text-2xl font-semibold text-amber-600">{{ vendorStats.disabled }}</p>
-      </div>
-      <div class="glass-card rounded-xl p-3 border border-blue-500/20">
-        <p class="text-[10px] uppercase tracking-wider text-blue-600/80">当前筛选</p>
-        <p class="mt-1 text-2xl font-semibold text-blue-600">{{ vendorStats.filtered }}</p>
-      </div>
-    </div>
-
-    <div v-if="errorMessage" class="glass-card rounded-xl p-4 text-sm text-error border border-error/20 bg-error/5">{{ errorMessage }}</div>
-    <div v-if="successMessage" class="glass-card rounded-xl p-4 text-sm text-emerald-600 border border-emerald-500/20 bg-emerald-500/5">{{ successMessage }}</div>
-
-    <div class="glass-card rounded-2xl p-5">
-      <form class="flex flex-wrap items-center gap-2" autocomplete="off" @submit.prevent>
-        <input
-          v-model="searchKeyword"
-          class="glass-input input input-bordered input-sm w-full rounded-xl sm:max-w-xs"
-          placeholder="搜索 provider/base_url/organization"
-          autocomplete="off"
-          autocapitalize="off"
-          autocorrect="off"
-          spellcheck="false"
-        />
-        <select v-model="enabledFilter" class="glass-input select select-bordered select-sm rounded-xl">
+        <select v-model="enabledFilter" class="tech-input px-3 py-2 text-sm">
           <option value="all">全部</option>
-          <option value="enabled">仅启用</option>
-          <option value="disabled">仅停用</option>
+          <option value="enabled">启用</option>
+          <option value="disabled">停用</option>
         </select>
-        <button class="btn btn-ghost btn-sm rounded-xl" :disabled="isLoading" @click="loadVendors">刷新</button>
-        <button v-if="hasActiveFilters" class="btn btn-ghost btn-sm rounded-xl" @click="clearFilters">清空筛选</button>
-      </form>
+        <button class="btn-ghost-tech flex items-center gap-2 px-3 py-2 text-sm" :disabled="isLoading" @click="loadVendors">
+          <IconRefresh class="h-4 w-4" :class="{ 'animate-spin': isLoading }" />
+          <span class="hidden sm:inline">刷新</span>
+        </button>
+      </div>
     </div>
 
-    <div class="glass-card rounded-2xl overflow-hidden">
-      <div v-if="isLoading" class="py-12 text-center"><span class="loading loading-spinner loading-md text-pretty-muted" /></div>
-      <div v-else class="overflow-x-auto">
-        <table class="table">
-          <thead>
-            <tr class="border-b border-[var(--border-subtle)]">
-              <th class="text-pretty-secondary font-medium">厂商</th>
-              <th class="text-pretty-secondary font-medium">Base URL</th>
-              <th class="text-pretty-secondary font-medium">Organization</th>
-              <th class="text-pretty-secondary font-medium">API Key</th>
-              <th class="text-pretty-secondary font-medium">状态</th>
-              <th class="text-right text-pretty-secondary font-medium">操作</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-if="!sortedFilteredVendors.length">
-              <td colspan="6" class="py-12 text-center text-sm text-pretty-muted">
-                暂无匹配厂商，请调整筛选条件或新增厂商
-              </td>
-            </tr>
-            <tr v-for="item in sortedFilteredVendors" :key="item.id" class="border-b border-[var(--border-subtle)] hover:bg-[var(--bg-elevated)]/50 transition-colors">
-              <td class="font-medium text-pretty">{{ item.name }}</td>
-              <td class="font-mono text-xs text-pretty-secondary">{{ item.base_url }}</td>
-              <td class="text-sm text-pretty-secondary">{{ item.organization || '-' }}</td>
-              <td class="font-mono text-xs text-pretty-muted">{{ item.api_key_masked || '-' }}</td>
-              <td><span class="badge rounded-xl" :class="item.enabled ? 'bg-emerald-500/15 text-emerald-600 border-0' : 'bg-[var(--glow-primary)] text-pretty-muted border-0'">{{ item.enabled ? '启用' : '停用' }}</span></td>
-              <td class="text-right">
-                <div class="flex justify-end gap-2">
-                  <button
-                    class="btn btn-xs rounded-xl"
-                    :class="item.enabled ? 'bg-amber-500/15 text-amber-600 border-0 hover:bg-amber-500/25' : 'bg-emerald-500/15 text-emerald-600 border-0 hover:bg-emerald-500/25'"
-                    :disabled="togglingVendorId === item.id"
-                    @click="toggleVendorStatus(item)"
-                  >
-                    <span v-if="togglingVendorId === item.id" class="loading loading-spinner loading-xs" />
-                    <span>{{ item.enabled ? '停用' : '启用' }}</span>
-                  </button>
-                  <button class="btn btn-ghost btn-xs rounded-xl text-pretty-secondary hover:bg-[var(--glow-primary)] hover:text-pretty" @click="router.push({ name: 'provider-detail', params: { providerId: item.id } })">详情</button>
-                </div>
-              </td>
-            </tr>
-          </tbody>
-        </table>
+    <div class="tech-card overflow-hidden">
+      <div v-if="isLoading" class="flex items-center justify-center py-12">
+        <span class="loading loading-spinner loading-md text-[var(--text-muted)]" />
       </div>
+      <div v-else-if="!sortedFilteredVendors.length" class="flex flex-col items-center justify-center py-12">
+        <p class="text-secondary text-sm">暂无厂商数据</p>
+        <button class="btn-ghost-tech mt-3 px-3 py-1.5 text-sm" @click="openVendorModal">新增 Provider</button>
+      </div>
+      <table v-else class="tech-table">
+        <thead>
+          <tr>
+            <th>厂商</th>
+            <th>Base URL</th>
+            <th>API Key</th>
+            <th>状态</th>
+            <th class="text-right">操作</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="item in sortedFilteredVendors" :key="item.id">
+            <td>
+              <p class="font-medium">{{ item.name }}</p>
+              <p v-if="item.organization" class="text-xs text-[var(--text-muted)]">{{ item.organization }}</p>
+            </td>
+            <td>
+              <code class="text-mono text-xs">{{ item.base_url }}</code>
+            </td>
+            <td>
+              <code class="text-mono text-xs text-[var(--text-muted)]">{{ item.api_key_masked || '-' }}</code>
+            </td>
+            <td>
+              <span 
+                class="inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-xs font-medium"
+                :class="item.enabled ? 'badge-success' : 'badge-neutral'"
+              >
+                {{ item.enabled ? '启用' : '停用' }}
+              </span>
+            </td>
+            <td class="text-right">
+              <div class="flex items-center justify-end gap-1">
+                <button
+                  class="inline-flex items-center rounded px-2 py-1 text-xs font-medium transition-colors"
+                  :class="item.enabled 
+                    ? 'text-[var(--text-muted)] hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)]' 
+                    : 'text-[var(--accent-primary)] hover:bg-[var(--surface-hover)]'"
+                  :disabled="togglingVendorId === item.id"
+                  @click="toggleVendorStatus(item)"
+                >
+                  <span v-if="togglingVendorId === item.id" class="loading loading-spinner loading-xs" />
+                  <span>{{ item.enabled ? '停用' : '启用' }}</span>
+                </button>
+                <button 
+                  class="inline-flex items-center rounded px-2 py-1 text-xs font-medium text-[var(--text-muted)] transition-colors hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)]"
+                  @click="router.push({ name: 'provider-detail', params: { providerId: item.id } })"
+                >
+                  详情
+                </button>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
     </div>
 
     <dialog :open="isVendorModalOpen" class="modal">
-      <div class="modal-box max-w-4xl rounded-2xl bg-[var(--bg-elevated)]">
-        <h3 class="text-lg font-semibold text-pretty">新增 Provider 厂商</h3>
-        <p class="mt-1 text-sm text-pretty-secondary">先填写核心接入信息，路径字段可按需展开调整</p>
-        <fieldset class="fieldset mt-4 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-base)] p-4">
-          <legend class="fieldset-legend text-pretty-secondary">厂商接入信息</legend>
+      <div class="tech-modal modal-box max-w-xl">
+        <div class="flex items-center justify-between border-b border-[var(--border-subtle)] px-5 py-4">
+          <h3 class="text-heading text-base">新增 Provider</h3>
+          <button class="flex h-7 w-7 items-center justify-center rounded text-[var(--text-muted)] hover:bg-[var(--surface-hover)]" @click="closeVendorModal">
+            <IconClose class="h-5 w-5" />
+          </button>
+        </div>
+
+        <form class="space-y-4 p-5" @submit.prevent="submitVendor">
           <div class="grid gap-4 sm:grid-cols-2">
             <div>
-              <label class="label"><span class="label-text text-pretty-secondary">Provider <span class="text-error">*</span></span></label>
-              <input v-model="vendorForm.provider" class="glass-input input input-bordered w-full rounded-xl" placeholder="openai-compatible" />
+              <label class="text-label mb-1.5 block">Provider <span class="text-[var(--accent-error)]">*</span></label>
+              <input v-model="vendorForm.provider" class="tech-input w-full px-3 py-2 text-sm" placeholder="openai-compatible" />
             </div>
             <div>
-              <label class="label"><span class="label-text text-pretty-secondary">Organization</span></label>
-              <input v-model="vendorForm.organization" class="glass-input input input-bordered w-full rounded-xl" placeholder="org_xxx" />
+              <label class="text-label mb-1.5 block">Organization</label>
+              <input v-model="vendorForm.organization" class="tech-input w-full px-3 py-2 text-sm" placeholder="org_xxx" />
             </div>
-            <div class="sm:col-span-2">
-              <label class="label"><span class="label-text text-pretty-secondary">Base URL <span class="text-error">*</span></span></label>
-              <input v-model="vendorForm.base_url" class="glass-input input input-bordered w-full rounded-xl" placeholder="https://api.example.com/v1" />
-            </div>
-            <div class="sm:col-span-2">
-              <div class="label">
-                <span class="label-text text-pretty-secondary">API Key <span class="text-error">*</span></span>
-                <button type="button" class="btn btn-ghost btn-xs rounded-xl" @click="showApiKey = !showApiKey">
-                  {{ showApiKey ? '隐藏' : '显示' }}
-                </button>
-              </div>
-              <input
-                v-model="vendorForm.api_key"
-                :type="showApiKey ? 'text' : 'password'"
-                class="glass-input input input-bordered w-full rounded-xl"
-                placeholder="sk-..."
-                autocomplete="off"
-              />
-            </div>
-            <div class="sm:col-span-2">
-              <button type="button" class="btn btn-ghost btn-sm rounded-xl" @click="showAdvancedPaths = !showAdvancedPaths">
-                {{ showAdvancedPaths ? '收起高级路径配置' : '展开高级路径配置' }}
+          </div>
+
+          <div>
+            <label class="text-label mb-1.5 block">Base URL <span class="text-[var(--accent-error)]">*</span></label>
+            <input v-model="vendorForm.base_url" class="tech-input w-full px-3 py-2 text-sm" placeholder="https://api.example.com/v1" />
+          </div>
+
+          <div>
+            <div class="flex items-center justify-between">
+              <label class="text-label mb-1.5 block">API Key <span class="text-[var(--accent-error)]">*</span></label>
+              <button type="button" class="flex items-center gap-1 text-xs text-[var(--text-muted)] hover:text-[var(--text-primary)]" @click="showApiKey = !showApiKey">
+                <component :is="showApiKey ? IconEyeOff : IconEye" class="h-4 w-4" />
+                {{ showApiKey ? '隐藏' : '显示' }}
               </button>
             </div>
-            <template v-if="showAdvancedPaths">
-              <div>
-                <label class="label"><span class="label-text text-pretty-secondary">Chat Completions Path</span></label>
-                <input v-model="vendorForm.chat_completions_path" class="glass-input input input-bordered w-full rounded-xl" placeholder="/chat/completions" />
-              </div>
-              <div>
-                <label class="label"><span class="label-text text-pretty-secondary">Responses Path</span></label>
-                <input v-model="vendorForm.chat_responses_path" class="glass-input input input-bordered w-full rounded-xl" placeholder="/responses" />
-              </div>
-              <div>
-                <label class="label"><span class="label-text text-pretty-secondary">Embeddings Path</span></label>
-                <input v-model="vendorForm.embeddings_path" class="glass-input input input-bordered w-full rounded-xl" placeholder="/embeddings" />
-              </div>
-              <div>
-                <label class="label"><span class="label-text text-pretty-secondary">Rerank Path</span></label>
-                <input v-model="vendorForm.rerank_path" class="glass-input input input-bordered w-full rounded-xl" placeholder="/rerank" />
-              </div>
-              <div>
-                <label class="label"><span class="label-text text-pretty-secondary">Audio Speech Path</span></label>
-                <input v-model="vendorForm.audio_speech_path" class="glass-input input input-bordered w-full rounded-xl" placeholder="/audio/speech" />
-              </div>
-              <div>
-                <label class="label"><span class="label-text text-pretty-secondary">Audio Transcriptions Path</span></label>
-                <input v-model="vendorForm.audio_transcriptions_path" class="glass-input input input-bordered w-full rounded-xl" placeholder="/audio/transcriptions" />
-              </div>
-            </template>
-            <div>
-              <label class="label"><span class="label-text text-pretty-secondary">Models Path</span></label>
-              <input v-model="vendorForm.models_path" class="glass-input input input-bordered w-full rounded-xl" placeholder="/models" />
-            </div>
-            <label class="label cursor-pointer justify-start gap-2 mt-2">
-              <input v-model="vendorForm.enabled" type="checkbox" class="toggle toggle-sm" />
-              <span class="label-text text-pretty-secondary">Enabled</span>
-            </label>
+            <input
+              v-model="vendorForm.api_key"
+              :type="showApiKey ? 'text' : 'password'"
+              class="tech-input w-full px-3 py-2 text-sm"
+              placeholder="sk-..."
+              autocomplete="off"
+            />
           </div>
-        </fieldset>
-        <div class="modal-action">
-          <button class="btn btn-ghost rounded-xl" @click="closeVendorModal">取消</button>
-          <button class="btn rounded-xl bg-[var(--glow-primary)] text-pretty hover:opacity-90" :disabled="isSubmitting || !canSubmitVendor" @click="submitVendor">
+
+          <div>
+            <button type="button" class="flex items-center gap-1.5 text-sm text-[var(--text-muted)] hover:text-[var(--text-primary)]" @click="showAdvancedPaths = !showAdvancedPaths">
+              <component :is="showAdvancedPaths ? IconChevronUp : IconChevronDown" class="h-4 w-4" />
+              高级配置
+            </button>
+          </div>
+
+          <div v-if="showAdvancedPaths" class="grid gap-4 sm:grid-cols-2">
+            <div>
+              <label class="text-label mb-1.5 block">Chat Path</label>
+              <input v-model="vendorForm.chat_completions_path" class="tech-input w-full px-3 py-2 text-sm" />
+            </div>
+            <div>
+              <label class="text-label mb-1.5 block">Embeddings Path</label>
+              <input v-model="vendorForm.embeddings_path" class="tech-input w-full px-3 py-2 text-sm" />
+            </div>
+            <div>
+              <label class="text-label mb-1.5 block">Models Path</label>
+              <input v-model="vendorForm.models_path" class="tech-input w-full px-3 py-2 text-sm" />
+            </div>
+          </div>
+
+          <label class="flex cursor-pointer items-center gap-2">
+            <input v-model="vendorForm.enabled" type="checkbox" class="toggle toggle-sm" />
+            <span class="text-sm">启用此厂商</span>
+          </label>
+        </form>
+
+        <div class="flex justify-end gap-2 border-t border-[var(--border-subtle)] px-5 py-3">
+          <button class="btn-ghost-tech px-4 py-2 text-sm" @click="closeVendorModal">取消</button>
+          <button 
+            class="btn-tech flex items-center gap-2 px-4 py-2 text-sm" 
+            :disabled="isSubmitting || !canSubmitVendor"
+            @click="submitVendor"
+          >
             <span v-if="isSubmitting" class="loading loading-spinner loading-xs" />
-            <span>{{ isSubmitting ? '提交中...' : '创建厂商并落库' }}</span>
+            <IconCheck v-else class="h-4 w-4" />
+            创建
           </button>
         </div>
       </div>
-      <form method="dialog" class="modal-backdrop">
+      <form method="dialog" class="modal-backdrop-tech">
         <button @click="closeVendorModal">close</button>
       </form>
     </dialog>

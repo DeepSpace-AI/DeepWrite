@@ -65,3 +65,23 @@ class ModelConfigResponse(BaseModel):
     audio_speech_path: str
     audio_transcriptions_path: str
     models_path: str
+
+
+class TestConnectionRequest(BaseModel):
+    model_config = ConfigDict(extra="allow")
+
+    base_url: str = Field(min_length=1)
+    api_key: str = Field(min_length=1)
+    model: str | None = None
+    request_model: str | None = None
+    organization: str | None = None
+    chat_completions_path: str = "/chat/completions"
+    models_path: str = "/models"
+    extra_headers: dict[str, str] = Field(default_factory=dict)
+
+
+class TestConnectionResponse(BaseModel):
+    success: bool
+    message: str
+    latency_ms: float | None = None
+    error_detail: str | None = None

@@ -3,23 +3,26 @@
   "version": "1.0.0",
   "description": "",
   "scripts": {
-    "dev": "turbo run dev",
-    "build": "turbo run build",
-    "preview": "turbo run preview",
-    "lint": "turbo run lint",
-    "format": "turbo run format",
+    "dev": "concurrently -n web,admin,gateway,worker,ai -c blue,green,yellow,magenta,cyan \"pnpm dev:web\" \"pnpm dev:admin\" \"pnpm dev:gateway\" \"pnpm dev:worker\" \"pnpm dev:ai\"",
     "dev:web": "turbo run dev --filter=@deepwrite/web",
     "dev:admin": "turbo run dev --filter=@deepwrite/admin",
     "dev:gateway": "pnpm --filter @deepwrite/gateway dev",
     "dev:worker": "cd services/worker && uv run python main.py",
     "dev:ai": "cd services/ai && uv run python main.py",
+    "dev:frontend": "concurrently -n web,admin -c blue,green \"pnpm dev:web\" \"pnpm dev:admin\"",
+    "dev:backend": "concurrently -n gateway,worker,ai -c yellow,magenta,cyan \"pnpm dev:gateway\" \"pnpm dev:worker\" \"pnpm dev:ai\"",
+    "build": "turbo run build",
+    "preview": "turbo run preview",
+    "lint": "turbo run lint",
+    "format": "turbo run format",
     "gen:openapi": "cd services/gateway && swag init"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "packageManager": "pnpm@10.30.2",
-  "dependencies": {
+  "packageManager": "pnpm@10.32.1+sha512.a706938f0e89ac1456b6563eab4edf1d1faf3368d1191fc5c59790e96dc918e4456ab2e67d613de1043d2e8c81f87303e6b40d4ffeca9df15ef1ad567348f2be",
+  "devDependencies": {
+    "concurrently": "^9.1.2",
     "turbo": "^2.8.10"
   }
 }

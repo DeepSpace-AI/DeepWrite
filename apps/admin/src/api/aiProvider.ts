@@ -211,3 +211,20 @@ export async function createModelByVendor(providerId: string, input: CreateModel
   const res = await http.post(`/ai/providers/vendors/${encodeURIComponent(providerId)}/models`, input)
   return unwrapResponse<AIProviderModel>(res)
 }
+
+export interface TestConnectionResult {
+  success: boolean
+  message: string
+  latency_ms?: number
+  error_detail?: string
+}
+
+export async function testVendorConnection(providerId: string) {
+  const res = await http.post(`/ai/providers/vendors/${encodeURIComponent(providerId)}/test-connection`)
+  return unwrapResponse<TestConnectionResult>(res)
+}
+
+export async function testModelConnection(model: string) {
+  const res = await http.post(`/ai/providers/${encodeURIComponent(model)}/test-connection`)
+  return unwrapResponse<TestConnectionResult>(res)
+}

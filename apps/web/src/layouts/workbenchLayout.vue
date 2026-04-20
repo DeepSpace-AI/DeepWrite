@@ -14,7 +14,9 @@ import IconBookmarkOutline from '~icons/mdi/bookmark-outline'
 import IconViewGridOutline from '~icons/mdi/view-grid-outline'
 import IconRobotOutline from '~icons/mdi/robot-outline'
 import IconBellOutline from '~icons/mdi/bell-outline'
-import IconPlus from '~icons/mdi/plus'
+import IconCogOutline from '~icons/mdi/cog-outline'
+import IconHelpCircleOutline from '~icons/mdi/help-circle-outline'
+import IconChevronDown from '~icons/mdi/chevron-down'
 
 const router = useRouter()
 const route = useRoute()
@@ -92,16 +94,6 @@ function openProfileCenter() {
   router.push({ name: 'profile' })
 }
 
-function openSystemSettings() {
-  userMenuOpen.value = false
-  router.push({ name: 'dashboard', query: { tab: 'settings' } })
-}
-
-function openSubscription() {
-  userMenuOpen.value = false
-  router.push({ name: 'dashboard', query: { tab: 'subscription' } })
-}
-
 function openNotifications() {
   userMenuOpen.value = false
   router.push({ name: 'notifications' })
@@ -149,7 +141,7 @@ onBeforeMount(() => {
 
 function closeMenuOnClickOutside(event: MouseEvent) {
   const target = event.target as HTMLElement
-  if (!target.closest('.relative')) {
+  if (!target.closest('.scholar-user-menu')) {
     userMenuOpen.value = false
   }
 }
@@ -164,260 +156,281 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <section class="dot-grid relative min-h-screen overflow-hidden min-w-screen" :data-theme="isDark ? 'vellum-dark' : 'vellum-light'">
-    <div class="glow-blob -left-28 top-0 h-[28rem] w-[28rem] bg-[var(--glow-primary)] opacity-50" />
-    <div class="glow-blob -right-24 bottom-0 h-[32rem] w-[32rem] bg-[var(--glow-secondary)] opacity-40" />
-    <div class="glow-blob left-1/3 top-1/2 h-64 w-64 -translate-x-1/2 -translate-y-1/2 rounded-full bg-[var(--glow-primary)] opacity-20" />
+  <section class="scholar-layout flex min-h-screen overflow-x-hidden" :data-theme="isDark ? 'vellum-dark' : 'vellum-light'">
+    <!-- Left Sidebar -->
+    <aside class="scholar-sidebar fixed left-0 top-0 z-20 flex h-screen w-64 flex-col overflow-y-auto">
+      <!-- Logo Area -->
+      <div class="px-6 py-8">
+        <h1 class="text-editorial text-lg font-medium italic">DeepWrite</h1>
+        <p class="label-sm mt-1 text-[var(--color-on-surface-variant)] opacity-60">{{ t('sidebar.tagline') }}</p>
+      </div>
 
-    <div class="relative mx-auto px-4 py-4 lg:px-6">
-      <aside class="paper-card fixed left-4 top-4 z-20 flex h-[calc(100vh-2rem)] w-72 flex-col rounded-lg">
-        <div class="px-5 py-5">
-          <h1 class="text-editorial mt-2 text-xl font-semibold">DeepWrite</h1>
-        </div>
+      <!-- Main Navigation -->
+      <nav class="flex-1 space-y-1 px-3">
+        <RouterLink
+          :to="{ name: 'dashboard' }"
+          class="scholar-nav-item group flex items-center gap-4 py-2.5 pl-4 transition-colors"
+          :class="isNavActive('dashboard') ? 'nav-active' : ''"
+        >
+          <IconViewDashboardOutline class="h-5 w-5" />
+          <span class="label-sm">{{ t('sidebar.workbench') }}</span>
+        </RouterLink>
 
-        <nav class="flex-1 space-y-1 overflow-y-auto px-3 py-3">
-          <RouterLink
-            :to="{ name: 'dashboard' }"
-            class="group flex items-center gap-3 rounded-md px-3 py-3 transition-all duration-300"
-            :class="isNavActive('dashboard')
-              ? 'bg-[var(--glow-primary)]'
-              : 'hover:bg-[var(--glow-primary)]'"
-          >
-            <span
-              class="inline-flex h-10 w-10 items-center justify-center rounded-md transition-colors"
-              :class="isNavActive('dashboard')
-                ? 'bg-[var(--glow-primary)]'
-                : 'group-hover:bg-[var(--glow-primary)]'"
-            >
-              <IconViewDashboardOutline class="h-5 w-5" :class="isNavActive('dashboard') ? 'text-pretty' : 'text-pretty-muted'" />
-            </span>
-            <div>
-              <p class="font-medium label-md" :class="isNavActive('dashboard') ? 'text-pretty' : 'text-pretty-secondary'">{{ t('sidebar.workbench') }}</p>
-              <p class="text-xs text-pretty-muted mt-0.5">{{ t('sidebar.workbenchDesc') }}</p>
-            </div>
-          </RouterLink>
+        <RouterLink
+          :to="{ name: 'workspace-list' }"
+          class="scholar-nav-item group flex items-center gap-4 py-2.5 pl-4 transition-colors"
+          :class="isNavActive('workspace-list') ? 'nav-active' : ''"
+        >
+          <IconHomeOutline class="h-5 w-5" />
+          <span class="label-sm">{{ t('sidebar.workspace') }}</span>
+        </RouterLink>
 
-          <RouterLink
-            :to="{ name: 'workspace-list' }"
-            class="group flex items-center gap-3 rounded-md px-3 py-3 transition-all duration-300"
-            :class="isNavActive('workspace-list')
-              ? 'bg-[var(--glow-primary)]'
-              : 'hover:bg-[var(--glow-primary)]'"
-          >
-            <span
-              class="inline-flex h-10 w-10 items-center justify-center rounded-md transition-colors"
-              :class="isNavActive('workspace-list')
-                ? 'bg-[var(--glow-secondary)]'
-                : 'group-hover:bg-[var(--glow-secondary)]'"
-            >
-              <IconHomeOutline class="h-5 w-5" :class="isNavActive('workspace-list') ? 'text-pretty' : 'text-pretty-muted'" />
-            </span>
-            <div>
-              <p class="font-medium label-md" :class="isNavActive('workspace-list') ? 'text-pretty' : 'text-pretty-secondary'">{{ t('sidebar.workspace') }}</p>
-              <p class="text-xs text-pretty-muted mt-0.5">{{ t('sidebar.workspaceDesc') }}</p>
-            </div>
-          </RouterLink>
+        <RouterLink
+          :to="{ name: 'library' }"
+          class="scholar-nav-item group flex items-center gap-4 py-2.5 pl-4 transition-colors"
+          :class="isNavActive('library') ? 'nav-active' : ''"
+        >
+          <IconBookmarkOutline class="h-5 w-5" />
+          <span class="label-sm">{{ t('sidebar.library') }}</span>
+        </RouterLink>
 
-          <RouterLink
-            :to="{ name: 'library' }"
-            class="group flex items-center gap-3 rounded-md px-3 py-3 transition-all duration-300"
-            :class="isNavActive('library')
-              ? 'bg-[var(--glow-primary)]'
-              : 'hover:bg-[var(--glow-primary)]'"
-          >
-            <span
-              class="inline-flex h-10 w-10 items-center justify-center rounded-md transition-colors"
-              :class="isNavActive('library')
-                ? 'bg-[var(--glow-secondary)]'
-                : 'group-hover:bg-[var(--glow-secondary)]'"
-            >
-              <IconBookmarkOutline class="h-5 w-5" :class="isNavActive('library') ? 'text-pretty' : 'text-pretty-muted'" />
-            </span>
-            <div>
-              <p class="font-medium label-md" :class="isNavActive('library') ? 'text-pretty' : 'text-pretty-secondary'">{{ t('sidebar.library') }}</p>
-              <p class="text-xs text-pretty-muted mt-0.5">{{ t('sidebar.libraryDesc') }}</p>
-            </div>
-          </RouterLink>
+        <RouterLink
+          :to="{ name: 'skills' }"
+          class="scholar-nav-item group flex items-center gap-4 py-2.5 pl-4 transition-colors"
+          :class="isNavActive('skills') ? 'nav-active' : ''"
+        >
+          <IconViewGridOutline class="h-5 w-5" />
+          <span class="label-sm">{{ t('sidebar.skills') }}</span>
+        </RouterLink>
 
-          <RouterLink
-            :to="{ name: 'skills' }"
-            class="group flex items-center gap-3 rounded-md px-3 py-3 transition-all duration-300"
-            :class="isNavActive('skills')
-              ? 'bg-[var(--glow-primary)]'
-              : 'hover:bg-[var(--glow-primary)]'"
-          >
-            <span
-              class="inline-flex h-10 w-10 items-center justify-center rounded-md transition-colors"
-              :class="isNavActive('skills')
-                ? 'bg-[var(--glow-primary)]'
-                : 'group-hover:bg-[var(--glow-primary)]'"
-            >
-              <IconViewGridOutline class="h-5 w-5" :class="isNavActive('skills') ? 'text-pretty' : 'text-pretty-muted'" />
-            </span>
-            <div>
-              <p class="font-medium label-md" :class="isNavActive('skills') ? 'text-pretty' : 'text-pretty-secondary'">{{ t('sidebar.skills') }}</p>
-              <p class="text-xs text-pretty-muted mt-0.5">{{ t('sidebar.skillsDesc') }}</p>
-            </div>
-          </RouterLink>
+        <RouterLink
+          :to="{ name: 'agents' }"
+          class="scholar-nav-item group flex items-center gap-4 py-2.5 pl-4 transition-colors"
+          :class="isNavActive('agents') ? 'nav-active' : ''"
+        >
+          <IconRobotOutline class="h-5 w-5" />
+          <span class="label-sm">{{ t('sidebar.agent') }}</span>
+        </RouterLink>
+      </nav>
 
-          <RouterLink
-            :to="{ name: 'agents' }"
-            class="group flex items-center gap-3 rounded-md px-3 py-3 transition-all duration-300"
-            :class="isNavActive('agents')
-              ? 'bg-[var(--glow-primary)]'
-              : 'hover:bg-[var(--glow-primary)]'"
-          >
-            <span
-              class="inline-flex h-10 w-10 items-center justify-center rounded-md transition-colors"
-              :class="isNavActive('agents')
-                ? 'bg-[var(--glow-primary)]'
-                : 'group-hover:bg-[var(--glow-primary)]'"
-            >
-              <IconRobotOutline class="h-5 w-5" :class="isNavActive('agents') ? 'text-pretty' : 'text-pretty-muted'" />
-            </span>
-            <div>
-              <p class="font-medium label-md" :class="isNavActive('agents') ? 'text-pretty' : 'text-pretty-secondary'">{{ t('sidebar.agent') }}</p>
-              <p class="text-xs text-pretty-muted mt-0.5">{{ t('sidebar.agentDesc') }}</p>
-            </div>
-          </RouterLink>
-        </nav>
+      <!-- Bottom Section -->
+      <div class="px-3 py-6">
+        <RouterLink
+          :to="{ name: 'profile' }"
+          class="scholar-nav-item group flex items-center gap-4 py-2 pl-4 transition-colors"
+        >
+          <IconCogOutline class="h-5 w-5" />
+          <span class="label-sm">{{ t('userMenu.settings') }}</span>
+        </RouterLink>
 
-        <div class="mx-3 mb-3 mt-auto rounded-md bg-[var(--surface-overlay)] p-4">
-          <div class="flex items-start gap-3">
+        <RouterLink
+          to="#"
+          class="scholar-nav-item group flex items-center gap-4 py-2 pl-4 transition-colors"
+        >
+          <IconHelpCircleOutline class="h-5 w-5" />
+          <span class="label-sm">{{ t('sidebar.help') }}</span>
+        </RouterLink>
+
+        <!-- User Profile Card -->
+        <div class="scholar-user-card mt-6 flex items-center gap-3 rounded-lg px-3 py-3">
+          <div class="scholar-avatar flex h-8 w-8 items-center justify-center rounded-full overflow-hidden">
             <img
               v-if="user?.avatarUrl"
               :src="user.avatarUrl"
-              :alt="`${user.displayName} avatar`"
-              class="h-10 w-10 rounded-md object-cover"
+              :alt="user.displayName"
+              class="h-full w-full rounded-full object-cover"
             />
-            <div
-              v-else
-              class="inline-flex h-10 w-10 items-center justify-center rounded-md bg-[var(--glow-primary)] font-semibold text-pretty"
+            <span v-else class="text-sm font-medium">{{ userInitial }}</span>
+          </div>
+          <div class="min-w-0 flex-1">
+            <p class="label-sm truncate font-medium">{{ user?.displayName || t('sidebar.guestUser') }}</p>
+            <p class="text-xs text-[var(--color-on-surface-variant)] opacity-70">{{ user?.role || 'Scholar' }}</p>
+          </div>
+
+          <!-- Notifications & Menu -->
+          <div class="scholar-user-menu relative flex items-center">
+            <button
+              type="button"
+              class="scholar-icon-btn relative rounded-md p-1.5"
+              :aria-label="t('sidebar.notifications')"
+              @click="openNotifications"
             >
-              {{ userInitial }}
-            </div>
-            <div class="min-w-0 flex-1">
-              <p class="truncate text-sm font-medium text-pretty">{{ user?.displayName || t('sidebar.guestUser') }}</p>
-              <p class="truncate text-xs text-pretty-muted">{{ user?.email || 'guest@deepwrite.local' }}</p>
-            </div>
-
-            <div class="ml-auto flex items-center gap-1">
-              <button
-                type="button"
-                class="btn-tertiary rounded-md p-2"
-                :aria-label="t('sidebar.notifications')"
-                @click="openNotifications"
+              <IconBellOutline class="h-4 w-4" />
+              <span
+                v-if="pendingCount > 0"
+                class="absolute -right-0.5 -top-0.5 min-w-4 rounded-full bg-[var(--color-error)] px-1 text-center text-[10px] font-semibold text-white"
               >
-                <span class="relative inline-flex">
-                  <IconBellOutline class="h-5 w-5" />
-                  <span
-                    v-if="pendingCount > 0"
-                    class="absolute -right-1 -top-1 min-w-4 rounded-full bg-[var(--color-primary)] px-1 text-center text-[10px] font-semibold text-white"
-                  >
-                    {{ pendingCount > 99 ? '99+' : pendingCount }}
-                  </span>
-                </span>
-              </button>
+                {{ pendingCount > 99 ? '99+' : pendingCount }}
+              </span>
+            </button>
 
-              <div class="relative">
+            <button
+              type="button"
+              class="scholar-icon-btn ml-1 rounded-md p-1.5"
+              :aria-label="t('sidebar.openMenu')"
+              @click="userMenuOpen = !userMenuOpen"
+            >
+              <IconChevronDown class="h-4 w-4 transition-transform" :class="{ 'rotate-180': userMenuOpen }" />
+            </button>
+
+            <!-- Dropdown Menu -->
+            <Transition name="dropdown">
+              <div
+                v-if="userMenuOpen"
+                class="scholar-dropdown absolute right-0 bottom-full z-50 mb-2 w-56 rounded-lg p-3"
+              >
                 <button
                   type="button"
-                  class="btn-tertiary rounded-md p-2"
-                  :aria-label="t('sidebar.openMenu')"
-                  @click="userMenuOpen = !userMenuOpen"
+                  class="scholar-dropdown-item w-full rounded-md px-3 py-2 text-left text-sm"
+                  @click="openProfileCenter"
                 >
-                  <IconPlus class="h-5 w-5" />
+                  {{ t('userMenu.profile') }}
                 </button>
-                <div
-                  v-if="userMenuOpen"
-                  class="absolute right-0 bottom-full z-50 mb-2 w-64 rounded-md p-4 shadow-lg paper-card bg-[var(--surface-raised)]"
+
+                <div class="my-2 h-px bg-[var(--surface-container-highest)]" />
+
+                <label class="flex items-center justify-between rounded-md px-3 py-2 text-sm">
+                  <span>{{ t('userMenu.darkMode') }}</span>
+                  <input
+                    type="checkbox"
+                    class="toggle toggle-sm"
+                    :checked="isDark"
+                    @change="applyTheme(($event.target as HTMLInputElement).checked)"
+                  />
+                </label>
+
+                <label class="mt-2 block px-3 py-1.5 text-xs text-[var(--color-on-surface-variant)]">{{ t('userMenu.language') }}</label>
+                <select
+                  v-model="selectedLanguage"
+                  class="scholar-select mt-1 w-full rounded-md px-3 py-2 text-sm"
+                  @change="updateUserPreferences"
                 >
-                  <button
-                    type="button"
-                    class="btn-tertiary mb-1 w-full justify-start rounded-md px-3 py-2 text-sm"
-                    @click="openProfileCenter"
-                  >
-                    {{ t('userMenu.profile') }}
-                  </button>
-                  <button
-                    type="button"
-                    class="btn-tertiary mb-1 w-full justify-start rounded-md px-3 py-2 text-sm"
-                    @click="openSystemSettings"
-                  >
-                    {{ t('userMenu.settings') }}
-                  </button>
-                  <button
-                    type="button"
-                    class="btn-tertiary mb-2 w-full justify-start rounded-md px-3 py-2 text-sm"
-                    @click="openSubscription"
-                  >
-                    {{ t('userMenu.subscription') }}
-                  </button>
+                  <option v-for="item in languageOptions" :key="item.value" :value="item.value">{{ item.label }}</option>
+                </select>
 
-                  <div class="my-3 rounded-sm bg-[var(--surface-overlay)] px-2 py-2" />
+                <label class="mt-2 block px-3 py-1.5 text-xs text-[var(--color-on-surface-variant)]">{{ t('userMenu.timezone') }}</label>
+                <select
+                  v-model="selectedTimezone"
+                  class="scholar-select mt-1 w-full rounded-md px-3 py-2 text-sm"
+                  @change="updateUserPreferences"
+                >
+                  <option v-for="item in timezoneOptions" :key="item.value" :value="item.value">{{ item.label }}</option>
+                </select>
 
-                  <label class="flex items-center justify-between gap-3 rounded-md px-2 py-2.5 text-sm">
-                    <span class="text-pretty-secondary">{{ t('userMenu.darkMode') }}</span>
-                    <input
-                      type="checkbox"
-                      class="toggle toggle-sm"
-                      :checked="isDark"
-                      @change="applyTheme(($event.target as HTMLInputElement).checked)"
-                    />
-                  </label>
+                <div class="my-2 h-px bg-[var(--surface-container-highest)]" />
 
-                  <label class="mt-3 block px-2 py-1.5 text-xs text-pretty-muted">{{ t('userMenu.language') }}</label>
-                  <select
-                    v-model="selectedLanguage"
-                    class="input-ghost mt-1 w-full rounded-md px-3 py-2 text-sm"
-                    @change="updateUserPreferences"
-                  >
-                    <option v-for="item in languageOptions" :key="item.value" :value="item.value">{{ item.label }}</option>
-                  </select>
-
-                  <label class="mt-3 block px-2 py-1.5 text-xs text-pretty-muted">{{ t('userMenu.timezone') }}</label>
-                  <select
-                    v-model="selectedTimezone"
-                    class="input-ghost mt-1 w-full rounded-md px-3 py-2 text-sm"
-                    @change="updateUserPreferences"
-                  >
-                    <option v-for="item in timezoneOptions" :key="item.value" :value="item.value">{{ item.label }}</option>
-                  </select>
-
-                  <div class="my-3 rounded-sm bg-[var(--surface-overlay)] px-2 py-2" />
-
-                  <button
-                    type="button"
-                    class="btn-tertiary w-full justify-start rounded-md px-3 py-2 text-sm text-red-500"
-                    @click="handleLogout"
-                  >
-                    {{ t('userMenu.logout') }}
-                  </button>
-                </div>
+                <button
+                  type="button"
+                  class="scholar-dropdown-item w-full rounded-md px-3 py-2 text-left text-sm text-[var(--color-error)]"
+                  @click="handleLogout"
+                >
+                  {{ t('userMenu.logout') }}
+                </button>
               </div>
-            </div>
-          </div>
-          <p v-if="user?.bio?.trim()" class="mt-3 line-clamp-2 text-xs leading-5 text-pretty-secondary">{{ user.bio }}</p>
-          <div class="mt-3 flex items-center justify-between text-xs text-pretty-muted">
-            <span>{{ user?.role || 'viewer' }}</span>
-            <span class="inline-flex items-center gap-1.5">
-              <span
-                class="h-2 w-2 rounded-full"
-                :class="user?.status === 'active' ? 'bg-[var(--color-secondary)]' : 'bg-amber-500'"
-              />
-              {{ t('userStatus.' + (user?.status || 'unknown')) }}
-            </span>
-          </div>
-          <div class="mt-2 flex items-center justify-between text-[11px] text-pretty-muted/60">
-            <span>{{ t('sidebar.langDisplay', { lang: user?.language || 'en' }) }}</span>
-            <span>{{ user?.timezone || 'UTC' }}</span>
+            </Transition>
           </div>
         </div>
-      </aside>
+      </div>
+    </aside>
 
-      <main class="space-y-5 lg:ml-[19rem] lg:min-h-[calc(100vh-2rem)]">
-        <RouterView />
-      </main>
-    </div>
+    <!-- Main Content Area -->
+    <main class="scholar-main ml-64 min-h-screen flex-1">
+      <RouterView />
+    </main>
   </section>
 </template>
+
+<style scoped>
+.scholar-layout {
+  background-color: var(--surface-base);
+}
+
+.scholar-sidebar {
+  background-color: var(--surface-container-low);
+  border: none;
+}
+
+.scholar-nav-item {
+  color: var(--color-on-surface-variant);
+  border-left: 2px solid transparent;
+  border-radius: 0 0.375rem 0.375rem 0;
+}
+
+.scholar-nav-item:hover {
+  background-color: var(--surface-container);
+  color: var(--color-on-surface);
+}
+
+.scholar-nav-item.nav-active {
+  color: var(--color-on-surface);
+  border-left-color: var(--color-primary);
+  font-weight: 500;
+}
+
+.scholar-user-card {
+  background-color: var(--surface-container);
+}
+
+.scholar-avatar {
+  background-color: var(--surface-container-high);
+  color: var(--color-on-surface);
+}
+
+.scholar-icon-btn {
+  color: var(--color-on-surface-variant);
+  transition: background-color 0.2s, color 0.2s;
+}
+
+.scholar-icon-btn:hover {
+  background-color: var(--surface-container-high);
+  color: var(--color-on-surface);
+}
+
+.scholar-dropdown {
+  background-color: var(--surface-raised);
+  box-shadow: 0 8px 32px oklch(0.28 0.008 105 / 0.12);
+}
+
+[data-theme="vellum-dark"] .scholar-dropdown {
+  box-shadow: 0 8px 32px oklch(0.15 0.02 75 / 0.25);
+}
+
+.scholar-dropdown-item {
+  color: var(--color-on-surface);
+  transition: background-color 0.2s;
+}
+
+.scholar-dropdown-item:hover {
+  background-color: var(--surface-container);
+}
+
+.scholar-select {
+  background-color: var(--surface-container);
+  color: var(--color-on-surface);
+  border: none;
+  outline: none;
+}
+
+.scholar-select:focus {
+  background-color: var(--surface-container-high);
+}
+
+.glow-blob {
+  position: absolute;
+  border-radius: 9999px;
+  filter: blur(80px);
+  pointer-events: none;
+}
+
+/* Dropdown Transition */
+.dropdown-enter-active,
+.dropdown-leave-active {
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.dropdown-enter-from,
+.dropdown-leave-to {
+  opacity: 0;
+  transform: translateY(4px);
+}
+</style>

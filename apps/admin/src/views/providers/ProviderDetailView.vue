@@ -7,10 +7,13 @@ import {
   discoverVendorModels,
   getVendorDetail,
   updateAIProvider,
+  testVendorConnection,
+  testModelConnection,
   type AIProviderModel,
   type AIProviderVendor,
   type CreateModelByVendorInput,
   type DiscoveredProviderModel,
+  type TestConnectionResult,
 } from '@/api/aiProvider'
 import { ApiError } from '@/api/http'
 
@@ -26,8 +29,10 @@ const isDiscovering = ref(false)
 const isSavingModels = ref(false)
 const isSavingManualModel = ref(false)
 const isSavingPersistedModel = ref(false)
+const isTestingVendorConnection = ref(false)
 const togglingPersistedModelName = ref('')
 const deletingPersistedModelName = ref('')
+const testingModelName = ref('')
 const errorMessage = ref('')
 const successMessage = ref('')
 const detailProvider = ref<AIProviderVendor | null>(null)
@@ -37,6 +42,8 @@ const discoverState = ref<Record<string, DiscoverSelection>>({})
 const isModelCompareModalOpen = ref(false)
 const isManualModelModalOpen = ref(false)
 const isPersistedEditModalOpen = ref(false)
+const isTestResultModalOpen = ref(false)
+const testResult = ref<TestConnectionResult | null>(null)
 const modelSearchKeyword = ref('')
 const modelPage = ref(1)
 const modelPageSize = ref(20)
@@ -446,6 +453,40 @@ async function deletePersistedModel(row: AIProviderModel) {
   }
 }
 
+async function handleTestVendorConnection() {
+  if (!providerId.value) return
+  isTestingVendorConnection.value = true
+  errorMessage.value = ''
+  try {
+    const result = await testVendorConnection(providerId.value)
+    testResult.value = result
+    isTestResultModalOpen.value = true
+  } catch (error) {
+    errorMessage.value = error instanceof ApiError ? error.message : '测试连通性失败'
+  } finally {
+    isTestingVendorConnection.value = false
+  }
+}
+
+async function handleTestModelConnection(row: AIProviderModel) {
+  testingModelName.value = row.model
+  errorMessage.value = ''
+  try {
+    const result = await testModelConnection(row.model)
+    testResult.value = result
+    isTestResultModalOpen.value = true
+  } catch (error) {
+    errorMessage.value = error instanceof ApiError ? error.message : '测试连通性失败'
+  } finally {
+    testingModelName.value = ''
+  }
+}
+
+function closeTestResultModal() {
+  isTestResultModalOpen.value = false
+  testResult.value = null
+}
+
 watch(providerId, () => {
   discoverState.value = {}
   discoveredModels.value = []
@@ -476,156 +517,149 @@ onMounted(() => {
 </script>
 
 <template>
-  <section class="space-y-4">
-    <div class="glass-card rounded-2xl p-5">
-      <div class="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h2 class="text-xl font-semibold text-pretty">Provider 详情</h2>
-          <p class="mt-1 text-sm text-pretty-secondary">在详情页拉取厂商模型列表，选择并配置后落库</p>
-        </div>
-        <button class="btn btn-ghost btn-sm rounded-xl" @click="router.push({ name: 'providers' })">返回列表</button>
+  <section class="space-y-8">
+    <header class="flex flex-wrap items-start justify-between gap-4">
+      <div>
+        <p class="text-label">AI 模型</p>
+        <h1 class="text-display mt-2 text-3xl">Provider 详情</h1>
+        <p class="text-secondary mt-2">拉取厂商模型列表，选择并配置后落库</p>
       </div>
-    </div>
+      <button class="btn-ghost-tech px-4 py-2.5 text-sm" @click="router.push({ name: 'providers' })">返回列表</button>
+    </header>
 
-    <div v-if="errorMessage" class="glass-card rounded-xl p-4 text-sm text-error border border-error/20 bg-error/5">{{ errorMessage }}</div>
-    <div v-if="successMessage" class="glass-card rounded-xl p-4 text-sm text-emerald-600 border border-emerald-500/20 bg-emerald-500/5">{{ successMessage }}</div>
+    <div v-if="errorMessage" class="tech-card px-5 py-4 text-sm text-[var(--accent-primary)]">{{ errorMessage }}</div>
+    <div v-if="successMessage" class="tech-card border-[var(--accent-secondary)] px-5 py-4 text-sm text-[var(--accent-secondary)]">{{ successMessage }}</div>
 
-    <fieldset class="glass-card rounded-2xl p-5">
-      <legend class="px-2 text-pretty-secondary font-medium">厂商详情</legend>
-      <div v-if="isLoading" class="py-8 text-center"><span class="loading loading-spinner loading-md text-pretty-muted" /></div>
+    <div class="tech-card p-6">
+      <h2 class="text-heading text-lg">厂商信息</h2>
+      <div v-if="isLoading" class="flex items-center justify-center py-8"><span class="loading loading-spinner loading-lg text-[var(--text-muted)]" /></div>
       <div v-else-if="detailProvider">
         <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          <div class="glass-card rounded-xl p-3">
-            <p class="text-[10px] uppercase tracking-wider text-pretty-muted">Provider</p>
-            <p class="mt-1 text-sm font-semibold text-pretty">{{ detailProvider.name }}</p>
+          <div class="rounded-xl bg-[var(--bg-base)] p-4">
+            <p class="text-label">Provider</p>
+            <p class="text-heading mt-2 text-lg">{{ detailProvider.name }}</p>
           </div>
-          <div class="glass-card rounded-xl p-3">
-            <p class="text-[10px] uppercase tracking-wider text-pretty-muted">已落库模型</p>
-            <p class="mt-1 text-2xl font-semibold text-pretty">{{ persistedModels.length }}</p>
+          <div class="rounded-xl bg-[var(--bg-base)] p-4">
+            <p class="text-label">已落库模型</p>
+            <p class="text-display mt-2 text-2xl">{{ persistedModels.length }}</p>
           </div>
-          <div class="glass-card rounded-xl p-3 border border-emerald-500/20">
-            <p class="text-[10px] uppercase tracking-wider text-emerald-600/80">启用模型</p>
-            <p class="mt-1 text-2xl font-semibold text-emerald-600">{{ persistedEnabledCount }}</p>
+          <div class="rounded-xl border-l-4 border-l-[var(--accent-secondary)] bg-[var(--bg-base)] p-4">
+            <p class="text-label">启用模型</p>
+            <p class="text-display mt-2 text-2xl text-[var(--accent-secondary)]">{{ persistedEnabledCount }}</p>
           </div>
-          <div class="glass-card rounded-xl p-3 border border-blue-500/20">
-            <p class="text-[10px] uppercase tracking-wider text-blue-600/80">待选择模型</p>
-            <p class="mt-1 text-2xl font-semibold text-blue-600">{{ selectedDiscoverCount }}</p>
+          <div class="rounded-xl border-l-4 border-l-[var(--accent-gold)] bg-[var(--bg-base)] p-4">
+            <p class="text-label">待选择模型</p>
+            <p class="text-display mt-2 text-2xl text-[var(--accent-gold)]">{{ selectedDiscoverCount }}</p>
           </div>
         </div>
         <div class="mt-4 space-y-1">
-          <p class="text-sm text-pretty-secondary"><span class="font-medium text-pretty">Base URL：</span><span class="font-mono text-xs">{{ detailProvider.base_url }}</span></p>
-          <p class="text-sm text-pretty-secondary"><span class="font-medium text-pretty">Models Path：</span><span class="font-mono text-xs">{{ detailProvider.models_path }}</span></p>
+          <p class="text-sm text-[var(--text-secondary)]"><span class="font-medium text-[var(--text-primary)]">Base URL：</span><code class="text-mono text-xs">{{ detailProvider.base_url }}</code></p>
+          <p class="text-sm text-[var(--text-secondary)]"><span class="font-medium text-[var(--text-primary)]">Models Path：</span><code class="text-mono text-xs">{{ detailProvider.models_path }}</code></p>
         </div>
         <div class="mt-4 flex gap-2">
-          <button class="btn btn-ghost btn-sm rounded-xl" :disabled="isDiscovering" @click="discoverModels">
+          <button class="btn-ghost-tech flex items-center gap-2 px-4 py-2.5 text-sm" :disabled="isDiscovering" @click="discoverModels">
             <span v-if="isDiscovering" class="loading loading-spinner loading-xs" />
             <span>{{ isDiscovering ? '拉取中...' : '拉取厂商模型列表' }}</span>
           </button>
+          <button class="btn-ghost-tech flex items-center gap-2 px-4 py-2.5 text-sm" :disabled="isTestingVendorConnection" @click="handleTestVendorConnection">
+            <span v-if="isTestingVendorConnection" class="loading loading-spinner loading-xs" />
+            <span>{{ isTestingVendorConnection ? '测试中...' : '测试连通性' }}</span>
+          </button>
         </div>
       </div>
-      <p v-else class="text-sm text-pretty-muted">未找到该厂商信息</p>
-    </fieldset>
+      <p v-else class="text-sm text-[var(--text-muted)]">未找到该厂商信息</p>
+    </div>
 
-    <fieldset class="glass-card rounded-2xl p-5">
-      <legend class="px-2 text-pretty-secondary font-medium">模型选择与配置</legend>
+    <div class="tech-card p-6">
       <div class="mb-4 flex flex-wrap items-center justify-between gap-2">
-        <p class="text-sm text-pretty-secondary">已拉取 {{ discoveredModels.length }} 个模型，已选择 {{ selectedDiscoverCount }} 个</p>
+        <h2 class="text-heading text-lg">模型选择与配置</h2>
         <div class="flex flex-wrap items-center gap-2">
-          <button class="btn btn-ghost btn-sm rounded-xl" @click="isManualModelModalOpen = true">手动新增模型</button>
-          <button class="btn btn-ghost btn-sm rounded-xl" :disabled="!discoveredModels.length" @click="isModelCompareModalOpen = true">打开模型对比弹窗</button>
-          <button class="btn rounded-xl bg-[var(--glow-primary)] text-pretty hover:opacity-90 btn-sm" :disabled="!canSaveSelected" @click="saveSelectedModels">
+          <button class="btn-ghost-tech px-4 py-2 text-sm" @click="isManualModelModalOpen = true">手动新增模型</button>
+          <button class="btn-ghost-tech px-4 py-2 text-sm" :disabled="!discoveredModels.length" @click="isModelCompareModalOpen = true">打开模型对比弹窗</button>
+          <button class="btn-tech px-4 py-2 text-sm" :disabled="!canSaveSelected" @click="saveSelectedModels">
             <span v-if="isSavingModels" class="loading loading-spinner loading-xs" />
             <span>{{ isSavingModels ? '落库中...' : '落库选中模型' }}</span>
           </button>
         </div>
       </div>
-      <div v-if="!discoveredModels.length" class="text-sm text-pretty-muted py-4">请先在上方点击"拉取厂商模型列表"</div>
-    </fieldset>
+      <p class="text-sm text-[var(--text-muted)]">已拉取 {{ discoveredModels.length }} 个模型，已选择 {{ selectedDiscoverCount }} 个</p>
+      <div v-if="!discoveredModels.length" class="py-8 text-center text-sm text-[var(--text-muted)]">请先点击上方"拉取厂商模型列表"</div>
+    </div>
 
     <dialog :open="isManualModelModalOpen" class="modal">
-      <div class="modal-box w-11/12 max-w-3xl rounded-2xl bg-[var(--bg-elevated)]">
-        <form method="dialog">
-          <button class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2" @click="closeManualModelModal">✕</button>
-        </form>
-        <h3 class="text-lg font-semibold text-pretty">手动新增模型</h3>
+      <div class="tech-modal modal-box w-11/12 max-w-3xl">
+        <div class="flex items-center justify-between border-b border-[var(--border-subtle)] px-6 py-4">
+          <div>
+            <h3 class="text-heading text-lg">手动新增模型</h3>
+            <p class="text-muted mt-0.5 text-sm">配置模型信息与能力</p>
+          </div>
+          <button class="flex h-8 w-8 items-center justify-center rounded-lg text-[var(--text-muted)] hover:bg-[var(--bg-base)]" @click="closeManualModelModal">
+            <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
 
-        <div class="mt-6 grid gap-5">
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div class="form-control w-full">
-              <label class="label"><span class="label-text font-medium text-pretty">Model ID</span><span class="label-text-alt text-error">*</span></label>
-              <input v-model="manualModelForm.model" type="text" placeholder="e.g. gpt-4o-mini" class="glass-input input input-bordered w-full rounded-xl" :class="{'input-error': !manualModelForm.model}" />
+        <div class="mt-6 space-y-5">
+          <div class="grid gap-4 sm:grid-cols-2">
+            <div>
+              <label class="text-label mb-2 block">Model ID <span class="text-[var(--accent-primary)]">*</span></label>
+              <input v-model="manualModelForm.model" type="text" placeholder="gpt-4o-mini" class="tech-input w-full px-4 py-2.5 text-sm" :class="{'border-[var(--accent-primary)]': !manualModelForm.model}" />
             </div>
-            <div class="form-control w-full">
-              <label class="label"><span class="label-text font-medium text-pretty">Request Model</span><span class="label-text-alt text-pretty-muted">Optional</span></label>
-              <input v-model="manualModelForm.request_model" type="text" placeholder="Defaults to Model ID if empty" class="glass-input input input-bordered w-full rounded-xl" />
+            <div>
+              <label class="text-label mb-2 block">Request Model</label>
+              <input v-model="manualModelForm.request_model" type="text" placeholder="默认同 Model ID" class="tech-input w-full px-4 py-2.5 text-sm" />
             </div>
           </div>
 
-          <div class="glass-card rounded-xl p-4">
-            <h4 class="text-sm font-semibold text-pretty-secondary mb-3 uppercase tracking-wider">Capabilities & Status</h4>
-            <div class="grid grid-cols-2 sm:grid-cols-4 gap-x-4 gap-y-3">
-              <div class="form-control">
-                <label class="label cursor-pointer justify-start gap-3 p-0">
-                  <input v-model="manualModelForm.supports_chat_completions" type="checkbox" class="checkbox checkbox-sm checkbox-primary" />
-                  <span class="label-text text-sm text-pretty-secondary">Chat</span>
-                </label>
-              </div>
-              <div class="form-control">
-                <label class="label cursor-pointer justify-start gap-3 p-0">
-                  <input v-model="manualModelForm.supports_chat_responses" type="checkbox" class="checkbox checkbox-sm checkbox-primary" />
-                  <span class="label-text text-sm text-pretty-secondary">Responses</span>
-                </label>
-              </div>
-              <div class="form-control">
-                <label class="label cursor-pointer justify-start gap-3 p-0">
-                  <input v-model="manualModelForm.supports_embeddings" type="checkbox" class="checkbox checkbox-sm checkbox-primary" />
-                  <span class="label-text text-sm text-pretty-secondary">Embeddings</span>
-                </label>
-              </div>
-              <div class="form-control">
-                <label class="label cursor-pointer justify-start gap-3 p-0">
-                  <input v-model="manualModelForm.supports_rerank" type="checkbox" class="checkbox checkbox-sm checkbox-primary" />
-                  <span class="label-text text-sm text-pretty-secondary">Rerank</span>
-                </label>
-              </div>
-              <div class="form-control">
-                <label class="label cursor-pointer justify-start gap-3 p-0">
-                  <input v-model="manualModelForm.supports_audio_speech" type="checkbox" class="checkbox checkbox-sm checkbox-primary" />
-                  <span class="label-text text-sm text-pretty-secondary">Speech</span>
-                </label>
-              </div>
-              <div class="form-control">
-                <label class="label cursor-pointer justify-start gap-3 p-0">
-                  <input v-model="manualModelForm.supports_audio_transcriptions" type="checkbox" class="checkbox checkbox-sm checkbox-primary" />
-                  <span class="label-text text-sm text-pretty-secondary">Transcribe</span>
-                </label>
-              </div>
-              <div class="form-control">
-                <label class="label cursor-pointer justify-start gap-3 p-0">
-                  <input v-model="manualModelForm.supports_models" type="checkbox" class="checkbox checkbox-sm checkbox-primary" />
-                  <span class="label-text text-sm text-pretty-secondary">Models</span>
-                </label>
-              </div>
-              <div class="divider col-span-full my-0 opacity-10"></div>
-              <div class="form-control col-span-full sm:col-span-2">
-                <label class="label cursor-pointer justify-start gap-3 p-0">
-                  <input v-model="manualModelForm.enabled" type="checkbox" class="toggle toggle-success toggle-sm" />
-                  <span class="label-text font-medium text-pretty">Enable Model</span>
-                </label>
-              </div>
+          <div class="rounded-xl bg-[var(--bg-base)] p-4">
+            <p class="text-label mb-4">能力配置</p>
+            <div class="grid grid-cols-2 gap-4 sm:grid-cols-4">
+              <label class="flex cursor-pointer items-center gap-2">
+                <input v-model="manualModelForm.supports_chat_completions" type="checkbox" class="checkbox checkbox-sm" />
+                <span class="text-sm text-[var(--text-secondary)]">Chat</span>
+              </label>
+              <label class="flex cursor-pointer items-center gap-2">
+                <input v-model="manualModelForm.supports_chat_responses" type="checkbox" class="checkbox checkbox-sm" />
+                <span class="text-sm text-[var(--text-secondary)]">Responses</span>
+              </label>
+              <label class="flex cursor-pointer items-center gap-2">
+                <input v-model="manualModelForm.supports_embeddings" type="checkbox" class="checkbox checkbox-sm" />
+                <span class="text-sm text-[var(--text-secondary)]">Embeddings</span>
+              </label>
+              <label class="flex cursor-pointer items-center gap-2">
+                <input v-model="manualModelForm.supports_rerank" type="checkbox" class="checkbox checkbox-sm" />
+                <span class="text-sm text-[var(--text-secondary)]">Rerank</span>
+              </label>
+              <label class="flex cursor-pointer items-center gap-2">
+                <input v-model="manualModelForm.supports_audio_speech" type="checkbox" class="checkbox checkbox-sm" />
+                <span class="text-sm text-[var(--text-secondary)]">Speech</span>
+              </label>
+              <label class="flex cursor-pointer items-center gap-2">
+                <input v-model="manualModelForm.supports_audio_transcriptions" type="checkbox" class="checkbox checkbox-sm" />
+                <span class="text-sm text-[var(--text-secondary)]">Transcribe</span>
+              </label>
+              <label class="flex cursor-pointer items-center gap-2">
+                <input v-model="manualModelForm.supports_models" type="checkbox" class="checkbox checkbox-sm" />
+                <span class="text-sm text-[var(--text-secondary)]">Models</span>
+              </label>
+              <label class="flex cursor-pointer items-center gap-2">
+                <input v-model="manualModelForm.enabled" type="checkbox" class="toggle toggle-sm" />
+                <span class="text-sm font-medium text-[var(--text-primary)]">启用</span>
+              </label>
             </div>
           </div>
         </div>
 
-        <div class="modal-action mt-8">
-          <button class="btn btn-ghost rounded-xl" @click="closeManualModelModal">取消</button>
-          <button class="btn rounded-xl bg-[var(--glow-primary)] text-pretty hover:opacity-90" :disabled="isSavingManualModel || !manualModelForm.model.trim()" @click="saveManualModel">
+        <div class="flex justify-end gap-3 border-t border-[var(--border-subtle)] px-6 py-4">
+          <button class="btn-ghost-tech px-5 py-2.5 text-sm" @click="closeManualModelModal">取消</button>
+          <button class="btn-tech px-5 py-2.5 text-sm" :disabled="isSavingManualModel || !manualModelForm.model.trim()" @click="saveManualModel">
             <span v-if="isSavingManualModel" class="loading loading-spinner loading-xs" />
-            <span>{{ isSavingManualModel ? '正在保存...' : '确认新增' }}</span>
+            <span>{{ isSavingManualModel ? '保存中...' : '确认新增' }}</span>
           </button>
         </div>
       </div>
-      <form method="dialog" class="modal-backdrop">
+      <form method="dialog" class="modal-backdrop-tech">
         <button @click="closeManualModelModal">close</button>
       </form>
     </dialog>
@@ -770,53 +804,69 @@ onMounted(() => {
       </form>
     </dialog>
 
-    <fieldset class="glass-card rounded-2xl p-5">
-      <legend class="px-2 text-pretty-secondary font-medium">已落库模型</legend>
-      <div class="mb-4 max-w-sm">
-        <input
-          v-model="persistSearchKeyword"
-          class="glass-input input input-bordered input-sm w-full rounded-xl"
-          placeholder="搜索已落库模型 model/request_model"
-          autocomplete="off"
-          autocapitalize="off"
-          autocorrect="off"
-          spellcheck="false"
-        />
+    <div class="tech-card p-6">
+      <div class="mb-4 flex items-center justify-between">
+        <h2 class="text-heading text-lg">已落库模型</h2>
+        <div class="max-w-sm">
+          <input
+            v-model="persistSearchKeyword"
+            class="tech-input w-full px-4 py-2 text-sm"
+            placeholder="搜索模型..."
+            autocomplete="off"
+          />
+        </div>
       </div>
       <div class="overflow-x-auto rounded-xl border border-[var(--border-subtle)]">
-        <table class="table">
+        <table class="tech-table">
           <thead>
-            <tr class="border-b border-[var(--border-subtle)] bg-[var(--bg-base)]/50">
-              <th class="text-pretty-secondary font-medium">Model</th>
-              <th class="text-pretty-secondary font-medium">Request Model</th>
-              <th class="text-pretty-secondary font-medium">Enabled</th>
-              <th class="text-pretty-secondary font-medium">更新时间</th>
-              <th class="text-right text-pretty-secondary font-medium">操作</th>
+            <tr>
+              <th>Model</th>
+              <th>Request Model</th>
+              <th>Enabled</th>
+              <th>更新时间</th>
+              <th class="text-right">操作</th>
             </tr>
           </thead>
           <tbody>
             <tr v-if="!filteredPersistedModels.length">
-              <td colspan="5" class="py-10 text-center text-sm text-pretty-muted">暂无已落库模型</td>
+              <td colspan="5" class="py-10 text-center text-sm text-[var(--text-muted)]">暂无已落库模型</td>
             </tr>
-            <tr v-for="row in filteredPersistedModels" :key="row.id" class="border-b border-[var(--border-subtle)] hover:bg-[var(--bg-elevated)]/30 transition-colors">
-              <td class="font-mono text-xs text-pretty">{{ row.model }}</td>
-              <td class="font-mono text-xs text-pretty-secondary">{{ row.request_model }}</td>
-              <td><span class="badge rounded-xl" :class="row.enabled ? 'bg-emerald-500/15 text-emerald-600 border-0' : 'bg-[var(--glow-primary)] text-pretty-muted border-0'">{{ row.enabled ? '启用' : '停用' }}</span></td>
-              <td class="text-xs text-pretty-muted">{{ row.updated_at }}</td>
+            <tr v-for="row in filteredPersistedModels" :key="row.id">
+              <td><code class="text-mono text-sm">{{ row.model }}</code></td>
+              <td><code class="text-mono text-xs text-[var(--text-muted)]">{{ row.request_model }}</code></td>
               <td>
+                <span 
+                  class="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium"
+                  :class="row.enabled ? 'badge-success' : 'badge-neutral'"
+                >
+                  {{ row.enabled ? '启用' : '停用' }}
+                </span>
+              </td>
+              <td class="text-xs text-[var(--text-muted)]">{{ row.updated_at }}</td>
+              <td class="text-right">
                 <div class="flex justify-end gap-2">
                   <button
-                    class="btn btn-xs rounded-xl"
-                    :class="row.enabled ? 'bg-amber-500/15 text-amber-600 border-0 hover:bg-amber-500/25' : 'bg-emerald-500/15 text-emerald-600 border-0 hover:bg-emerald-500/25'"
+                    class="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition-colors"
+                    :class="row.enabled 
+                      ? 'text-[var(--text-muted)] hover:bg-[var(--bg-base)] hover:text-[var(--text-primary)]' 
+                      : 'text-[var(--accent-secondary)] hover:bg-[var(--glow-cool)]'"
                     :disabled="togglingPersistedModelName === row.model"
                     @click="togglePersistedModelEnabled(row)"
                   >
                     <span v-if="togglingPersistedModelName === row.model" class="loading loading-spinner loading-xs" />
                     <span>{{ row.enabled ? '停用' : '启用' }}</span>
                   </button>
-                  <button class="btn btn-ghost btn-xs rounded-xl text-pretty-secondary hover:bg-[var(--glow-primary)] hover:text-pretty" @click="openPersistedEditModal(row)">编辑</button>
+                  <button 
+                    class="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium text-[var(--accent-primary)] transition-colors hover:bg-[var(--glow-warm)]"
+                    :disabled="testingModelName === row.model"
+                    @click="handleTestModelConnection(row)"
+                  >
+                    <span v-if="testingModelName === row.model" class="loading loading-spinner loading-xs" />
+                    <span>{{ testingModelName === row.model ? '测试中' : '测试' }}</span>
+                  </button>
+                  <button class="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium text-[var(--text-muted)] transition-colors hover:bg-[var(--bg-base)] hover:text-[var(--text-primary)]" @click="openPersistedEditModal(row)">编辑</button>
                   <button
-                    class="btn btn-error btn-xs rounded-xl border-0"
+                    class="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium text-[var(--accent-primary)] transition-colors hover:bg-[var(--glow-warm)]"
                     :disabled="deletingPersistedModelName === row.model"
                     @click="deletePersistedModel(row)"
                   >
@@ -829,7 +879,7 @@ onMounted(() => {
           </tbody>
         </table>
       </div>
-    </fieldset>
+    </div>
 
     <dialog :open="isPersistedEditModalOpen" class="modal">
       <div class="modal-box w-11/12 max-w-3xl rounded-2xl bg-[var(--bg-elevated)]">
@@ -875,6 +925,50 @@ onMounted(() => {
       </div>
       <form method="dialog" class="modal-backdrop">
         <button @click="closePersistedEditModal">close</button>
+      </form>
+    </dialog>
+
+    <dialog :open="isTestResultModalOpen" class="modal">
+      <div class="tech-modal modal-box w-11/12 max-w-lg">
+        <div class="flex items-center justify-between border-b border-[var(--border-subtle)] px-6 py-4">
+          <h3 class="text-heading text-lg">连通性测试结果</h3>
+          <button class="flex h-8 w-8 items-center justify-center rounded-lg text-[var(--text-muted)] hover:bg-[var(--bg-base)]" @click="closeTestResultModal">
+            <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        <div v-if="testResult" class="space-y-5 p-6">
+          <div class="flex items-center gap-3 rounded-xl bg-[var(--bg-base)] p-4">
+            <span 
+              class="inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-sm font-medium"
+              :class="testResult.success ? 'badge-success' : 'badge-error'"
+            >
+              {{ testResult.success ? '连通成功' : '连通失败' }}
+            </span>
+            <span class="text-[var(--text-secondary)]">{{ testResult.message }}</span>
+          </div>
+
+          <div class="rounded-xl bg-[var(--bg-base)] p-4">
+            <p class="text-label">响应延迟</p>
+            <p class="text-display mt-2 text-xl">
+              {{ testResult.latency_ms ? `${testResult.latency_ms} ms` : '-' }}
+            </p>
+          </div>
+
+          <div v-if="testResult.error_detail" class="rounded-xl border border-[var(--accent-primary)] bg-[var(--glow-warm)] p-4">
+            <p class="text-sm font-medium text-[var(--accent-primary)]">错误详情</p>
+            <p class="mt-1 text-mono text-sm break-all text-[var(--text-secondary)]">{{ testResult.error_detail }}</p>
+          </div>
+        </div>
+
+        <div class="flex justify-end border-t border-[var(--border-subtle)] px-6 py-4">
+          <button class="btn-tech px-5 py-2.5 text-sm" @click="closeTestResultModal">关闭</button>
+        </div>
+      </div>
+      <form method="dialog" class="modal-backdrop-tech">
+        <button @click="closeTestResultModal">close</button>
       </form>
     </dialog>
   </section>

@@ -4,6 +4,7 @@ import (
 	"github.com/deepwrite/serivces/gateway/bootstrap"
 	_ "github.com/deepwrite/serivces/gateway/docs"
 	"github.com/deepwrite/serivces/gateway/pkg/config"
+	"github.com/deepwrite/serivces/gateway/pkg/crypto"
 	gatewaylogger "github.com/deepwrite/serivces/gateway/pkg/logger"
 	"github.com/gin-gonic/gin"
 )
@@ -46,6 +47,10 @@ func main() {
 	bootstrap.SetupRouter(r)
 
 	bootstrap.SetupDB()
+
+	if cfg.AI.EncryptionKey != "" {
+		crypto.InitService(cfg.AI.EncryptionKey)
+	}
 
 	if err := bootstrap.SetupCache(*cfg); err != nil {
 		panic(err)

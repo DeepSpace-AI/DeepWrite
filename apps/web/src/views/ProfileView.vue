@@ -4,10 +4,13 @@ import { storeToRefs } from 'pinia'
 import { ApiError } from '@/api/http'
 import { updateCurrentUserProfile, uploadUserAvatar } from '@/api/auth'
 import { useUserStore } from '@/stores/user'
+import { useI18n } from 'vue-i18n'
 import IconAccountCircle from '~icons/mdi/account-circle'
+import IconUpload from '~icons/mdi/upload'
 
 const userStore = useUserStore()
 const { user } = storeToRefs(userStore)
+const { t } = useI18n()
 
 const displayName = ref('')
 const avatarUrl = ref('')
@@ -36,6 +39,11 @@ const timezoneOptions = [
 
 const email = computed(() => user.value?.email || '')
 
+const userInitial = computed(() => {
+  const name = user.value?.displayName || user.value?.email || ''
+  return name ? name.slice(0, 1).toUpperCase() : 'D'
+})
+
 watch(
   user,
   (nextUser) => {
@@ -56,7 +64,7 @@ async function onAvatarFileChange(event: Event) {
   input.value = ''
 
   if (file.size > 5 * 1024 * 1024) {
-    uploadAvatarError.value = '头像文件不能超过 5 MB。'
+    uploadAvatarError.value = t('profile.avatarSizeError')
     return
   }
 
@@ -67,7 +75,7 @@ async function onAvatarFileChange(event: Event) {
     const url = await uploadUserAvatar(file)
     avatarUrl.value = url
   } catch (error) {
-    uploadAvatarError.value = error instanceof ApiError ? error.message : '头像上传失败，请稍后重试。'
+    uploadAvatarError.value = error instanceof ApiError ? error.message : t('profile.avatarUploadError')
   } finally {
     isUploadingAvatar.value = false
   }
@@ -78,15 +86,15 @@ async function onSubmit() {
 
   const name = displayName.value.trim()
   if (!name) {
-    errorMessage.value = '显示名不能为空。'
+    errorMessage.value = t('profile.nameRequired')
     return
   }
   if (name.length > 30) {
-    errorMessage.value = '显示名不能超过 30 个字符。'
+    errorMessage.value = t('profile.nameTooLong')
     return
   }
   if (bio.value.trim().length > 255) {
-    errorMessage.value = '个人简介不能超过 255 个字符。'
+    errorMessage.value = t('profile.bioTooLong')
     return
   }
 
@@ -104,9 +112,9 @@ async function onSubmit() {
     })
 
     userStore.setUser(updated)
-    successMessage.value = '个人信息已更新。'
+    successMessage.value = t('profile.success')
   } catch (error) {
-    errorMessage.value = error instanceof ApiError ? error.message : '更新失败，请稍后重试。'
+    errorMessage.value = error instanceof ApiError ? error.message : t('profile.error')
   } finally {
     isSubmitting.value = false
   }
@@ -114,114 +122,253 @@ async function onSubmit() {
 </script>
 
 <template>
-  <section class="space-y-5">
-    <section class="paper-card rounded-lg p-5">
-      <p class="text-[11px] font-mono uppercase tracking-[0.2em] text-pretty-muted">Profile / Account</p>
-      <h2 class="heading-serif mt-2 text-3xl font-bold text-pretty">个人信息</h2>
-      <p class="mt-2 max-w-2xl text-sm leading-7 text-pretty-secondary">管理你的显示名、头像地址、语言和时区设置。这些设置会同步到后端并在刷新后保持一致。</p>
-    </section>
+  <section class="scholar-profile p-8">
+    <div class="mx-auto max-w-2xl">
+      <!-- Header -->
+      <header class="mb-8">
+        <p class="label-sm text-[var(--color-on-surface-variant)] uppercase tracking-widest">
+          Profile / Account
+        </p>
+        <h1 class="text-editorial mt-3 text-4xl font-light text-[var(--color-on-background)]">
+          {{ t('profile.title') }}
+        </h1>
+        <p class="body-md mt-3 text-[var(--color-on-surface-variant)]">
+          {{ t('profile.subtitle') }}
+        </p>
+      </header>
 
-    <section class="paper-card rounded-lg p-5 bg-[var(--surface-raised)]">
-      <form class="grid gap-5" @submit.prevent="onSubmit">
-        <div class="grid gap-5 md:grid-cols-2">
-          <label class="fieldset">
-            <legend class="fieldset-legend text-sm text-pretty-secondary">显示名</legend>
-            <input v-model="displayName" type="text" class="input input-bordered w-full rounded-xl" maxlength="30" placeholder="请输入显示名" />
-          </label>
-
-          <label class="fieldset">
-            <legend class="fieldset-legend text-sm text-pretty-secondary">邮箱</legend>
-            <input :value="email" type="email" class="input input-bordered w-full rounded-xl" disabled />
-          </label>
-        </div>
-
-        <div class="fieldset">
-          <legend class="fieldset-legend text-sm text-pretty-secondary">头像</legend>
-          <div class="flex items-center gap-4">
-            <div class="relative shrink-0">
-              <img
-                v-if="avatarUrl"
-                :src="avatarUrl"
-                alt="avatar"
-                class="h-16 w-16 rounded-md object-cover"
-              />
-              <div
-                v-else
-                class="flex h-16 w-16 items-center justify-center rounded-md bg-[var(--surface-overlay)] text-pretty-muted"
-              >
-                <IconAccountCircle class="h-8 w-8" />
+      <!-- Form Card -->
+      <div class="scholar-form-card rounded-xl p-8">
+        <form class="space-y-8" @submit.prevent="onSubmit">
+          <!-- Avatar Section -->
+          <div class="scholar-form-section">
+            <label class="label-sm mb-4 block text-[var(--color-on-surface-variant)]">
+              {{ t('profile.avatar') }}
+            </label>
+            <div class="flex items-center gap-6">
+              <div class="scholar-avatar-container relative shrink-0">
+                <img
+                  v-if="avatarUrl"
+                  :src="avatarUrl"
+                  alt="avatar"
+                  class="h-20 w-20 rounded-xl object-cover"
+                />
+                <div v-else class="scholar-avatar-placeholder flex h-20 w-20 items-center justify-center rounded-xl">
+                  <span class="text-2xl font-medium">{{ userInitial }}</span>
+                </div>
+                <div
+                  v-if="isUploadingAvatar"
+                  class="absolute inset-0 flex items-center justify-center rounded-xl bg-[var(--surface-base)]/70"
+                >
+                  <span class="loading loading-spinner loading-md" />
+                </div>
               </div>
-              <div
-                v-if="isUploadingAvatar"
-                class="absolute inset-0 flex items-center justify-center rounded-md bg-[var(--bg-base)]/70"
-              >
-                <span class="loading loading-spinner loading-sm" />
+              <div class="flex flex-col gap-2">
+                <button
+                  type="button"
+                  class="scholar-upload-btn flex items-center gap-2 rounded-lg px-4 py-2.5"
+                  :disabled="isUploadingAvatar"
+                  @click="avatarFileInput?.click()"
+                >
+                  <IconUpload class="h-4 w-4" />
+                  {{ isUploadingAvatar ? t('profile.uploading') : t('profile.uploadAvatar') }}
+                </button>
+                <p class="text-xs text-[var(--color-on-surface-muted)]">{{ t('profile.avatarHint') }}</p>
               </div>
             </div>
-            <div class="flex flex-col gap-1">
-              <button
-                type="button"
-                class="btn-tertiary rounded-md px-3 py-1.5 text-sm"
-                :disabled="isUploadingAvatar"
-                @click="avatarFileInput?.click()"
-              >
-                {{ isUploadingAvatar ? '上传中...' : '上传头像' }}
-              </button>
-              <p class="text-xs text-pretty-muted">最大 5 MB，支持 JPG / PNG / GIF / WebP</p>
+            <input
+              ref="avatarFileInput"
+              type="file"
+              accept="image/*"
+              class="hidden"
+              @change="onAvatarFileChange"
+            />
+            <p v-if="uploadAvatarError" class="mt-2 text-sm text-[var(--color-error)]">{{ uploadAvatarError }}</p>
+          </div>
+
+          <!-- Name & Email -->
+          <div class="grid gap-6 md:grid-cols-2">
+            <div class="scholar-form-section">
+              <label class="label-sm mb-2 block text-[var(--color-on-surface-variant)]">
+                {{ t('profile.displayName') }}
+              </label>
+              <input
+                v-model="displayName"
+                type="text"
+                class="scholar-input w-full rounded-lg px-4 py-3"
+                maxlength="30"
+                :placeholder="t('profile.displayNamePlaceholder')"
+              />
+            </div>
+
+            <div class="scholar-form-section">
+              <label class="label-sm mb-2 block text-[var(--color-on-surface-variant)]">
+                {{ t('profile.email') }}
+              </label>
+              <input
+                :value="email"
+                type="email"
+                class="scholar-input w-full rounded-lg px-4 py-3 opacity-60"
+                disabled
+              />
             </div>
           </div>
-          <input
-            ref="avatarFileInput"
-            type="file"
-            accept="image/*"
-            class="hidden"
-            @change="onAvatarFileChange"
-          />
-          <p v-if="uploadAvatarError" class="mt-1 text-xs text-error">{{ uploadAvatarError }}</p>
-        </div>
 
-        <label class="fieldset">
-          <legend class="fieldset-legend text-sm text-pretty-secondary">头像地址</legend>
-          <input v-model="avatarUrl" type="url" class="input input-bordered w-full rounded-md" placeholder="https://example.com/avatar.jpg" />
-          <div class="fieldset-label text-xs text-pretty-muted">上传头像后自动填入，也可手动输入 URL</div>
-        </label>
+          <!-- Avatar URL -->
+          <div class="scholar-form-section">
+            <label class="label-sm mb-2 block text-[var(--color-on-surface-variant)]">
+              {{ t('profile.avatarUrl') }}
+            </label>
+            <input
+              v-model="avatarUrl"
+              type="url"
+              class="scholar-input w-full rounded-lg px-4 py-3"
+              placeholder="https://example.com/avatar.jpg"
+            />
+            <p class="mt-2 text-xs text-[var(--color-on-surface-muted)]">{{ t('profile.avatarUrlHint') }}</p>
+          </div>
 
-        <label class="fieldset">
-          <legend class="fieldset-legend text-sm text-pretty-secondary">个人简介</legend>
-          <textarea v-model="bio" class="textarea textarea-bordered min-h-28 w-full rounded-md" maxlength="255" placeholder="介绍一下你自己" />
-          <div class="mt-1 text-xs text-pretty-muted">{{ bio.trim().length }} / 255</div>
-        </label>
+          <!-- Bio -->
+          <div class="scholar-form-section">
+            <label class="label-sm mb-2 block text-[var(--color-on-surface-variant)]">
+              {{ t('profile.bio') }}
+            </label>
+            <textarea
+              v-model="bio"
+              class="scholar-input min-h-28 w-full rounded-lg px-4 py-3"
+              maxlength="255"
+              :placeholder="t('profile.bioPlaceholder')"
+            />
+            <p class="mt-2 text-xs text-[var(--color-on-surface-muted)]">{{ bio.trim().length }} / 255</p>
+          </div>
 
-        <div class="grid gap-5 md:grid-cols-2">
-          <label class="fieldset">
-            <legend class="fieldset-legend text-sm text-pretty-secondary">语言</legend>
-            <select v-model="language" class="select select-bordered w-full rounded-md">
-              <option v-for="item in languageOptions" :key="item.value" :value="item.value">{{ item.label }}</option>
-            </select>
-          </label>
+          <!-- Language & Timezone -->
+          <div class="grid gap-6 md:grid-cols-2">
+            <div class="scholar-form-section">
+              <label class="label-sm mb-2 block text-[var(--color-on-surface-variant)]">
+                {{ t('profile.language') }}
+              </label>
+              <select v-model="language" class="scholar-select w-full rounded-lg px-4 py-3">
+                <option v-for="item in languageOptions" :key="item.value" :value="item.value">
+                  {{ item.label }}
+                </option>
+              </select>
+            </div>
 
-          <label class="fieldset">
-            <legend class="fieldset-legend text-sm text-pretty-secondary">时区</legend>
-            <select v-model="timezone" class="select select-bordered w-full rounded-md">
-              <option v-for="item in timezoneOptions" :key="item.value" :value="item.value">{{ item.label }}</option>
-            </select>
-          </label>
-        </div>
+            <div class="scholar-form-section">
+              <label class="label-sm mb-2 block text-[var(--color-on-surface-variant)]">
+                {{ t('profile.timezone') }}
+              </label>
+              <select v-model="timezone" class="scholar-select w-full rounded-lg px-4 py-3">
+                <option v-for="item in timezoneOptions" :key="item.value" :value="item.value">
+                  {{ item.label }}
+                </option>
+              </select>
+            </div>
+          </div>
 
-        <p v-if="errorMessage" class="rounded-md bg-error/8 px-3 py-2 text-sm text-error">
-          {{ errorMessage }}
-        </p>
+          <!-- Messages -->
+          <div v-if="errorMessage" class="scholar-error rounded-lg p-4">
+            {{ errorMessage }}
+          </div>
 
-        <p v-if="successMessage" class="rounded-md bg-emerald-500/8 px-3 py-2 text-sm text-emerald-600">
-          {{ successMessage }}
-        </p>
+          <div v-if="successMessage" class="scholar-success rounded-lg p-4">
+            {{ successMessage }}
+          </div>
 
-        <div class="flex justify-end">
-          <button type="submit" class="btn-primary-vellum rounded-md px-4 py-2" :disabled="isSubmitting">
-            {{ isSubmitting ? '保存中...' : '保存更改' }}
-          </button>
-        </div>
-      </form>
-    </section>
+          <!-- Submit -->
+          <div class="flex justify-end">
+            <button type="submit" class="scholar-submit-btn rounded-lg px-6 py-3" :disabled="isSubmitting">
+              {{ isSubmitting ? t('profile.saving') : t('profile.save') }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
   </section>
 </template>
+
+<style scoped>
+.scholar-form-card {
+  background-color: var(--surface-container-lowest);
+  box-shadow: 0 8px 32px oklch(0.28 0.008 105 / 0.08);
+}
+
+[data-theme="vellum-dark"] .scholar-form-card {
+  box-shadow: 0 8px 32px oklch(0.15 0.02 75 / 0.20);
+}
+
+.scholar-avatar-container {
+  background-color: var(--surface-container-low);
+  border-radius: 0.75rem;
+}
+
+.scholar-avatar-placeholder {
+  background-color: var(--surface-container);
+  color: var(--color-on-surface);
+}
+
+.scholar-upload-btn {
+  background-color: var(--surface-container-low);
+  color: var(--color-on-surface);
+  font-weight: 500;
+  transition: background-color 0.2s;
+}
+
+.scholar-upload-btn:hover {
+  background-color: var(--surface-container);
+}
+
+.scholar-upload-btn:disabled {
+  opacity: 0.5;
+}
+
+.scholar-input {
+  background-color: var(--surface-container-low);
+  color: var(--color-on-surface);
+  border: none;
+  outline: none;
+  transition: background-color 0.2s;
+}
+
+.scholar-input:focus {
+  background-color: var(--surface-container);
+}
+
+.scholar-select {
+  background-color: var(--surface-container-low);
+  color: var(--color-on-surface);
+  border: none;
+  outline: none;
+  cursor: pointer;
+}
+
+.scholar-select:focus {
+  background-color: var(--surface-container);
+}
+
+.scholar-error {
+  background-color: var(--color-error-container);
+  color: var(--color-on-error-container);
+}
+
+.scholar-success {
+  background-color: var(--color-tertiary-container);
+  color: var(--color-on-tertiary-container);
+}
+
+.scholar-submit-btn {
+  background: linear-gradient(135deg, var(--color-primary), var(--color-primary-dim));
+  color: var(--color-on-primary);
+  font-weight: 500;
+  transition: opacity 0.2s;
+}
+
+.scholar-submit-btn:hover {
+  opacity: 0.88;
+}
+
+.scholar-submit-btn:disabled {
+  opacity: 0.5;
+}
+</style>
