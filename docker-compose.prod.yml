@@ -1,0 +1,140 @@
+version: '3.8'
+
+services:
+  web:
+    image: ghcr.io/${GITHUB_REPOSITORY:-deepwrite}/web:${IMAGE_TAG:-latest}
+    restart: unless-stopped
+    ports:
+      - "5173:5173"
+    environment:
+      - VITE_GATEWAY_BASE_URL=${GATEWAY_URL:-http://localhost:8080}
+    networks:
+      - deepwrite-network
+    depends_on:
+      - gateway
+
+  admin:
+    image: ghcr.io/${GITHUB_REPOSITORY:-deepwrite}/admin:${IMAGE_TAG:-latest}
+    restart: unless-stopped
+    ports:
+      - "5174:5174"
+    environment:
+      - VITE_GATEWAY_BASE_URL=${GATEWAY_URL:-http://localhost:8080}
+    networks:
+      - deepwrite-network
+    depends_on:
+      - gateway
+
+  gateway:
+    image: ghcr.io/${GITHUB_REPOSITORY:-deepwrite}/gateway:${IMAGE_TAG:-latest}
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      - GATEWAY_PORT=8080
+      - GATEWAY_MODE=release
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USER=${DB_USER:-deepwrite}
+      - DB_PASSWORD=${DB_PASSWORD:?DB_PASSWORD is required}
+      - DB_NAME=${DB_NAME:-deepwrite}
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - JWT_SECRET=${JWT_SECRET:?JWT_SECRET is required}
+    networks:
+      - deepwrite-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  worker:
+    image: ghcr.io/${GITHUB_REPOSITORY:-deepwrite}/worker:${IMAGE_TAG:-latest}
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+      - "8001:8001"
+    environment:
+      - CELERY_BROKER_URL=redis://redis:6379/1
+      - CELERY_RESULT_BACKEND=redis://redis:6379/2
+      - DATABASE_URL=postgresql://${DB_USER:-deepwrite}:${DB_PASSWORD}@postgres:5432/${DB_NAME:-deepwrite}
+    networks:
+      - deepwrite-network
+    depends_on:
+      redis:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+
+  ai:
+    image: ghcr.io/${GITHUB_REPOSITORY:-deepwrite}/ai:${IMAGE_TAG:-latest}
+    restart: unless-stopped
+    ports:
+      - "8002:8002"
+    environment:
+      - DATABASE_URL=postgresql://${DB_USER:-deepwrite}:${DB_PASSWORD}@postgres:5432/${DB_NAME:-deepwrite}
+    networks:
+      - deepwrite-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    ports:
+      - "${DB_EXTERNAL_PORT:-5432}:5432"
+    environment:
+      - POSTGRES_DB=${DB_NAME:-deepwrite}
+      - POSTGRES_USER=${DB_USER:-deepwrite}
+      - POSTGRES_PASSWORD=${DB_PASSWORD:?DB_PASSWORD is required}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - deepwrite-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-deepwrite} -d ${DB_NAME:-deepwrite}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    ports:
+      - "${REDIS_EXTERNAL_PORT:-6379}:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - deepwrite-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  nginx:
+    image: nginx:alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/ssl:/etc/nginx/ssl:ro
+    networks:
+      - deepwrite-network
+    depends_on:
+      - web
+      - admin
+      - gateway
+      - ai
+
+networks:
+  deepwrite-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  redis_data:
