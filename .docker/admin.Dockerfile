@@ -9,7 +9,9 @@ COPY apps/admin/package.json apps/admin/
 RUN corepack enable pnpm && pnpm install --frozen-lockfile
 
 FROM base AS builder
+RUN corepack enable pnpm
 COPY --from=deps /app/node_modules ./node_modules
+COPY --from=deps /app/package.json ./package.json
 COPY . .
 RUN pnpm --filter @deepwrite/admin build
 
