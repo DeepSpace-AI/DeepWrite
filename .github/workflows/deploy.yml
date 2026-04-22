@@ -46,6 +46,8 @@ jobs:
       - name: Extract metadata
         id: meta
         run: |
+          REPO_LOWER=$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
+          echo "repo_lower=${REPO_LOWER}" >> $GITHUB_OUTPUT
           if [[ $GITHUB_REF == refs/tags/v* ]]; then
             VERSION=${GITHUB_REF#refs/tags/}
             echo "tag=${VERSION}" >> $GITHUB_OUTPUT
@@ -61,7 +63,7 @@ jobs:
           context: .
           file: .docker/web.Dockerfile
           push: true
-          tags: ${{ env.REGISTRY }}/${{ github.repository }}/web:${{ steps.meta.outputs.tag }}
+          tags: ${{ env.REGISTRY }}/${{ steps.meta.outputs.repo_lower }}/web:${{ steps.meta.outputs.tag }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
@@ -71,7 +73,7 @@ jobs:
           context: .
           file: .docker/admin.Dockerfile
           push: true
-          tags: ${{ env.REGISTRY }}/${{ github.repository }}/admin:${{ steps.meta.outputs.tag }}
+          tags: ${{ env.REGISTRY }}/${{ steps.meta.outputs.repo_lower }}/admin:${{ steps.meta.outputs.tag }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
@@ -81,7 +83,7 @@ jobs:
           context: .
           file: .docker/gateway.Dockerfile
           push: true
-          tags: ${{ env.REGISTRY }}/${{ github.repository }}/gateway:${{ steps.meta.outputs.tag }}
+          tags: ${{ env.REGISTRY }}/${{ steps.meta.outputs.repo_lower }}/gateway:${{ steps.meta.outputs.tag }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
@@ -91,7 +93,7 @@ jobs:
           context: .
           file: .docker/worker.Dockerfile
           push: true
-          tags: ${{ env.REGISTRY }}/${{ github.repository }}/worker:${{ steps.meta.outputs.tag }}
+          tags: ${{ env.REGISTRY }}/${{ steps.meta.outputs.repo_lower }}/worker:${{ steps.meta.outputs.tag }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
@@ -101,7 +103,7 @@ jobs:
           context: .
           file: .docker/ai.Dockerfile
           push: true
-          tags: ${{ env.REGISTRY }}/${{ github.repository }}/ai:${{ steps.meta.outputs.tag }}
+          tags: ${{ env.REGISTRY }}/${{ steps.meta.outputs.repo_lower }}/ai:${{ steps.meta.outputs.tag }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
@@ -126,7 +128,7 @@ jobs:
             cd ${{ secrets.DEPLOY_PATH || '/opt/deepwrite' }}
             
             export IMAGE_TAG=${{ needs.build-and-push.outputs.image_tag }}
-            export GITHUB_REPOSITORY=${{ github.repository }}
+            export GITHUB_REPOSITORY=$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
             export DB_PASSWORD='${{ secrets.DB_PASSWORD }}'
             export JWT_SECRET='${{ secrets.JWT_SECRET }}'
             export DB_USER='${{ secrets.DB_USER || 'deepwrite' }}'
