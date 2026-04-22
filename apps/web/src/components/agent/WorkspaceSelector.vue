@@ -4,7 +4,6 @@ import { useI18n } from 'vue-i18n'
 import { listWorkspaces, type Workspace } from '@/api/workspace'
 import IconChevronDown from '~icons/mdi/chevron-down'
 import IconFolder from '~icons/mdi/folder-outline'
-import IconPlus from '~icons/mdi/plus'
 import IconCheck from '~icons/mdi/check'
 
 const props = withDefaults(defineProps<{

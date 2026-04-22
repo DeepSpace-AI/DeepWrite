@@ -19,7 +19,7 @@ interface Props {
 
 const props = defineProps<Props>()
 
-const emit = defineEmits<{
+defineEmits<{
   close: []
   'open-link-modal': []
 }>()
@@ -35,14 +35,7 @@ const isActive = (type: string, attrs?: Record<string, unknown>) => {
   return props.editor.isActive(type)
 }
 
-const canRun = (action: () => boolean) => {
-  if (!props.editor) return false
-  try {
-    return action()
-  } catch {
-    return false
-  }
-}
+
 
 const toggleBold = () => props.editor?.chain().focus().toggleBold().run()
 const toggleItalic = () => props.editor?.chain().focus().toggleItalic().run()

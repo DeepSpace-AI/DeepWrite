@@ -17,7 +17,6 @@ const emit = defineEmits<{
 const {
   snapshots,
   lastSaved,
-  hasUnsavedChanges,
   createSnapshot,
   restoreSnapshot,
   deleteSnapshot,

@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { cacheManager, CACHE_TTL } from '@/utils/cache'
 
 const TEST_KEY = 'test-cache-key'

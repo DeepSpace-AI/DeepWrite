@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref } from 'vue'
 import type { SessionGroup } from '@/api/agent'
 import { DButton, DModal } from '@/components/base'
 import IconFolder from '~icons/mdi/folder'
@@ -7,7 +7,7 @@ import IconPlus from '~icons/mdi/plus'
 import IconPencil from '~icons/mdi/pencil'
 import IconDelete from '~icons/mdi/delete'
 
-const props = defineProps<{
+defineProps<{
   groups: SessionGroup[]
   selectedGroupId?: string | null
 }>()

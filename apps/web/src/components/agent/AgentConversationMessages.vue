@@ -5,7 +5,7 @@ import { getTextFromMessage } from '@/types/chat'
 import IconAutoAwesome from '~icons/mdi/auto-fix'
 import IconUser from '~icons/mdi/account'
 
-const props = defineProps<{
+defineProps<{
   messages: ChatMessage[]
   isLoading?: boolean
   agent?: Agent | null

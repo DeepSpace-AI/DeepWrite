@@ -31,7 +31,7 @@ export function exportToMarkdown(editor: Editor | null): string {
   let markdown = ''
   const doc = editor.state.doc
 
-  doc.descendants((node, pos) => {
+  doc.descendants((node, _pos) => {
     switch (node.type.name) {
       case 'heading': {
         const level = node.attrs.level

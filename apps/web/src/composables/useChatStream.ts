@@ -1,7 +1,7 @@
 import { ref, onUnmounted, type Ref } from 'vue'
 import { gatewayBase } from '@/api/http'
 import { cacheManager } from '@/utils/cache'
-import type { ChatMessage, StreamDelta, MessageStatus } from '@/types/chat'
+import type { ChatMessage } from '@/types/chat'
 import { generateMessageId, updateMessagePart } from '@/types/chat'
 
 export interface UseChatStreamOptions {

@@ -8,7 +8,7 @@ import IconPlus from '~icons/mdi/plus'
 import IconArchive from '~icons/mdi/archive-outline'
 import IconInbox from '~icons/mdi/inbox'
 
-const props = defineProps<{
+defineProps<{
   sessions: Session[]
   archivedSessions?: Session[]
   currentSessionId?: string

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import type { ToolCallPart } from '@/types/chat'
+
 import IconWrench from '~icons/mdi/wrench'
 import IconCheck from '~icons/mdi/check-circle'
 import IconAlert from '~icons/mdi/alert-circle'

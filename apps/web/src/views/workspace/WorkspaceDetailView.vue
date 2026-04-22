@@ -383,7 +383,7 @@ async function handleAnnotationCreate(annotation: {
   rect_height: number
   color?: string
   content?: string
-  paths?: any[]
+  paths?: unknown[]
 }) {
   await addAnnotation({
     type: annotation.type,

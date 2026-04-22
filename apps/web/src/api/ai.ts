@@ -1,4 +1,4 @@
-import { http, unwrapResponse, gatewayBase } from './http'
+import { http, unwrapResponse } from './http'
 
 export interface ProviderModel {
   id: string

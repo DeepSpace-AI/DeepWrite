@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, watch, TransitionGroup } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useAgentStore, type Agent } from '@/stores/agent'
 import { DModal, DButton } from '@/components/base'

@@ -5,7 +5,6 @@ import { ApiError } from '@/api/http'
 import { updateCurrentUserProfile, uploadUserAvatar } from '@/api/auth'
 import { useUserStore } from '@/stores/user'
 import { useI18n } from 'vue-i18n'
-import IconAccountCircle from '~icons/mdi/account-circle'
 import IconUpload from '~icons/mdi/upload'
 
 const userStore = useUserStore()

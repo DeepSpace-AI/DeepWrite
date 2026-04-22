@@ -5,7 +5,7 @@ import { cacheManager } from '@/utils/cache'
 export interface SessionEvent {
   session_id: string
   type: 'title_updated' | 'message_created' | 'session_archived'
-  data: Record<string, any>
+  data: Record<string, unknown>
 }
 
 export function useSessionEvents(onEvent: (event: SessionEvent) => void) {

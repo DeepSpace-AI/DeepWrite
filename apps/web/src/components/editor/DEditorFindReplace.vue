@@ -20,8 +20,6 @@ const {
   matchCase,
   wholeWord,
   hasResults,
-  hasMore,
-  hasPrev,
   resultText,
   next,
   prev,

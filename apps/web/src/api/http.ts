@@ -1,7 +1,7 @@
 import axios, { type AxiosResponse } from 'axios'
 import { useAuthStore } from '@/stores/auth'
 import { useUserStore } from '@/stores/user'
-import { cacheManager, CACHE_TTL } from '@/utils/cache'
+import { cacheManager } from '@/utils/cache'
 
 declare module 'axios' {
   interface AxiosRequestConfig {
@@ -46,7 +46,6 @@ const refreshHttp = axios.create({
 let refreshPromise: Promise<string> | null = null
 const CACHE_KEY_ACCESS = 'deepwrite_access_token'
 const CACHE_KEY_REFRESH = 'deepwrite_refresh_token'
-const TOKEN_TTL = CACHE_TTL.ONE_DAY
 
 function getAccessToken() {
   const authStore = useAuthStore()

@@ -109,7 +109,7 @@ interface RemoteCursorMarker {
 const remoteCursorMarkers = ref<RemoteCursorMarker[]>([])
 let cursorUpdateTimer: number | null = null
 let scrollContainer: HTMLElement | null = null
-let editorContainerRef: HTMLElement | null = null
+const editorContainerRef: HTMLElement | null = null
 
 function clampSelectionPos(pos: number, size: number) {
   return Math.max(1, Math.min(pos, size + 1))

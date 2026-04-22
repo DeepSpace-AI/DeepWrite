@@ -345,7 +345,7 @@ export const useReferenceStore = defineStore('reference', () => {
           year: result.reference.year,
           source: result.reference.source,
           doi: result.reference.doi,
-          type: result.reference.type as any,
+          type: result.reference.type as unknown,
           abstract: result.reference.abstract,
           volume: result.reference.volume,
           issue: result.reference.issue,

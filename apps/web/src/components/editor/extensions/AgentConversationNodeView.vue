@@ -21,7 +21,6 @@ const isCollapsed = ref(props.node.attrs.collapsed)
 const agentId = computed(() => props.node.attrs.agentId)
 const nodeWorkspaceId = computed(() => props.node.attrs.workspaceId)
 const workspaceId = computed(() => nodeWorkspaceId.value || injectedWorkspaceId.value)
-const sessionId = computed(() => props.node.attrs.sessionId)
 
 watch(isCollapsed, (val) => {
   props.updateAttributes({ collapsed: val })

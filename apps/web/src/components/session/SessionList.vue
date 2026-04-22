@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import type { Session } from '@/api/agent'
-import { DButton, DDropdown } from '@/components/base'
+import { DDropdown } from '@/components/base'
 import IconPin from '~icons/mdi/pin'
 import IconPinOff from '~icons/mdi/pin-off'
 import IconArchive from '~icons/mdi/archive'

@@ -3,16 +3,12 @@ import { useI18n } from 'vue-i18n'
 import type { Agent } from '@/api/agent'
 import AgentMemoryPanel from './AgentMemoryPanel.vue'
 
-const props = defineProps<{
+defineProps<{
   agent?: Agent | null
   workspaceId: string
   sessionId?: string
   contextDocs?: Array<{ id: string; name: string }>
   contextRefs?: Array<{ id: string; title: string }>
-}>()
-
-const emit = defineEmits<{
-  'context-update': [docs: typeof props.contextDocs, refs: typeof props.contextRefs]
 }>()
 
 const { t } = useI18n()

@@ -8,7 +8,7 @@ import IconWrite from '~icons/mdi/pencil-outline'
 import IconData from '~icons/mdi/database'
 import IconPublish from '~icons/mdi/book-open-page-variant'
 
-const props = defineProps<{
+defineProps<{
   agents: Agent[]
   currentAgent?: Agent | null
 }>()

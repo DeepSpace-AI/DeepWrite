@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed } from 'vue'
 import type { ChatMessage } from '@/types/chat'
 import type { ToolCallPart } from '@/types/chat'
 import ChatMessageText from './ChatMessageText.vue'
@@ -37,13 +37,6 @@ const showActionButtons = computed(() =>
 
 function handleToggleReasoning() {
   emit('toggle-reasoning')
-}
-
-function getToolCallPart(part: unknown): ToolCallPart | null {
-  if (part && typeof part === 'object' && (part as ToolCallPart).type === 'tool_call') {
-    return part as ToolCallPart
-  }
-  return null
 }
 </script>
 

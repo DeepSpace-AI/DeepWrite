@@ -41,7 +41,7 @@ const showExportDropdown = ref(false)
 const showAISearchModal = ref(false)
 const selectedReference = ref<Reference | null>(null)
 const editingCollection = ref<CollectionTree | null>(null)
-const deletingItem = ref<Reference | CollectionTree | null>(null)
+
 
 const newCollectionName = ref('')
 const doiInput = ref('')
@@ -309,10 +309,6 @@ async function handlePdfAddUpload(event: Event) {
   }
 }
 
-async function createFromPdf() {
-  closeAddModal()
-}
-
 function openCreateCollection() {
   editingCollection.value = null
   newCollectionName.value = ''
@@ -344,16 +340,6 @@ async function saveCollection() {
     closeCollectionModal()
   } catch (e) {
     console.error('Failed to save collection:', e)
-  }
-}
-
-async function deleteCollection(col: CollectionTree) {
-  if (!confirm(t('library.folders.deleteConfirm'))) return
-
-  try {
-    await store.deleteCollection(col.id)
-  } catch (e) {
-    console.error('Failed to delete collection:', e)
   }
 }
 

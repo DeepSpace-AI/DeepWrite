@@ -6,7 +6,6 @@ import {
   getAgent,
   createAgent,
   updateAgent,
-  type Agent,
 } from '@/api/agentAdmin'
 import { listAIProviders, type AIProviderModel } from '@/api/aiProvider'
 import IconSave from '~icons/mdi/content-save'

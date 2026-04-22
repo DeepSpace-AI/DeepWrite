@@ -3,7 +3,6 @@ import { onMounted, ref, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import {
   listMemories,
-  createMemory,
   deleteMemory,
   triggerMemoryExtraction,
   getMemoryExtractionStatus,
@@ -116,7 +115,7 @@ async function pollExtractionStatus(taskId: string) {
       }
 
       setTimeout(poll, 2000)
-    } catch (e) {
+    } catch {
       extractionStatus.value = 'error'
       isExtracting.value = false
     }
