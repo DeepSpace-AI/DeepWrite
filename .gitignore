@@ -20,3 +20,36 @@ __pycache__/
 dist/
 build/
 .next/
+
+# Go
+*.exe
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+go.work
+
+# Python
+*.pyc
+*.pyo
+*.egg-info/
+
+# Logs
+*.log
+
+# Coverage
+coverage/
+*.cover
+*.coverage
+
+# Temporary files
+*.tmp
+*.swp
+*.swo
+*~
+
+# Sensitive files
+*.pem
+*.key
+secrets/

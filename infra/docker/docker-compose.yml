@@ -1,0 +1,447 @@
+networks:
+  deepwrite-net:
+    driver: bridge
+
+volumes:
+  user-db-data:
+  project-db-data:
+  writing-db-data:
+  code-db-data:
+  image-db-data:
+  reference-db-data:
+  writing-doc-db-data:
+  redis-data:
+  minio-data:
+  kong-db-data:
+
+services:
+  # ==========================================
+  # Database & Infrastructure Services
+  # ==========================================
+  user-db:
+    image: postgres:18-alpine
+    container_name: deepwrite-user-db
+    restart: always
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-password}
+      POSTGRES_DB: user_db
+    ports:
+      - "5432"
+    volumes:
+      - user-db-data:/var/lib/postgresql
+      - ./init-scripts/postgresql/01_user_db.sql:/docker-entrypoint-initdb.d/01_user_db.sql:ro
+    networks:
+      - deepwrite-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-user} -d user_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  project-db:
+    image: postgres:18-alpine
+    container_name: deepwrite-project-db
+    restart: always
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-password}
+      POSTGRES_DB: project_db
+    ports:
+      - "5432"
+    volumes:
+      - project-db-data:/var/lib/postgresql
+      - ./init-scripts/postgresql/02_project_db.sql:/docker-entrypoint-initdb.d/02_project_db.sql:ro
+    networks:
+      - deepwrite-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-user} -d project_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  writing-db:
+    image: postgres:18-alpine
+    container_name: deepwrite-writing-db
+    restart: always
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-password}
+      POSTGRES_DB: writing_db
+    ports:
+      - "5432"
+    volumes:
+      - writing-db-data:/var/lib/postgresql
+      - ./init-scripts/postgresql/03_writing_db.sql:/docker-entrypoint-initdb.d/03_writing_db.sql:ro
+    networks:
+      - deepwrite-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-user} -d writing_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  code-db:
+    image: postgres:18-alpine
+    container_name: deepwrite-code-db
+    restart: always
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-password}
+      POSTGRES_DB: code_db
+    ports:
+      - "5432"
+    volumes:
+      - code-db-data:/var/lib/postgresql
+      - ./init-scripts/postgresql/04_code_db.sql:/docker-entrypoint-initdb.d/04_code_db.sql:ro
+    networks:
+      - deepwrite-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-user} -d code_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  image-db:
+    image: postgres:18-alpine
+    container_name: deepwrite-image-db
+    restart: always
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-password}
+      POSTGRES_DB: image_db
+    ports:
+      - "5432"
+    volumes:
+      - image-db-data:/var/lib/postgresql
+      - ./init-scripts/postgresql/05_image_db.sql:/docker-entrypoint-initdb.d/05_image_db.sql:ro
+    networks:
+      - deepwrite-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-user} -d image_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  reference-db:
+    image: mongo:8
+    container_name: deepwrite-reference-db
+    restart: always
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_INITDB_ROOT_USERNAME:-admin}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_INITDB_ROOT_PASSWORD:-password}
+      MONGO_INITDB_DATABASE: reference_db
+    ports:
+      - "27017"
+    volumes:
+      - reference-db-data:/data/db
+      - ./init-scripts/mongodb/01_reference_db.js:/docker-entrypoint-initdb.d/01_reference_db.js:ro
+    networks:
+      - deepwrite-net
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  writing-doc-db:
+    image: mongo:8
+    container_name: deepwrite-writing-doc-db
+    restart: always
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_INITDB_ROOT_USERNAME:-admin}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_INITDB_ROOT_PASSWORD:-password}
+      MONGO_INITDB_DATABASE: writing_doc_db
+    ports:
+      - "27017"
+    volumes:
+      - writing-doc-db-data:/data/db
+      - ./init-scripts/mongodb/02_writing_doc_db.js:/docker-entrypoint-initdb.d/02_writing_doc_db.js:ro
+    networks:
+      - deepwrite-net
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:8-alpine
+    container_name: deepwrite-redis
+    restart: always
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+      - ./redis.conf:/usr/local/etc/redis/redis.conf:ro
+    command: redis-server /usr/local/etc/redis/redis.conf
+    networks:
+      - deepwrite-net
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  minio:
+    image: minio/minio
+    container_name: deepwrite-minio
+    restart: always
+    environment:
+      MINIO_ROOT_USER: ${S3_ACCESS_KEY:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${S3_SECRET_KEY:-minioadmin}
+    command: server /data --console-address ":9001"
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - minio-data:/data
+    networks:
+      - deepwrite-net
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  minio-init:
+    image: minio/mc
+    container_name: deepwrite-minio-init
+    depends_on:
+      minio:
+        condition: service_healthy
+    environment:
+      MINIO_ROOT_USER: ${S3_ACCESS_KEY:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${S3_SECRET_KEY:-minioadmin}
+    entrypoint: >
+      /bin/sh -c "
+      sleep 5;
+      mc alias set local http://minio:9000 $${MINIO_ROOT_USER} $${MINIO_ROOT_PASSWORD};
+      mc mb -p local/deepwrite-images || true;
+      mc mb -p local/deepwrite-documents || true;
+      mc mb -p local/deepwrite-code || true;
+      mc mb -p local/deepwrite-exports || true;
+      mc anonymous set download local/deepwrite-images || true;
+      echo 'Minio buckets initialized';
+      "
+    networks:
+      - deepwrite-net
+
+  api-gateway:
+    image: kong:latest
+    container_name: deepwrite-api-gateway
+    restart: always
+    environment:
+      KONG_DATABASE: "off"
+      KONG_DECLARATIVE_CONFIG: /kong/declarative/kong.yml
+      KONG_PROXY_ACCESS_LOG: /dev/stdout
+      KONG_ADMIN_ACCESS_LOG: /dev/stdout
+      KONG_PROXY_ERROR_LOG: /dev/stderr
+      KONG_ADMIN_ERROR_LOG: /dev/stderr
+      KONG_ADMIN_LISTEN: 0.0.0.0:8001
+    ports:
+      - "8080:8000"
+      - "8001:8001"
+    volumes:
+      - ./kong.yml:/kong/declarative/kong.yml:ro
+    networks:
+      - deepwrite-net
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8001/status"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ==========================================
+  # Application Services
+  # ==========================================
+  user-service:
+    build: 
+      context: ../../services/user-service
+      dockerfile: Dockerfile
+    image: deepwrite-user-service
+    container_name: deepwrite-user-service
+    restart: always
+    ports:
+      - "8081:8081"
+    environment:
+      - DB_HOST=user-db
+      - DB_PORT=5432
+      - DB_USER=${POSTGRES_USER:-user}
+      - DB_PASSWORD=${POSTGRES_PASSWORD:-password}
+      - DB_NAME=user_db
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - JWT_SECRET=${JWT_SECRET}
+    networks:
+      - deepwrite-net
+    depends_on:
+      user-db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  project-service:
+    build: 
+      context: ../../services/project-service
+      dockerfile: Dockerfile
+    image: deepwrite-project-service
+    container_name: deepwrite-project-service
+    restart: always
+    ports:
+      - "8082:8082"
+    environment:
+      - DB_HOST=project-db
+      - DB_PORT=5432
+      - DB_USER=${POSTGRES_USER:-user}
+      - DB_PASSWORD=${POSTGRES_PASSWORD:-password}
+      - DB_NAME=project_db
+    networks:
+      - deepwrite-net
+    depends_on:
+      project-db:
+        condition: service_healthy
+
+  reference-service:
+    build: 
+      context: ../../services/reference-service
+      dockerfile: Dockerfile
+    image: deepwrite-reference-service
+    container_name: deepwrite-reference-service
+    restart: always
+    ports:
+      - "8083:8083"
+    environment:
+      - MONGO_HOST=reference-db
+      - MONGO_PORT=27017
+      - MONGO_USER=${MONGO_INITDB_ROOT_USERNAME:-admin}
+      - MONGO_PASSWORD=${MONGO_INITDB_ROOT_PASSWORD:-password}
+      - MONGO_DB=reference_db
+    networks:
+      - deepwrite-net
+    depends_on:
+      reference-db:
+        condition: service_healthy
+
+  writing-service:
+    build: 
+      context: ../../services/writing-service
+      dockerfile: Dockerfile
+    image: deepwrite-writing-service
+    container_name: deepwrite-writing-service
+    restart: always
+    ports:
+      - "8084:8084"
+    environment:
+      - DB_HOST=writing-db
+      - DB_PORT=5432
+      - DB_USER=${POSTGRES_USER:-user}
+      - DB_PASSWORD=${POSTGRES_PASSWORD:-password}
+      - DB_NAME=writing_db
+      - MONGO_HOST=writing-doc-db
+      - MONGO_PORT=27017
+      - MONGO_USER=${MONGO_INITDB_ROOT_USERNAME:-admin}
+      - MONGO_PASSWORD=${MONGO_INITDB_ROOT_PASSWORD:-password}
+      - MONGO_DB=writing_doc_db
+      - JWT_SECRET=${JWT_SECRET}
+    networks:
+      - deepwrite-net
+    depends_on:
+      writing-db:
+        condition: service_healthy
+      writing-doc-db:
+        condition: service_healthy
+
+  code-service:
+    build: 
+      context: ../../services/code-service
+      dockerfile: Dockerfile
+    image: deepwrite-code-service
+    container_name: deepwrite-code-service
+    restart: always
+    ports:
+      - "8085:8085"
+    environment:
+      - DB_HOST=code-db
+      - DB_PORT=5432
+      - DB_USER=${POSTGRES_USER:-user}
+      - DB_PASSWORD=${POSTGRES_PASSWORD:-password}
+      - DB_NAME=code_db
+    networks:
+      - deepwrite-net
+    depends_on:
+      code-db:
+        condition: service_healthy
+
+  image-service:
+    build: 
+      context: ../../services/image-service
+      dockerfile: Dockerfile
+    image: deepwrite-image-service
+    container_name: deepwrite-image-service
+    restart: always
+    ports:
+      - "8086:8086"
+    environment:
+      - DB_HOST=image-db
+      - DB_PORT=5432
+      - DB_USER=${POSTGRES_USER:-user}
+      - DB_PASSWORD=${POSTGRES_PASSWORD:-password}
+      - DB_NAME=image_db
+    networks:
+      - deepwrite-net
+    depends_on:
+      image-db:
+        condition: service_healthy
+
+  ai-service:
+    build: 
+      context: ../../services/ai-service
+      dockerfile: Dockerfile
+    image: deepwrite-ai-service
+    container_name: deepwrite-ai-service
+    restart: always
+    ports:
+      - "8087:8087"
+    environment:
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+    networks:
+      - deepwrite-net
+
+  storage-service:
+    build: 
+      context: ../../services/storage-service
+      dockerfile: Dockerfile
+    image: deepwrite-storage-service
+    container_name: deepwrite-storage-service
+    restart: always
+    ports:
+      - "8088:8088"
+    environment:
+      - MINIO_ENDPOINT=minio:9000
+      - MINIO_ACCESS_KEY=${S3_ACCESS_KEY:-minioadmin}
+      - MINIO_SECRET_KEY=${S3_SECRET_KEY:-minioadmin}
+      - MINIO_USE_SSL=false
+    networks:
+      - deepwrite-net
+    depends_on:
+      minio:
+        condition: service_healthy
+
+  # ==========================================
+  # Frontend Services
+  # ==========================================
+  frontend:
+    build: 
+      context: ../../frontend
+      dockerfile: Dockerfile
+    image: deepwrite-frontend
+    container_name: deepwrite-frontend
+    restart: always
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=development
+    networks:
+      - deepwrite-net
