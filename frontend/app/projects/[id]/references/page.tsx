@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
 import Link from "next/link";
 import { referenceApi } from "@/lib/api";
 import {
@@ -30,7 +30,6 @@ interface Reference {
 
 export default function ProjectReferencesPage() {
   const params = useParams();
-  const router = useRouter();
   const projectId = params.id as string;
   const [references, setReferences] = useState<Reference[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -48,19 +47,18 @@ export default function ProjectReferencesPage() {
   });
 
   useEffect(() => {
-    fetchReferences();
+    const loadReferences = async () => {
+      try {
+        const res = await referenceApi.list({ project_id: projectId, limit: 100 });
+        setReferences(res.data.data || []);
+      } catch (err) {
+        console.error("Failed to fetch references:", err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    loadReferences();
   }, [projectId]);
-
-  const fetchReferences = async () => {
-    try {
-      const res = await referenceApi.list({ project_id: projectId, limit: 100 });
-      setReferences(res.data.data || []);
-    } catch (err) {
-      console.error("Failed to fetch references:", err);
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   const handleCreate = async () => {
     if (!newRef.title.trim()) return;

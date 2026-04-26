@@ -18,8 +18,9 @@ export default function ForgotPasswordPage() {
     try {
       await new Promise((resolve) => setTimeout(resolve, 1000));
       setIsSubmitted(true);
-    } catch (err: any) {
-      setError(err.message || "发送失败，请重试");
+    } catch (err: unknown) {
+      const error = err as { message?: string };
+      setError(error.message || "发送失败，请重试");
     } finally {
       setIsLoading(false);
     }

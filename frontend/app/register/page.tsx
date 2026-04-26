@@ -47,8 +47,9 @@ export default function RegisterPage() {
       const { data } = response.data;
       setAuth(data.user, data.access_token);
       router.push("/dashboard");
-    } catch (err: any) {
-      setError(err.response?.data?.error?.message || "注册失败，请重试");
+    } catch (err: unknown) {
+      const error = err as { response?: { data?: { error?: { message?: string } } } };
+      setError(error.response?.data?.error?.message || "注册失败，请重试");
     } finally {
       setIsLoading(false);
     }

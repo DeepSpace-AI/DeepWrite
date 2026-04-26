@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
 import Link from "next/link";
 import { documentApi } from "@/lib/api";
 import {
@@ -33,13 +33,12 @@ const SECTIONS = [
 
 export default function DocumentEditorPage() {
   const params = useParams();
-  const router = useRouter();
   const projectId = params.id as string;
   const docId = params.docId as string;
 
   const [title, setTitle] = useState("");
   const [content, setContent] = useState<DocumentContent>({});
-  const [status, setStatus] = useState("draft");
+  const [, setStatus] = useState("draft");
   const [wordCount, setWordCount] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -105,15 +104,6 @@ export default function DocumentEditorPage() {
 
   const handleContentChange = (section: string, html: string) => {
     setContent((prev) => ({ ...prev, [section]: html }));
-  };
-
-  const handleWordCountChange = (count: number) => {
-    setWordCount((prev) => {
-      const sectionKey = activeSection as keyof DocumentContent;
-      const oldSectionText = content[sectionKey] || "";
-      const oldSectionWords = oldSectionText.split(/\s+/).filter(Boolean).length;
-      return prev - oldSectionWords + count;
-    });
   };
 
   if (isLoading) {
