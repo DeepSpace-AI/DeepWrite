@@ -82,43 +82,41 @@ services:
       retries: 5
 
   code-db:
-    image: postgres:18-alpine
+    image: mongo:8
     container_name: deepwrite-code-db
     restart: always
     environment:
-      POSTGRES_USER: ${POSTGRES_USER:-user}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-password}
-      POSTGRES_DB: code_db
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_INITDB_ROOT_USERNAME:-admin}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_INITDB_ROOT_PASSWORD:-password}
+      MONGO_INITDB_DATABASE: code_db
     ports:
-      - "5432"
+      - "27017"
     volumes:
-      - code-db-data:/var/lib/postgresql
-      - ./init-scripts/postgresql/04_code_db.sql:/docker-entrypoint-initdb.d/04_code_db.sql:ro
+      - code-db-data:/data/db
     networks:
       - deepwrite-net
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-user} -d code_db"]
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
       interval: 10s
       timeout: 5s
       retries: 5
 
   image-db:
-    image: postgres:18-alpine
+    image: mongo:8
     container_name: deepwrite-image-db
     restart: always
     environment:
-      POSTGRES_USER: ${POSTGRES_USER:-user}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-password}
-      POSTGRES_DB: image_db
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_INITDB_ROOT_USERNAME:-admin}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_INITDB_ROOT_PASSWORD:-password}
+      MONGO_INITDB_DATABASE: image_db
     ports:
-      - "5432"
+      - "27017"
     volumes:
-      - image-db-data:/var/lib/postgresql
-      - ./init-scripts/postgresql/05_image_db.sql:/docker-entrypoint-initdb.d/05_image_db.sql:ro
+      - image-db-data:/data/db
     networks:
       - deepwrite-net
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-user} -d image_db"]
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -362,11 +360,8 @@ services:
     ports:
       - "8085:8085"
     environment:
-      - DB_HOST=code-db
-      - DB_PORT=5432
-      - DB_USER=${POSTGRES_USER:-user}
-      - DB_PASSWORD=${POSTGRES_PASSWORD:-password}
-      - DB_NAME=code_db
+      - MONGO_URL=mongodb://admin:password@code-db:27017
+      - MONGO_DB=code_db
     networks:
       - deepwrite-net
     depends_on:
@@ -383,15 +378,18 @@ services:
     ports:
       - "8086:8086"
     environment:
-      - DB_HOST=image-db
-      - DB_PORT=5432
-      - DB_USER=${POSTGRES_USER:-user}
-      - DB_PASSWORD=${POSTGRES_PASSWORD:-password}
-      - DB_NAME=image_db
+      - MONGO_URL=mongodb://admin:password@image-db:27017
+      - MONGO_DB=image_db
+      - MINIO_ENDPOINT=minio:9000
+      - MINIO_ACCESS_KEY=${S3_ACCESS_KEY:-minioadmin}
+      - MINIO_SECRET_KEY=${S3_SECRET_KEY:-minioadmin}
+      - MINIO_BUCKET=deepwrite-images
     networks:
       - deepwrite-net
     depends_on:
       image-db:
+        condition: service_healthy
+      minio:
         condition: service_healthy
 
   ai-service:
@@ -442,6 +440,6 @@ services:
     ports:
       - "3000:3000"
     environment:
-      - NODE_ENV=development
+      - NODE_ENV=production
     networks:
       - deepwrite-net
