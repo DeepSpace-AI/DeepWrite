@@ -46,18 +46,19 @@ export default function ProjectReferencesPage() {
     tags: "",
   });
 
+  const fetchReferences = async () => {
+    try {
+      const res = await referenceApi.list({ project_id: projectId, limit: 100 });
+      setReferences(res.data.data || []);
+    } catch (err) {
+      console.error("Failed to fetch references:", err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const loadReferences = async () => {
-      try {
-        const res = await referenceApi.list({ project_id: projectId, limit: 100 });
-        setReferences(res.data.data || []);
-      } catch (err) {
-        console.error("Failed to fetch references:", err);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    loadReferences();
+    fetchReferences();
   }, [projectId]);
 
   const handleCreate = async () => {

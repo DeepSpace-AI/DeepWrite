@@ -52,11 +52,10 @@ jobs:
 
       - name: Run tests
         working-directory: services/${{ matrix.service }}
-        continue-on-error: true
         run: |
           if [ -f "go.mod" ]; then
             go mod download
-            go test -v -race -coverprofile=coverage.out ./... 2>&1 || echo "Tests failed but continuing"
+            go test -v -race -coverprofile=coverage.out ./...
           else
             echo "No go.mod found, skipping tests"
           fi
@@ -109,7 +108,7 @@ jobs:
         working-directory: services/${{ matrix.service }}
         run: |
           if [ -f "pytest.ini" ] || [ -d "tests" ]; then
-            pytest -v --cov=. --cov-report=xml || true
+            pytest -v --cov=. --cov-report=xml
           else
             echo "No tests found, skipping"
           fi
@@ -141,7 +140,7 @@ jobs:
 
       - name: Type check
         working-directory: frontend
-        run: npx tsc --noEmit || true
+        run: npx tsc --noEmit
 
       - name: Build
         working-directory: frontend
