@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { referenceApi } from "@/lib/api";
@@ -46,7 +46,7 @@ export default function ProjectReferencesPage() {
     tags: "",
   });
 
-  const fetchReferences = async () => {
+  const fetchReferences = useCallback(async () => {
     try {
       const res = await referenceApi.list({ project_id: projectId, limit: 100 });
       setReferences(res.data.data || []);
@@ -55,11 +55,11 @@ export default function ProjectReferencesPage() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [projectId]);
 
   useEffect(() => {
     fetchReferences();
-  }, [projectId]);
+  }, [fetchReferences]);
 
   const handleCreate = async () => {
     if (!newRef.title.trim()) return;
