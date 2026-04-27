@@ -14,7 +14,7 @@ markers = [
 ]
 
 [tool.coverage.run]
-source = ["app"]
+source = ["app", "main.py"]
 omit = ["*/tests/*", "*/venv/*", "*/__pycache__/*"]
 
 [tool.coverage.report]
