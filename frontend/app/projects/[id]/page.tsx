@@ -14,6 +14,8 @@ import {
   Clock,
   FileText,
   BookOpen,
+  Code,
+  Image,
   MoreVertical,
 } from "lucide-react";
 
@@ -155,7 +157,9 @@ export default function ProjectDetailPage() {
             <div className="space-y-2">
               {[
                 { label: "管理文献", icon: BookOpen, href: `/projects/${projectId}/references` },
-                { label: "管理论文", icon: FileText, href: `/projects/${projectId}/documents` },
+                { label: "论文写作", icon: FileText, href: `/projects/${projectId}/writing` },
+                { label: "代码编辑", icon: Code, href: `/projects/${projectId}/code` },
+                { label: "图像管理", icon: Image, href: `/projects/${projectId}/images` },
               ].map((action) => (
                 <Link
                   key={action.label}

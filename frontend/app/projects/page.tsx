@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { projectApi } from "@/lib/api";
 import type { Project } from "@/types";
@@ -12,6 +12,7 @@ import {
   MoreVertical,
   Users,
   Clock,
+  Loader2,
 } from "lucide-react";
 
 export default function ProjectsPage() {
@@ -20,6 +21,10 @@ export default function ProjectsPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [newProject, setNewProject] = useState({ title: "", description: "" });
+
+  useEffect(() => {
+    fetchProjects();
+  }, []);
 
   const fetchProjects = async () => {
     try {

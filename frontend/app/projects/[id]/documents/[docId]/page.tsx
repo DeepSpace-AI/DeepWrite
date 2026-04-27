@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
-import { documentApi } from "@/lib/api";
+import { documentApi, aiApi } from "@/lib/api";
 import {
   ArrowLeft,
   Save,
@@ -49,6 +49,9 @@ export default function DocumentEditorPage() {
   const [isCreatingVersion, setIsCreatingVersion] = useState(false);
   const [showAIModal, setShowAIModal] = useState(false);
   const [aiPrompt, setAiPrompt] = useState("");
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiResult, setAiResult] = useState<string | null>(null);
+  const [aiMode, setAiMode] = useState<"write" | "polish" | "continue">("write");
 
   useEffect(() => {
     const fetchDocument = async () => {
@@ -104,6 +107,52 @@ export default function DocumentEditorPage() {
 
   const handleContentChange = (section: string, html: string) => {
     setContent((prev) => ({ ...prev, [section]: html }));
+  };
+
+  const handleAIGenerate = async () => {
+    setAiLoading(true);
+    setAiResult(null);
+    try {
+      const sectionLabel = SECTIONS.find((s) => s.key === activeSection)?.label || "";
+      const existingContent = content[activeSection as keyof DocumentContent] || "";
+
+      if (aiMode === "polish" && existingContent) {
+        const res = await aiApi.polish({
+          text: existingContent,
+          style: "academic",
+          focus: aiPrompt || undefined,
+        });
+        setAiResult(res.data.data.polished);
+      } else if (aiMode === "continue" && existingContent) {
+        const res = await aiApi.chat({
+          message: `请继续以下${sectionLabel}的内容，保持风格一致：\n\n${existingContent}\n\n${aiPrompt}`,
+          context: `当前正在编辑论文的${sectionLabel}部分`,
+        });
+        setAiResult(res.data.data.response);
+      } else {
+        const res = await aiApi.write({
+          topic: title || aiPrompt,
+          section: sectionLabel,
+          style: "academic",
+          word_count: 500,
+        });
+        setAiResult(res.data.data.content);
+      }
+    } catch (err) {
+      console.error("AI generation failed:", err);
+      setAiResult("AI 生成失败，请检查网络连接或 API 配置。");
+    } finally {
+      setAiLoading(false);
+    }
+  };
+
+  const handleApplyAIResult = () => {
+    if (aiResult) {
+      handleContentChange(activeSection, aiResult);
+      setShowAIModal(false);
+      setAiResult(null);
+      setAiPrompt("");
+    }
   };
 
   if (isLoading) {
@@ -265,7 +314,7 @@ export default function DocumentEditorPage() {
 
       {showAIModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl p-6 w-full max-w-lg mx-4">
+          <div className="bg-white rounded-xl p-6 w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto">
             <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
               <Sparkles className="w-5 h-5 text-purple-600" />
               AI 写作助手
@@ -277,36 +326,98 @@ export default function DocumentEditorPage() {
                   {SECTIONS.find((s) => s.key === activeSection)?.label}
                 </p>
               </div>
+
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setAiMode("write")}
+                  className={`px-4 py-2 rounded-lg text-sm font-medium ${
+                    aiMode === "write"
+                      ? "bg-purple-600 text-white"
+                      : "bg-purple-100 text-purple-700 hover:bg-purple-200"
+                  }`}
+                >
+                  生成内容
+                </button>
+                <button
+                  onClick={() => setAiMode("polish")}
+                  className={`px-4 py-2 rounded-lg text-sm font-medium ${
+                    aiMode === "polish"
+                      ? "bg-purple-600 text-white"
+                      : "bg-purple-100 text-purple-700 hover:bg-purple-200"
+                  }`}
+                >
+                  润色优化
+                </button>
+                <button
+                  onClick={() => setAiMode("continue")}
+                  className={`px-4 py-2 rounded-lg text-sm font-medium ${
+                    aiMode === "continue"
+                      ? "bg-purple-600 text-white"
+                      : "bg-purple-100 text-purple-700 hover:bg-purple-200"
+                  }`}
+                >
+                  续写扩展
+                </button>
+              </div>
+
               <textarea
                 value={aiPrompt}
                 onChange={(e) => setAiPrompt(e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 h-24 resize-none"
-                placeholder="描述您想要 AI 帮助的内容，例如：帮我写一段关于深度学习在医学影像中应用的引言..."
+                placeholder={
+                  aiMode === "polish"
+                    ? "描述润色要求，例如：使表达更加学术化..."
+                    : aiMode === "continue"
+                    ? "描述续写方向，例如：扩展实验结果的讨论..."
+                    : "描述您想要 AI 帮助的内容，例如：帮我写一段关于深度学习在医学影像中应用的引言..."
+                }
               />
-              <div className="flex gap-2">
-                <button className="px-3 py-1.5 text-sm bg-purple-100 text-purple-700 rounded-lg hover:bg-purple-200">
-                  续写
-                </button>
-                <button className="px-3 py-1.5 text-sm bg-purple-100 text-purple-700 rounded-lg hover:bg-purple-200">
-                  润色
-                </button>
-                <button className="px-3 py-1.5 text-sm bg-purple-100 text-purple-700 rounded-lg hover:bg-purple-200">
-                  摘要
-                </button>
-              </div>
+
+              <button
+                onClick={handleAIGenerate}
+                disabled={aiLoading}
+                className="w-full px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                {aiLoading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    生成中...
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="w-4 h-4" />
+                    生成内容
+                  </>
+                )}
+              </button>
+
+              {aiResult && (
+                <div className="p-4 bg-gray-50 rounded-lg">
+                  <h3 className="font-medium text-gray-900 mb-2">生成结果</h3>
+                  <div className="prose prose-sm max-w-none">
+                    <pre className="whitespace-pre-wrap text-gray-700 font-sans">
+                      {aiResult}
+                    </pre>
+                  </div>
+                  <button
+                    onClick={handleApplyAIResult}
+                    className="mt-4 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+                  >
+                    应用到当前章节
+                  </button>
+                </div>
+              )}
             </div>
             <div className="flex justify-end gap-3 mt-6">
               <button
-                onClick={() => setShowAIModal(false)}
+                onClick={() => {
+                  setShowAIModal(false);
+                  setAiResult(null);
+                  setAiPrompt("");
+                }}
                 className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg"
               >
-                取消
-              </button>
-              <button
-                onClick={() => setShowAIModal(false)}
-                className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
-              >
-                生成内容
+                关闭
               </button>
             </div>
           </div>
