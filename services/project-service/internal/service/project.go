@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 
 	"github.com/deepwrite/project-service/internal/models"
@@ -19,7 +20,7 @@ func NewProjectService(repo *repository.ProjectRepository) *ProjectService {
 func (s *ProjectService) Create(ctx context.Context, ownerID string, req *models.CreateProjectRequest) (*models.Project, error) {
 	project := &models.Project{
 		Title:         req.Title,
-		Description:   req.Description,
+		Description:   sql.NullString{String: req.Description, Valid: req.Description != ""},
 		OwnerID:       ownerID,
 		Status:        "active",
 	}
@@ -101,7 +102,7 @@ func (s *ProjectService) Update(ctx context.Context, id, userID string, req *mod
 		project.Title = req.Title
 	}
 	if req.Description != "" {
-		project.Description = req.Description
+		project.Description = sql.NullString{String: req.Description, Valid: true}
 	}
 	if req.Status != "" {
 		project.Status = req.Status

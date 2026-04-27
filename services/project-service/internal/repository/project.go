@@ -24,7 +24,7 @@ func (r *ProjectRepository) Create(ctx context.Context, project *models.Project)
 	`
 	return r.db.QueryRowContext(ctx, query,
 		project.Title,
-		sql.NullString{String: project.Description, Valid: project.Description != ""},
+		project.Description,
 		project.OwnerID,
 		sql.NullString{String: project.TeamID.String, Valid: project.TeamID.String != ""},
 		project.Status,
@@ -102,7 +102,7 @@ func (r *ProjectRepository) Update(ctx context.Context, project *models.Project)
 	`
 	return r.db.QueryRowContext(ctx, query,
 		project.ID, project.Title,
-		sql.NullString{String: project.Description, Valid: project.Description != ""},
+		project.Description,
 		project.Status,
 		sql.NullString{String: project.ResearchField.String, Valid: project.ResearchField.String != ""},
 	).Scan(&project.UpdatedAt)
