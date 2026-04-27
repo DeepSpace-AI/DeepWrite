@@ -26,9 +26,12 @@ api.interceptors.response.use(
   (response) => response,
   (error: AxiosError) => {
     if (error.response?.status === 401) {
-      useAuthStore.getState().logout();
-      if (typeof window !== "undefined") {
-        window.location.href = "/login";
+      const isOnLoginPage = typeof window !== "undefined" && window.location.pathname === "/login";
+      if (!isOnLoginPage) {
+        useAuthStore.getState().logout();
+        if (typeof window !== "undefined") {
+          window.location.href = "/login";
+        }
       }
     }
     return Promise.reject(error);
@@ -87,7 +90,7 @@ export const documentApi = {
 };
 
 export const referenceApi = {
-  list: (params: { project_id: string; page?: number; limit?: number }) =>
+  list: (params: { project_id: string; page?: number; limit?: number; search?: string; tags?: string }) =>
     api.get("/api/references", { params }),
   create: (data: { project_id: string; title: string; authors?: string[]; year?: number; journal?: string; doi?: string; abstract?: string; tags?: string[] }) =>
     api.post("/api/references", data),
@@ -95,6 +98,19 @@ export const referenceApi = {
   update: (id: string, data: Partial<{ title: string; authors: string[]; year: number; journal: string; doi: string; abstract: string; tags: string[] }>) =>
     api.put(`/api/references/${id}`, data),
   delete: (id: string) => api.delete(`/api/references/${id}`),
+  importDOI: (data: { project_id: string; doi: string }) =>
+    api.post("/api/references/import/doi", data),
+  importBibTeX: (projectId: string, file: File) => {
+    const formData = new FormData();
+    formData.append("file", file);
+    return api.post(`/api/references/import/bibtex?project_id=${projectId}`, formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+  },
+  getCitation: (id: string, style: string) =>
+    api.post(`/api/references/${id}/citation`, { style }),
+  searchExternal: (query: string, source: string = "crossref") =>
+    api.get("/api/references/search/external", { params: { query, source } }),
 };
 
 export const aiApi = {
@@ -106,4 +122,50 @@ export const aiApi = {
     api.post("/api/ai/academic/polish", data),
   analyzeReference: (data: { title?: string; abstract?: string; text?: string }) =>
     api.post("/api/ai/references/analyze", data),
+};
+
+export const codeApi = {
+  listFiles: (params: { project_id: string; page?: number; limit?: number }) =>
+    api.get("/api/code/files", { params }),
+  createFile: (data: { project_id: string; name: string; language: string; content?: string }) =>
+    api.post("/api/code/files", data),
+  getFile: (id: string) => api.get(`/api/code/files/${id}`),
+  updateFile: (id: string, data: Partial<{ name: string; content: string }>) =>
+    api.put(`/api/code/files/${id}`, data),
+  deleteFile: (id: string) => api.delete(`/api/code/files/${id}`),
+  runCode: (data: { file_id: string; timeout?: number }) =>
+    api.post("/api/code/run", data),
+  getRunStatus: (runId: string) => api.get(`/api/code/runs/${runId}`),
+};
+
+export const imageApi = {
+  list: (params: { project_id: string; page?: number; limit?: number }) =>
+    api.get("/api/images", { params }),
+  upload: (projectId: string, file: File, name?: string) => {
+    const formData = new FormData();
+    formData.append("file", file);
+    return api.post(`/api/images/upload?project_id=${projectId}${name ? `&name=${name}` : ""}`, formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+  },
+  get: (id: string) => api.get(`/api/images/${id}`),
+  update: (id: string, data: Partial<{ name: string; description: string; tags: string[] }>) =>
+    api.put(`/api/images/${id}`, data),
+  delete: (id: string) => api.delete(`/api/images/${id}`),
+};
+
+export const storageApi = {
+  upload: (bucket: string, projectId: string, file: File) => {
+    const formData = new FormData();
+    formData.append("file", file);
+    return api.post(`/api/storage/upload?bucket=${bucket}&project_id=${projectId}`, formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+  },
+  download: (bucket: string, objectName: string) =>
+    api.get(`/api/storage/${bucket}/${objectName}`, { responseType: "blob" }),
+  delete: (bucket: string, objectName: string) =>
+    api.delete(`/api/storage/${bucket}/${objectName}`),
+  list: (params: { bucket: string; project_id: string; prefix?: string }) =>
+    api.get("/api/storage/list", { params }),
 };
