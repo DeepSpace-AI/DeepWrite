@@ -47,18 +47,15 @@ export default function ProjectReferencesPage() {
   });
 
   const fetchReferences = useCallback(async () => {
-    try {
-      const res = await referenceApi.list({ project_id: projectId, limit: 100 });
-      setReferences(res.data.data || []);
-    } catch (err) {
-      console.error("Failed to fetch references:", err);
-    } finally {
-      setIsLoading(false);
-    }
+    const res = await referenceApi.list({ project_id: projectId, limit: 100 });
+    return res.data.data || [];
   }, [projectId]);
 
   useEffect(() => {
-    fetchReferences();
+    fetchReferences()
+      .then(setReferences)
+      .catch((err) => console.error("Failed to fetch references:", err))
+      .finally(() => setIsLoading(false));
   }, [fetchReferences]);
 
   const handleCreate = async () => {
@@ -79,7 +76,7 @@ export default function ProjectReferencesPage() {
       });
       setShowCreateModal(false);
       setNewRef({ title: "", authors: "", year: "", journal: "", doi: "", abstract: "", tags: "" });
-      fetchReferences();
+      fetchReferences().then(setReferences);
     } catch (err) {
       console.error("Failed to create reference:", err);
     } finally {
