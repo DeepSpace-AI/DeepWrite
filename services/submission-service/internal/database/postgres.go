@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	"github.com/deepwrite/submission-service/internal/config"
-	_ "github.com/lib/pq"
+	"github.com/lib/pq"
 )
 
 func NewPostgres(cfg *config.DatabaseConfig) (*sql.DB, error) {
@@ -146,7 +146,7 @@ func seedJournals(db *sql.DB) error {
 		_, err := db.Exec(
 			`INSERT INTO journals (name, publisher, issn, category, subcategory, impact_factor, quartile, open_access, website_url, review_time_days, acceptance_rate, keywords)
 			VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)`,
-			j.name, j.publisher, j.issn, j.category, j.subcategory, j.impactFactor, j.quartile, j.openAccess, j.websiteURL, j.reviewTimeDays, j.acceptanceRate, j.keywords,
+			j.name, j.publisher, j.issn, j.category, j.subcategory, j.impactFactor, j.quartile, j.openAccess, j.websiteURL, j.reviewTimeDays, j.acceptanceRate, pq.Array(j.keywords),
 		)
 		if err != nil {
 			return err

@@ -1,8 +1,6 @@
 package service
 
 import (
-	"time"
-
 	"github.com/deepwrite/submission-service/internal/models"
 	"github.com/deepwrite/submission-service/internal/repository"
 )
@@ -98,7 +96,6 @@ func (s *SubmissionService) SubmitToJournal(id, userID string, journalID int) (*
 		return nil, models.ErrUnauthorized
 	}
 
-	now := time.Now()
 	_ = s.repo.Update(id, &models.UpdateSubmissionRequest{
 		Status:    "submitted",
 		Stage:     "under_review",
