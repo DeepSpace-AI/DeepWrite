@@ -64,6 +64,8 @@ SUPPORTED_LANGUAGES = {
     "python": {"image": "python:3.12-alpine", "extension": ".py", "cmd": "python"},
     "javascript": {"image": "node:20-alpine", "extension": ".js", "cmd": "node"},
     "r": {"image": "r-base:latest", "extension": ".R", "cmd": "Rscript"},
+    "julia": {"image": "julia:1.10-alpine", "extension": ".jl", "cmd": "julia"},
+    "octave": {"image": "gnuoctave/octave:latest", "extension": ".m", "cmd": "octave --no-gui"},
 }
 
 
@@ -255,3 +257,92 @@ def get_run_status(run_id: str):
     if not run:
         raise HTTPException(status_code=404, detail="Run not found")
     return {"success": True, "data": serialize_doc(run)}
+
+
+@app.get("/api/code/files/{file_id}/versions")
+def list_versions(file_id: str):
+    try:
+        file = db.code_files.find_one({"_id": ObjectId(file_id)})
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid file ID")
+    if not file:
+        raise HTTPException(status_code=404, detail="File not found")
+
+    versions = list(
+        db.code_versions.find({"file_id": file_id})
+        .sort("version", -1)
+        .limit(50)
+    )
+    return {"success": True, "data": [serialize_doc(v) for v in versions]}
+
+
+@app.post("/api/code/files/{file_id}/versions")
+def create_version(file_id: str, message: str = Query("")):
+    try:
+        file = db.code_files.find_one({"_id": ObjectId(file_id)})
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid file ID")
+    if not file:
+        raise HTTPException(status_code=404, detail="File not found")
+
+    version_doc = {
+        "file_id": file_id,
+        "project_id": file["project_id"],
+        "version": file.get("version", 1),
+        "content": file["content"],
+        "message": message,
+        "created_at": datetime.utcnow(),
+    }
+    db.code_versions.insert_one(version_doc)
+
+    return {"success": True, "message": "Version created"}
+
+
+@app.get("/api/code/files/{file_id}/versions/{version}")
+def get_version(file_id: str, version: int):
+    try:
+        file = db.code_files.find_one({"_id": ObjectId(file_id)})
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid file ID")
+    if not file:
+        raise HTTPException(status_code=404, detail="File not found")
+
+    version_doc = db.code_versions.find_one({
+        "file_id": file_id,
+        "version": version,
+    })
+    if not version_doc:
+        raise HTTPException(status_code=404, detail="Version not found")
+
+    return {"success": True, "data": serialize_doc(version_doc)}
+
+
+@app.post("/api/code/files/{file_id}/rollback/{version}")
+def rollback_version(file_id: str, version: int):
+    try:
+        file = db.code_files.find_one({"_id": ObjectId(file_id)})
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid file ID")
+    if not file:
+        raise HTTPException(status_code=404, detail="File not found")
+
+    version_doc = db.code_versions.find_one({
+        "file_id": file_id,
+        "version": version,
+    })
+    if not version_doc:
+        raise HTTPException(status_code=404, detail="Version not found")
+
+    db.code_files.update_one(
+        {"_id": ObjectId(file_id)},
+        {
+            "$set": {
+                "content": version_doc["content"],
+                "updated_at": datetime.utcnow(),
+            },
+            "$inc": {"version": 1},
+        },
+    )
+
+    updated_file = db.code_files.find_one({"_id": ObjectId(file_id)})
+    return {"success": True, "data": serialize_doc(updated_file)}

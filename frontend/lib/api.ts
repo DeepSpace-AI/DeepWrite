@@ -136,6 +136,14 @@ export const codeApi = {
   runCode: (data: { file_id: string; timeout?: number }) =>
     api.post("/api/code/run", data),
   getRunStatus: (runId: string) => api.get(`/api/code/runs/${runId}`),
+  listVersions: (fileId: string) =>
+    api.get(`/api/code/files/${fileId}/versions`),
+  createVersion: (fileId: string, message?: string) =>
+    api.post(`/api/code/files/${fileId}/versions`, null, { params: { message } }),
+  getVersion: (fileId: string, version: number) =>
+    api.get(`/api/code/files/${fileId}/versions/${version}`),
+  rollbackVersion: (fileId: string, version: number) =>
+    api.post(`/api/code/files/${fileId}/rollback/${version}`),
 };
 
 export const imageApi = {

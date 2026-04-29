@@ -50,12 +50,16 @@ const SUPPORTED_LANGUAGES = [
   { value: "python", label: "Python", extension: ".py", monacoLang: "python" },
   { value: "javascript", label: "JavaScript", extension: ".js", monacoLang: "javascript" },
   { value: "r", label: "R", extension: ".R", monacoLang: "r" },
+  { value: "julia", label: "Julia", extension: ".jl", monacoLang: "julia" },
+  { value: "octave", label: "Octave/MATLAB", extension: ".m", monacoLang: "matlab" },
 ];
 
 const LANGUAGE_EXTENSIONS: Record<string, string> = {
   python: "python",
   javascript: "javascript",
   r: "r",
+  julia: "julia",
+  octave: "matlab",
 };
 
 export default function ProjectCodePage() {
