@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { useAuthStore } from "@/stores/auth";
 import { Sidebar } from "@/components/layout/sidebar";
@@ -10,28 +10,24 @@ import { cn } from "@/lib/utils";
 const publicRoutes = ["/login", "/register"];
 
 export function MainLayout({ children }: { children: React.ReactNode }) {
-  const { isAuthenticated, isLoading } = useAuthStore();
-  const setLoading = useAuthStore((state) => state.setLoading);
+  const { isAuthenticated, isLoading, isHydrated } = useAuthStore();
   const router = useRouter();
   const pathname = usePathname();
   const isPublicRoute = publicRoutes.includes(pathname || "");
-  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    setMounted(true);
-    setLoading(false);
-  }, [setLoading]);
-
-  useEffect(() => {
-    if (!isLoading && !isAuthenticated && !isPublicRoute) {
+    if (isHydrated && !isLoading && !isAuthenticated && !isPublicRoute) {
       router.push("/login");
     }
-  }, [isLoading, isAuthenticated, isPublicRoute, router]);
+  }, [isHydrated, isLoading, isAuthenticated, isPublicRoute, router]);
 
-  if (!mounted || isLoading) {
+  if (!isHydrated || isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+      <div className="flex items-center justify-center min-h-screen" style={{ background: "var(--bg-primary)" }}>
+        <div
+          className="w-8 h-8 border-4 border-t-transparent rounded-full animate-spin"
+          style={{ borderColor: "var(--accent)", borderTopColor: "transparent" }}
+        ></div>
       </div>
     );
   }
@@ -45,7 +41,7 @@ export function MainLayout({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen" style={{ background: "var(--bg-secondary)" }}>
       <Sidebar />
       <div className={cn("ml-64 transition-all duration-300")}>
         <Navbar />

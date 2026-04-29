@@ -39,19 +39,27 @@ export function Sidebar() {
   return (
     <aside
       className={cn(
-        "fixed left-0 top-0 z-40 h-screen bg-white border-r border-gray-200 transition-all duration-300 flex flex-col",
+        "fixed left-0 top-0 z-40 h-screen transition-all duration-300 flex flex-col",
         collapsed ? "w-16" : "w-64"
       )}
+      style={{
+        background: "var(--bg-sidebar)",
+        borderRight: "1px solid var(--border)",
+      }}
     >
-      <div className="flex items-center justify-between h-16 px-4 border-b border-gray-200">
+      <div
+        className="flex items-center justify-between h-16 px-4"
+        style={{ borderBottom: "1px solid var(--border)" }}
+      >
         {!collapsed && (
-          <Link href="/dashboard" className="text-xl font-bold text-gray-900">
+          <Link href="/dashboard" className="text-xl font-bold" style={{ color: "var(--text-primary)" }}>
             DeepWrite
           </Link>
         )}
         <button
           onClick={() => setCollapsed(!collapsed)}
-          className="p-1 rounded-lg hover:bg-gray-100 ml-auto"
+          className="p-1 rounded-lg ml-auto"
+          style={{ color: "var(--text-secondary)" }}
         >
           {collapsed ? (
             <ChevronRight className="w-5 h-5" />
@@ -69,11 +77,12 @@ export function Sidebar() {
               key={item.href}
               href={item.href}
               className={cn(
-                "flex items-center px-4 py-3 mx-2 rounded-lg transition-colors",
-                isActive
-                  ? "bg-blue-50 text-blue-600"
-                  : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                "flex items-center px-4 py-3 mx-2 rounded-lg transition-colors"
               )}
+              style={{
+                background: isActive ? "var(--accent-light)" : "transparent",
+                color: isActive ? "var(--accent)" : "var(--text-secondary)",
+              }}
               title={collapsed ? item.label : undefined}
             >
               <item.icon className={cn("w-5 h-5", collapsed && "mx-auto")} />
@@ -86,10 +95,16 @@ export function Sidebar() {
 
         {isProjectPage && projectId && (
           <>
-            <div className={cn("mx-4 my-2 border-t border-gray-200", collapsed && "mx-2")} />
+            <div
+              className={cn("mx-4 my-2", collapsed && "mx-2")}
+              style={{ borderTop: "1px solid var(--border)" }}
+            />
             {!collapsed && (
               <div className="px-4 py-2">
-                <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                <span
+                  className="text-xs font-semibold uppercase tracking-wider"
+                  style={{ color: "var(--text-muted)" }}
+                >
                   项目功能
                 </span>
               </div>
@@ -102,11 +117,12 @@ export function Sidebar() {
                   key={item.href}
                   href={href}
                   className={cn(
-                    "flex items-center px-4 py-3 mx-2 rounded-lg transition-colors",
-                    isActive
-                      ? "bg-blue-50 text-blue-600"
-                      : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                    "flex items-center px-4 py-3 mx-2 rounded-lg transition-colors"
                   )}
+                  style={{
+                    background: isActive ? "var(--accent-light)" : "transparent",
+                    color: isActive ? "var(--accent)" : "var(--text-secondary)",
+                  }}
                   title={collapsed ? item.label : undefined}
                 >
                   <item.icon className={cn("w-5 h-5", collapsed && "mx-auto")} />

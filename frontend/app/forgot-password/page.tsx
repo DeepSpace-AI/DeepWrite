@@ -27,26 +27,46 @@ export default function ForgotPasswordPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
+    <div
+      className="min-h-screen flex items-center justify-center px-4"
+      style={{ background: "var(--bg-secondary)" }}
+    >
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">DeepWrite</h1>
-          <p className="mt-2 text-gray-600">AI辅助科研写作平台</p>
+          <h1 className="text-3xl font-bold" style={{ color: "var(--text-primary)" }}>
+            DeepWrite
+          </h1>
+          <p className="mt-2" style={{ color: "var(--text-secondary)" }}>
+            AI辅助科研写作平台
+          </p>
         </div>
 
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8">
+        <div
+          className="rounded-xl shadow-sm p-8"
+          style={{
+            background: "var(--bg-card)",
+            border: "1px solid var(--border)",
+          }}
+        >
           {isSubmitted ? (
             <div className="text-center">
-              <CheckCircle className="w-12 h-12 text-green-500 mx-auto mb-4" />
-              <h2 className="text-xl font-semibold text-gray-900 mb-2">
+              <CheckCircle
+                className="w-12 h-12 mx-auto mb-4"
+                style={{ color: "var(--success)" }}
+              />
+              <h2
+                className="text-xl font-semibold mb-2"
+                style={{ color: "var(--text-primary)" }}
+              >
                 重置链接已发送
               </h2>
-              <p className="text-gray-600 mb-6">
+              <p className="mb-6" style={{ color: "var(--text-secondary)" }}>
                 请检查您的邮箱 {email}，点击邮件中的链接重置密码
               </p>
               <Link
                 href="/login"
-                className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-700 font-medium"
+                className="inline-flex items-center gap-2 font-medium"
+                style={{ color: "var(--accent)" }}
               >
                 <ArrowLeft className="w-4 h-4" />
                 返回登录
@@ -54,33 +74,54 @@ export default function ForgotPasswordPage() {
             </div>
           ) : (
             <>
-              <h2 className="text-xl font-semibold text-gray-900 mb-2">
+              <h2
+                className="text-xl font-semibold mb-2"
+                style={{ color: "var(--text-primary)" }}
+              >
                 忘记密码？
               </h2>
-              <p className="text-gray-600 mb-6">
+              <p className="mb-6" style={{ color: "var(--text-secondary)" }}>
                 输入您的邮箱地址，我们将发送密码重置链接
               </p>
 
               {error && (
-                <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-600 text-sm">
+                <div
+                  className="mb-4 p-3 rounded-lg text-sm"
+                  style={{
+                    background: "var(--error)10",
+                    border: "1px solid var(--error)30",
+                    color: "var(--error)",
+                  }}
+                >
                   {error}
                 </div>
               )}
 
               <form onSubmit={handleSubmit} className="space-y-5">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                  <label
+                    className="block text-sm font-medium mb-1.5"
+                    style={{ color: "var(--text-primary)" }}
+                  >
                     邮箱地址
                   </label>
                   <div className="relative">
-                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                    <Mail
+                      className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5"
+                      style={{ color: "var(--text-muted)" }}
+                    />
                     <input
                       type="email"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       placeholder="your@email.com"
                       required
-                      className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="w-full pl-10 pr-4 py-2.5 rounded-lg focus:outline-none focus:ring-2"
+                      style={{
+                        background: "var(--bg-primary)",
+                        border: "1px solid var(--border)",
+                        color: "var(--text-primary)",
+                      }}
                     />
                   </div>
                 </div>
@@ -88,10 +129,14 @@ export default function ForgotPasswordPage() {
                 <button
                   type="submit"
                   disabled={isLoading}
-                  className="w-full flex items-center justify-center gap-2 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  className="w-full flex items-center justify-center gap-2 py-2.5 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                  style={{ background: "var(--accent)" }}
                 >
                   {isLoading ? (
-                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    <div
+                      className="w-5 h-5 border-2 border-t-transparent rounded-full animate-spin"
+                      style={{ borderColor: "white", borderTopColor: "transparent" }}
+                    />
                   ) : (
                     "发送重置链接"
                   )}
@@ -101,7 +146,8 @@ export default function ForgotPasswordPage() {
               <div className="mt-6 text-center">
                 <Link
                   href="/login"
-                  className="inline-flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900"
+                  className="inline-flex items-center gap-2 text-sm"
+                  style={{ color: "var(--text-secondary)" }}
                 >
                   <ArrowLeft className="w-4 h-4" />
                   返回登录

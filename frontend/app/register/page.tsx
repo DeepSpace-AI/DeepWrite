@@ -56,29 +56,60 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
+    <div
+      className="min-h-screen flex items-center justify-center px-4"
+      style={{ background: "var(--bg-secondary)" }}
+    >
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">DeepWrite</h1>
-          <p className="mt-2 text-gray-600">AI辅助科研写作平台</p>
+          <h1 className="text-3xl font-bold" style={{ color: "var(--text-primary)" }}>
+            DeepWrite
+          </h1>
+          <p className="mt-2" style={{ color: "var(--text-secondary)" }}>
+            AI辅助科研写作平台
+          </p>
         </div>
 
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8">
-          <h2 className="text-xl font-semibold text-gray-900 mb-6">创建账号</h2>
+        <div
+          className="rounded-xl shadow-sm p-8"
+          style={{
+            background: "var(--bg-card)",
+            border: "1px solid var(--border)",
+          }}
+        >
+          <h2
+            className="text-xl font-semibold mb-6"
+            style={{ color: "var(--text-primary)" }}
+          >
+            创建账号
+          </h2>
 
           {error && (
-            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-600 text-sm">
+            <div
+              className="mb-4 p-3 rounded-lg text-sm"
+              style={{
+                background: "var(--error)10",
+                border: "1px solid var(--error)30",
+                color: "var(--error)",
+              }}
+            >
               {error}
             </div>
           )}
 
           <form onSubmit={handleSubmit} className="space-y-5">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">
+              <label
+                className="block text-sm font-medium mb-1.5"
+                style={{ color: "var(--text-primary)" }}
+              >
                 姓名
               </label>
               <div className="relative">
-                <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <User
+                  className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5"
+                  style={{ color: "var(--text-muted)" }}
+                />
                 <input
                   type="text"
                   name="name"
@@ -86,17 +117,28 @@ export default function RegisterPage() {
                   onChange={handleChange}
                   placeholder="您的姓名"
                   required
-                  className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full pl-10 pr-4 py-2.5 rounded-lg focus:outline-none focus:ring-2"
+                  style={{
+                    background: "var(--bg-primary)",
+                    border: "1px solid var(--border)",
+                    color: "var(--text-primary)",
+                  }}
                 />
               </div>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">
+              <label
+                className="block text-sm font-medium mb-1.5"
+                style={{ color: "var(--text-primary)" }}
+              >
                 邮箱地址
               </label>
               <div className="relative">
-                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <Mail
+                  className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5"
+                  style={{ color: "var(--text-muted)" }}
+                />
                 <input
                   type="email"
                   name="email"
@@ -104,17 +146,28 @@ export default function RegisterPage() {
                   onChange={handleChange}
                   placeholder="your@email.com"
                   required
-                  className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full pl-10 pr-4 py-2.5 rounded-lg focus:outline-none focus:ring-2"
+                  style={{
+                    background: "var(--bg-primary)",
+                    border: "1px solid var(--border)",
+                    color: "var(--text-primary)",
+                  }}
                 />
               </div>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">
+              <label
+                className="block text-sm font-medium mb-1.5"
+                style={{ color: "var(--text-primary)" }}
+              >
                 密码
               </label>
               <div className="relative">
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <Lock
+                  className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5"
+                  style={{ color: "var(--text-muted)" }}
+                />
                 <input
                   type={showPassword ? "text" : "password"}
                   name="password"
@@ -122,12 +175,18 @@ export default function RegisterPage() {
                   onChange={handleChange}
                   placeholder="至少6个字符"
                   required
-                  className="w-full pl-10 pr-12 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full pl-10 pr-12 py-2.5 rounded-lg focus:outline-none focus:ring-2"
+                  style={{
+                    background: "var(--bg-primary)",
+                    border: "1px solid var(--border)",
+                    color: "var(--text-primary)",
+                  }}
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  className="absolute right-3 top-1/2 -translate-y-1/2"
+                  style={{ color: "var(--text-muted)" }}
                 >
                   {showPassword ? (
                     <EyeOff className="w-5 h-5" />
@@ -139,11 +198,17 @@ export default function RegisterPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">
+              <label
+                className="block text-sm font-medium mb-1.5"
+                style={{ color: "var(--text-primary)" }}
+              >
                 确认密码
               </label>
               <div className="relative">
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <Lock
+                  className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5"
+                  style={{ color: "var(--text-muted)" }}
+                />
                 <input
                   type={showPassword ? "text" : "password"}
                   name="confirmPassword"
@@ -151,7 +216,12 @@ export default function RegisterPage() {
                   onChange={handleChange}
                   placeholder="再次输入密码"
                   required
-                  className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full pl-10 pr-4 py-2.5 rounded-lg focus:outline-none focus:ring-2"
+                  style={{
+                    background: "var(--bg-primary)",
+                    border: "1px solid var(--border)",
+                    color: "var(--text-primary)",
+                  }}
                 />
               </div>
             </div>
@@ -159,10 +229,14 @@ export default function RegisterPage() {
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full flex items-center justify-center gap-2 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="w-full flex items-center justify-center gap-2 py-2.5 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
+              style={{ background: "var(--accent)" }}
             >
               {isLoading ? (
-                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                <div
+                  className="w-5 h-5 border-2 border-t-transparent rounded-full animate-spin"
+                  style={{ borderColor: "white", borderTopColor: "transparent" }}
+                />
               ) : (
                 <>
                   注册
@@ -173,9 +247,13 @@ export default function RegisterPage() {
           </form>
 
           <div className="mt-6 text-center">
-            <p className="text-sm text-gray-600">
+            <p className="text-sm" style={{ color: "var(--text-secondary)" }}>
               已有账号？{" "}
-              <Link href="/login" className="text-blue-600 hover:text-blue-700 font-medium">
+              <Link
+                href="/login"
+                className="font-medium"
+                style={{ color: "var(--accent)" }}
+              >
                 立即登录
               </Link>
             </p>
