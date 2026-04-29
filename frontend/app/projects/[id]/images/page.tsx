@@ -167,6 +167,13 @@ export default function ProjectImagesPage() {
           <p className="text-gray-500">{projectTitle}</p>
         </div>
         <div className="flex items-center gap-2">
+          <Link
+            href={`/projects/${projectId}/images/editor`}
+            className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+          >
+            <Wand2 className="w-4 h-4" />
+            编辑器
+          </Link>
           <button
             onClick={() => setShowAIModal(true)}
             className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"

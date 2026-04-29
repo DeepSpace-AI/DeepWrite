@@ -41,11 +41,12 @@ func main() {
 	submissionHandler := handler.NewSubmissionHandler(submissionService)
 	reviewHandler := handler.NewReviewHandler(reviewService)
 	recommendHandler := handler.NewRecommendHandler(journalService, submissionService)
+	formatCheckHandler := handler.NewFormatCheckHandler()
 
 	jwtAuth := middleware.NewJWTAuth(&cfg.JWT)
 
 	router := gin.Default()
-	routes.Setup(router, journalHandler, submissionHandler, reviewHandler, recommendHandler, jwtAuth)
+	routes.Setup(router, journalHandler, submissionHandler, reviewHandler, recommendHandler, formatCheckHandler, jwtAuth)
 
 	log.Printf("Submission service starting on port %s", cfg.Server.Port)
 	if err := router.Run(":" + cfg.Server.Port); err != nil {

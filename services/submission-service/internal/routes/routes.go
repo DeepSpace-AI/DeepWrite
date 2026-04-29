@@ -12,6 +12,7 @@ func Setup(
 	submissionHandler *handler.SubmissionHandler,
 	reviewHandler *handler.ReviewHandler,
 	recommendHandler *handler.RecommendHandler,
+	formatCheckHandler *handler.FormatCheckHandler,
 	jwtAuth *middleware.JWTAuth,
 ) {
 	r.GET("/health", func(c *gin.Context) {
@@ -26,6 +27,7 @@ func Setup(
 		api.GET("/journals/:id", journalHandler.Get)
 
 		api.POST("/submissions/recommend", recommendHandler.RecommendJournals)
+		api.POST("/submissions/check-format", formatCheckHandler.CheckFormat)
 
 		api.POST("/submissions", submissionHandler.Create)
 		api.GET("/submissions/project/:project_id", submissionHandler.ListByProject)
@@ -37,6 +39,7 @@ func Setup(
 		api.POST("/submissions/:id/history", submissionHandler.AddHistory)
 
 		api.GET("/submissions/:id/recommend", recommendHandler.RecommendForSubmission)
+		api.POST("/submissions/:id/check-format", formatCheckHandler.CheckFormat)
 
 		api.POST("/submissions/:id/reviews", reviewHandler.Create)
 		api.GET("/submissions/:id/reviews", reviewHandler.ListBySubmission)

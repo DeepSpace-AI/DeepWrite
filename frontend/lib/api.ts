@@ -196,6 +196,10 @@ export const submissionApi = {
     api.post("/api/submissions/recommend", data),
   recommendForSubmission: (id: string) =>
     api.get(`/api/submissions/${id}/recommend`),
+  checkFormat: (data: { title: string; abstract?: string; keywords?: string[]; content?: string; journal_id?: number }) =>
+    api.post("/api/submissions/check-format", data),
+  checkFormatForSubmission: (id: string, data: { title: string; abstract?: string; keywords?: string[]; content?: string; journal_id?: number }) =>
+    api.post(`/api/submissions/${id}/check-format`, data),
 };
 
 export const reviewApi = {
