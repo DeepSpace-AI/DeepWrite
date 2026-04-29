@@ -11,11 +11,23 @@ export const api = axios.create({
   timeout: 10000,
 });
 
+const PUBLIC_PATHS = [
+  "/api/users/login",
+  "/api/users/register",
+  "/api/users/forgot-password",
+];
+
 api.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
-    const token = useAuthStore.getState().accessToken;
-    if (token && config.headers) {
-      config.headers.Authorization = `Bearer ${token}`;
+    const isPublicPath = PUBLIC_PATHS.some((path) =>
+      config.url?.startsWith(path)
+    );
+
+    if (!isPublicPath) {
+      const token = useAuthStore.getState().accessToken;
+      if (token && config.headers) {
+        config.headers.Authorization = `Bearer ${token}`;
+      }
     }
     return config;
   },
