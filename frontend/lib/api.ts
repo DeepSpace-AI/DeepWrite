@@ -169,3 +169,42 @@ export const storageApi = {
   list: (params: { bucket: string; project_id: string; prefix?: string }) =>
     api.get("/api/storage/list", { params }),
 };
+
+export const journalApi = {
+  list: (params?: { query?: string; category?: string; quartile?: string; page?: number; limit?: number }) =>
+    api.get("/api/journals", { params }),
+  get: (id: number) => api.get(`/api/journals/${id}`),
+  getCategories: () => api.get("/api/journals/categories"),
+};
+
+export const submissionApi = {
+  listByProject: (projectId: string, params?: { page?: number; limit?: number }) =>
+    api.get(`/api/submissions/project/${projectId}`, { params }),
+  get: (id: string) => api.get(`/api/submissions/${id}`),
+  create: (data: { project_id: string; title: string; abstract?: string; keywords?: string[]; document_id?: string }) =>
+    api.post("/api/submissions", data),
+  update: (id: string, data: Partial<{ title: string; abstract: string; keywords: string[]; status: string; stage: string; journal_id: number; notes: string }>) =>
+    api.put(`/api/submissions/${id}`, data),
+  delete: (id: string) => api.delete(`/api/submissions/${id}`),
+  submitToJournal: (id: string, journalId: number) =>
+    api.post(`/api/submissions/${id}/submit`, { journal_id: journalId }),
+  updateStatus: (id: string, data: { status: string; note?: string }) =>
+    api.put(`/api/submissions/${id}/status`, data),
+  addHistory: (id: string, data: { from_status?: string; to_status: string; note?: string }) =>
+    api.post(`/api/submissions/${id}/history`, data),
+  recommend: (data: { title: string; abstract?: string; keywords?: string[] }) =>
+    api.post("/api/submissions/recommend", data),
+  recommendForSubmission: (id: string) =>
+    api.get(`/api/submissions/${id}/recommend`),
+};
+
+export const reviewApi = {
+  listBySubmission: (submissionId: string) =>
+    api.get(`/api/submissions/${submissionId}/reviews`),
+  create: (submissionId: string, data: { reviewer_name?: string; review_type?: string; content: string; rating?: number; recommendation?: string }) =>
+    api.post(`/api/submissions/${submissionId}/reviews`, data),
+  update: (submissionId: string, reviewId: string, data: Partial<{ content: string; rating: number; recommendation: string; status: string }>) =>
+    api.put(`/api/submissions/${submissionId}/reviews/${reviewId}`, data),
+  delete: (submissionId: string, reviewId: string) =>
+    api.delete(`/api/submissions/${submissionId}/reviews/${reviewId}`),
+};

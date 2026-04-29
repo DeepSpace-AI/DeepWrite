@@ -10,6 +10,7 @@ volumes:
   image-db-data:
   reference-db-data:
   writing-doc-db-data:
+  submission-db-data:
   redis-data:
   minio-data:
   kong-db-data:
@@ -406,6 +407,49 @@ services:
       - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
     networks:
       - deepwrite-net
+
+  submission-db:
+    image: postgres:18-alpine
+    container_name: deepwrite-submission-db
+    restart: always
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-password}
+      POSTGRES_DB: submission_db
+    ports:
+      - "5432"
+    volumes:
+      - submission-db-data:/var/lib/postgresql
+    networks:
+      - deepwrite-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-user} -d submission_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  submission-service:
+    build: 
+      context: ../../services/submission-service
+      dockerfile: Dockerfile
+    image: deepwrite-submission-service
+    container_name: deepwrite-submission-service
+    restart: always
+    ports:
+      - "8089:8089"
+    environment:
+      - DB_HOST=submission-db
+      - DB_PORT=5432
+      - DB_USER=${POSTGRES_USER:-user}
+      - DB_PASSWORD=${POSTGRES_PASSWORD:-password}
+      - DB_NAME=submission_db
+      - JWT_SECRET=${JWT_SECRET}
+      - AI_SERVICE_URL=http://ai-service:8087
+    networks:
+      - deepwrite-net
+    depends_on:
+      submission-db:
+        condition: service_healthy
 
   storage-service:
     build: 
