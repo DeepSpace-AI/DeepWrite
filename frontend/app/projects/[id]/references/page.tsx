@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { referenceApi } from "@/lib/api";
+import { stripJatsXml } from "@/lib/utils";
 import {
   ArrowLeft,
   BookOpen,
@@ -315,7 +316,7 @@ export default function ProjectReferencesPage() {
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
                     <h3 className="text-lg font-semibold text-gray-900 mb-1">
-                      {ref.title}
+                      {stripJatsXml(ref.title)}
                     </h3>
                     <p className="text-gray-600 text-sm mb-2">
                       {ref.authors.join(", ")}
@@ -324,7 +325,7 @@ export default function ProjectReferencesPage() {
                     </p>
                     {ref.abstract && (
                       <p className="text-gray-500 text-sm mb-3 line-clamp-2">
-                        {ref.abstract}
+                        {stripJatsXml(ref.abstract)}
                       </p>
                     )}
                     <div className="flex items-center gap-2 flex-wrap">
@@ -601,7 +602,7 @@ export default function ProjectReferencesPage() {
                   className="p-4 border border-gray-200 rounded-lg"
                 >
                   <h3 className="font-medium text-gray-900 mb-1">
-                    {result.title}
+                    {stripJatsXml(result.title)}
                   </h3>
                   <p className="text-sm text-gray-600 mb-2">
                     {result.authors.join(", ")}
@@ -610,7 +611,7 @@ export default function ProjectReferencesPage() {
                   </p>
                   {result.abstract && (
                     <p className="text-sm text-gray-500 mb-3 line-clamp-2">
-                      {result.abstract}
+                      {stripJatsXml(result.abstract)}
                     </p>
                   )}
                   <button

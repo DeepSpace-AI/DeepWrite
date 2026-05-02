@@ -12,6 +12,7 @@ import {
   MoreVertical,
   Users,
   Clock,
+  Trash2,
 } from "lucide-react";
 
 export default function ProjectsPage() {
@@ -20,6 +21,9 @@ export default function ProjectsPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [newProject, setNewProject] = useState({ title: "", description: "" });
+  const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<Project | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
     fetchProjects();
@@ -47,6 +51,29 @@ export default function ProjectsPage() {
       console.error("Failed to create project:", err);
     }
   };
+
+  const handleDelete = async () => {
+    if (!deleteTarget) return;
+    setIsDeleting(true);
+    try {
+      await projectApi.delete(deleteTarget.id);
+      setDeleteTarget(null);
+      fetchProjects();
+    } catch (err) {
+      console.error("Failed to delete project:", err);
+      alert("删除项目失败，请重试");
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  useEffect(() => {
+    const handleClickOutside = () => setOpenMenuId(null);
+    if (openMenuId) {
+      document.addEventListener("click", handleClickOutside);
+      return () => document.removeEventListener("click", handleClickOutside);
+    }
+  }, [openMenuId]);
 
   const filteredProjects = projects.filter(
     (p) =>
@@ -133,12 +160,43 @@ export default function ProjectsPage() {
                 >
                   <FolderOpen className="w-5 h-5" />
                 </div>
-                <button
-                  className="opacity-0 group-hover:opacity-100 p-1 rounded"
-                  style={{ color: "var(--text-muted)" }}
-                >
-                  <MoreVertical className="w-4 h-4" />
-                </button>
+                <div className="relative">
+                  <button
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setOpenMenuId(openMenuId === project.id ? null : project.id);
+                    }}
+                    className="opacity-0 group-hover:opacity-100 p-1 rounded transition-opacity"
+                    style={{ color: "var(--text-muted)" }}
+                  >
+                    <MoreVertical className="w-4 h-4" />
+                  </button>
+                  {openMenuId === project.id && (
+                    <div
+                      className="absolute right-0 top-full mt-1 w-32 rounded-lg shadow-lg z-10 py-1"
+                      style={{
+                        background: "var(--bg-card)",
+                        border: "1px solid var(--border)",
+                      }}
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <button
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          setDeleteTarget(project);
+                          setOpenMenuId(null);
+                        }}
+                        className="w-full flex items-center gap-2 px-3 py-2 text-sm text-left transition-colors hover:bg-red-50 dark:hover:bg-red-950"
+                        style={{ color: "var(--error, #ef4444)" }}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                        删除项目
+                      </button>
+                    </div>
+                  )}
+                </div>
               </div>
 
               <h3
@@ -207,6 +265,45 @@ export default function ProjectsPage() {
               创建项目
             </button>
           )}
+        </div>
+      )}
+
+      {deleteTarget && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div
+            className="rounded-xl shadow-xl w-full max-w-sm mx-4"
+            style={{ background: "var(--bg-card)" }}
+          >
+            <div className="p-6 space-y-4">
+              <h3
+                className="text-lg font-semibold"
+                style={{ color: "var(--text-primary)" }}
+              >
+                确认删除
+              </h3>
+              <p style={{ color: "var(--text-secondary)" }}>
+                确定要删除项目「{deleteTarget.title}」吗？此操作不可恢复。
+              </p>
+              <div className="flex justify-end gap-3">
+                <button
+                  onClick={() => setDeleteTarget(null)}
+                  className="px-4 py-2 rounded-lg"
+                  style={{ color: "var(--text-secondary)" }}
+                  disabled={isDeleting}
+                >
+                  取消
+                </button>
+                <button
+                  onClick={handleDelete}
+                  className="px-4 py-2 text-white rounded-lg"
+                  style={{ background: "var(--error, #ef4444)" }}
+                  disabled={isDeleting}
+                >
+                  {isDeleting ? "删除中..." : "删除"}
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       )}
 
